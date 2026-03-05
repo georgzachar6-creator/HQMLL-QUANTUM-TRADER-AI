@@ -28,37 +28,65 @@ class _OracleScreenState extends State<OracleScreen>
 
   final List<String> _quickQuestions = [
     'BTC Resonanz-Analyse',
+    'ETH Analyse',
+    'QEMMA Token Analyse',
     'Portfolio-Risiko prüfen',
     'QEMMA Mining Status',
     'Markt-Sentiment heute',
-    'God Mode aktivieren',
     'Top Signale anzeigen',
+    'Agenten-Status',
+    'HQMLL System',
+    'Risikomanagement',
   ];
 
   static const List<_EmmaResponse> _responses = [
     _EmmaResponse(
       trigger: 'btc',
-      text: '🔮 BTC Quantum-Resonanz-Analyse:\n\n📊 Dominante Frequenz: 17-Tage-Zyklus\n⚡ RSI (4H): 62.4 – Neutrale Zone\n🌊 Wellen-Interferenz: Konstruktiv (+0.78)\n\n⚠️ Die 17-Tage-Resonanz interferiert KONSTRUKTIV mit der 89-Tage-Welle.\n\n📈 Prognose: Aufwärtsbewegung in den nächsten 6-12 Stunden hochwahrscheinlich.\nKonfidenz: 82%\n\nEmpfehlung: Vorsichtiges Nachkaufen – 5% des Kapitals.',
+      text: '🔮 BTC Quantum-Resonanz-Analyse:\n\n📊 Dominante Frequenz: 17-Tage-Zyklus\n⚡ RSI (4H): 62.4 – Neutrale Zone\n🌊 Wellen-Interferenz: Konstruktiv (+0.78)\n\n⚠️ Die 17-Tage-Resonanz interferiert KONSTRUKTIV mit der 89-Tage-Welle.\n\n📈 Prognose: Aufwärtsbewegung in den nächsten 6–12 Stunden hochwahrscheinlich.\nKonfidenz: 82%\n\nEmpfehlung: Vorsichtiges Nachkaufen – 5% des Kapitals.',
+    ),
+    _EmmaResponse(
+      trigger: 'eth',
+      text: '🔵 ETH Quantum-Analyse:\n\n📊 Zyklus: 34-Tage-Resonanz dominant\n⚡ RSI (1H): 58 – Leicht bullisch\n🌊 Wellen-Score: +0.71 (konstruktiv)\n\n🔗 On-Chain:\n• ETH-Staking: +3.2% diese Woche\n• Gas-Gebühren: Rückläufig ✅\n• Whale-Akkumulation: +8%\n\n📈 Prognose: ETH folgt BTC-Trend mit 4-6h Verzögerung.\nKonfidenz: 76%\n\nEmpfehlung: Halten & auf Breakout über \$3.600 warten.',
+    ),
+    _EmmaResponse(
+      trigger: 'sol',
+      text: '🟣 SOL Quantum-Analyse:\n\n📊 Zyklus: 21-Tage-Korrekturmuster\n⚡ RSI (4H): 44 – Überverkauft-Zone\n🌊 Wellen-Interferenz: Destruktiv (-0.32)\n\n⚠️ SOL befindet sich in einer kurzfristigen Korrekturphase.\n\n🎯 Support-Level: \$170 | Resistance: \$195\n\n💡 Empfehlung: Beobachten – Einstieg bei \$172–175 möglich.\nKonfidenz: 64%',
+    ),
+    _EmmaResponse(
+      trigger: 'qemma',
+      text: '⚡ \$QEMMA Token-Analyse:\n\n🚀 Momentum: EXTREM BULLISCH\n📈 24H: +12.45% | 7D: +34.2%\n🌊 Resonanz-Score: +0.94 (max. konstruktiv)\n\n💎 Token-Fundamentals:\n• Gesamt-Supply: 100M \$QEMMA\n• Circulating: 18.4M (18.4%)\n• Mining APY: ~340%\n• Burn-Rate: 1.2% pro Quartal\n\n🔮 Prognose: Nächstes ATH bei \$0.12–0.15 möglich.\nKonfidenz: 88%\n\nHalten & weiter minen, Grigori! 💪',
     ),
     _EmmaResponse(
       trigger: 'portfolio',
-      text: '📊 Portfolio-Risiko-Analyse:\n\n🔴 Risiko-Score: 6.2/10 (Mittel-Hoch)\n\nAllokation:\n• BTC: 45% – ✅ Optimal\n• ETH: 28% – ✅ Gut\n• Altcoins: 20% – ⚠️ Leicht erhöht\n• Stablecoins: 7% – 🔴 Zu niedrig\n\n💡 Empfehlung:\nStablecoin-Reserve auf 15% erhöhen.\nSharpe Ratio: 1.84 (gut)\nMax Drawdown: -12.3%\n\nEmmma-Score: B+ Portfolio',
+      text: '📊 Portfolio-Risiko-Analyse:\n\n🔴 Risiko-Score: 6.2/10 (Mittel-Hoch)\n\nAllokation:\n• BTC: 45% – ✅ Optimal\n• ETH: 28% – ✅ Gut\n• Altcoins: 20% – ⚠️ Leicht erhöht\n• Stablecoins: 7% – 🔴 Zu niedrig\n\n💡 Empfehlung:\nStablecoin-Reserve auf 15% erhöhen.\nSharpe Ratio: 1.84 (gut)\nMax Drawdown: -12.3%\n\n📊 Gesamt-Portfolio: \$47.842 (+8.3% diese Woche)\nEmma-Score: B+ Portfolio ⭐',
     ),
     _EmmaResponse(
       trigger: 'mining',
-      text: '⛏️ QEMMA Mining Status:\n\n🟢 Mining aktiv – Proof-of-Intelligence\n\n📈 Statistiken:\n• Heute verdient: 47.5 \$QEMMA\n• Gesamt: 1.284 \$QEMMA\n• Aktive Quests: 3/5\n• Nächste Quest in: 14 Min\n\n🏆 Aktuelle Quests:\n1. BTC-Trendanalyse – 10 \$QEMMA\n2. Sentiment-Rätsel – 15 \$QEMMA\n3. Resonanz-Kalibrierung – 25 \$QEMMA\n\nWeiter so, Grigori! 🚀',
+      text: '⛏️ QEMMA Mining Status:\n\n🟢 Mining aktiv – Proof-of-Intelligence\n\n📈 Statistiken:\n• Heute verdient: 47.5 \$QEMMA (\$4.02)\n• Diese Woche: 312 \$QEMMA\n• Gesamt: 1.284 \$QEMMA (\$108.76)\n• Aktive Quests: 3/5\n• Nächste Quest in: 14 Min\n\n🏆 Aktuelle Quests:\n1. BTC-Trendanalyse – 10 \$QEMMA\n2. Sentiment-Rätsel – 15 \$QEMMA\n3. Resonanz-Kalibrierung – 25 \$QEMMA\n\n⚡ Mining-Effizienz: 94% (exzellent)\nWeiter so, Grigori! 🚀',
     ),
     _EmmaResponse(
       trigger: 'sentiment',
-      text: '🧠 Markt-Sentiment-Analyse (Live):\n\n😊 Gesamt: POSITIV (72/100)\n\n📱 Social Media:\n• Twitter/X: +68% bullish\n• Reddit: +74% bullish\n• Telegram: Neutral (52%)\n\n📰 News-Sentiment: +0.71\n⛓️ On-Chain:\n• Whale-Bewegungen: +12% Akkumulation\n• Exchange Flows: Outflow dominant ✅\n\n⚡ Quantum-Resonanz: Die kollektive Marktpsychologie zeigt FOMO-Signale. Vorsicht bei Überhitzung.',
+      text: '🧠 Markt-Sentiment-Analyse (Live):\n\n😊 Gesamt: POSITIV (72/100)\n\n📱 Social Media:\n• Twitter/X: +68% bullish\n• Reddit: +74% bullish\n• Telegram: Neutral (52%)\n• YouTube: +81% positiv\n\n📰 News-Sentiment: +0.71\n📊 Fear & Greed Index: 68 (Gier)\n\n⛓️ On-Chain:\n• Whale-Bewegungen: +12% Akkumulation\n• Exchange Flows: Outflow dominant ✅\n• Long/Short Ratio: 1.42 (Longs dominant)\n\n⚡ Quantum-Resonanz: Die kollektive Marktpsychologie zeigt moderate FOMO-Signale. Vorsicht bei Überhitzung über 80.',
     ),
     _EmmaResponse(
       trigger: 'god',
-      text: '🔓 GOD MODE Aktivierungs-Anfrage erkannt.\n\nSicherheits-Protokoll: PIN erforderlich.\n\n[Aus Sicherheitsgründen im Demo-Modus deaktiviert]\n\nGod Mode Features:\n• Unbegrenzte Agenten-Kontrolle\n• Live-Modell-Gewichte anpassen\n• Shadow Research (Tor-Netzwerk)\n• Quantum Simulator (parallele Szenarien)\n• Direkter Zugriff auf alle 6 HQMLL-Agenten\n\nIn den Einstellungen > Erweitert aktivieren.',
+      text: '🔓 GOD MODE Aktivierungs-Anfrage erkannt.\n\nSicherheits-Protokoll aktiv.\n\nGod Mode Features:\n👁️ Unbegrenzte Agenten-Kontrolle\n⚙️ Live-Modell-Gewichte anpassen\n🕵️ Shadow Research (Tor-Netzwerk)\n🌀 Quantum Simulator (parallele Szenarien)\n🤖 Direkter Zugriff auf alle 6 HQMLL-Agenten\n🔮 Meta-Orchestrator Zugang\n\n→ Einstellungen > Erweitert > God Mode aktivieren\n   (PIN: in Ihren Zugangsdaten)',
     ),
     _EmmaResponse(
       trigger: 'signal',
-      text: '📡 Top Quantum-Signale (Echtzeit):\n\n🟢 BTC/USDT – KAUFEN\n   Konfidenz: 84% | Resonanz: +0.82\n\n🟢 ETH/USDT – KAUFEN\n   Konfidenz: 79% | RSI: 58\n\n🟡 SOL/USDT – HALTEN\n   Konfidenz: 61% | Trend: Neutral\n\n🔴 DOGE/USDT – VERKAUFEN\n   Konfidenz: 71% | Überverkauft-Signal\n\n⚡ Generiert von: Pattern Genesis Agent + Quantum Oracle\nAktualisiert: gerade eben',
+      text: '📡 Top Quantum-Signale (Echtzeit):\n\n🟢 BTC/USDT – KAUFEN\n   Konfidenz: 84% | Resonanz: +0.82 | RSI: 62\n\n🟢 ETH/USDT – KAUFEN\n   Konfidenz: 79% | RSI: 58 | Trend: Bullisch\n\n🟢 QEMMA/USDT – STARK KAUFEN\n   Konfidenz: 88% | Resonanz: +0.94 | Momentum: Max\n\n🟡 SOL/USDT – HALTEN\n   Konfidenz: 61% | Trend: Neutral\n\n🔴 DOGE/USDT – VERKAUFEN\n   Konfidenz: 71% | Überverkauft\n\n⚡ Generiert von: Pattern Genesis + Quantum Oracle\nAktualisiert: gerade eben · Nächste Analyse in 4 Min',
+    ),
+    _EmmaResponse(
+      trigger: 'agent',
+      text: '🤖 HQMLL Agenten-Status (Live):\n\n1️⃣ Quantum Oracle (Emma) – 🟢 AKTIV\n   Aufgabe: Marktanalyse & NLP\n   Konfidenz: 91%\n\n2️⃣ Pattern Genesis – 🟢 AKTIV\n   Aufgabe: Chart-Mustererkennung\n   Konfidenz: 87%\n\n3️⃣ Risk Sentinel – 🟢 AKTIV\n   Aufgabe: Risikomanagement\n   Konfidenz: 94%\n\n4️⃣ Sentiment Weaver – 🟢 AKTIV\n   Aufgabe: Social-Media-Analyse\n   Konfidenz: 82%\n\n5️⃣ Blockchain Scout – 🟡 SYNC\n   Aufgabe: On-Chain-Daten\n   Konfidenz: 78%\n\n6️⃣ Meta Orchestrator – 🟢 AKTIV\n   Aufgabe: Agenten-Koordination\n   Konfidenz: 96%\n\n✅ System-Gesundheit: 98.7%',
+    ),
+    _EmmaResponse(
+      trigger: 'hqmll',
+      text: '🌀 HQMLL – Hyper-Quantum Meta-Learning-Loop\n\nDas HQMLL-System ist das Herzstück der Quantum Trader Plattform:\n\n🔬 Technologie:\n• 6 spezialisierte KI-Agenten\n• Quantum-Resonanz-Algorithmen (17T & 89T Zyklen)\n• Proof-of-Intelligence Mining\n• Meta-Orchestrator (zentrales Koordinationssystem)\n\n📊 Performance (30 Tage):\n• Treffsicherheit: 74.3%\n• Ø Signal-Konfidenz: 82%\n• Verarbeitete Datenpunkte: 847.2M\n\n💡 Entwickler: Grigori Saks\n🔗 Blockchain: Solana (\$QEMMA)\n\nDas System lernt kontinuierlich und verbessert sich täglich.',
+    ),
+    _EmmaResponse(
+      trigger: 'risiko',
+      text: '⚠️ Risikomanagement-Empfehlungen:\n\n🛡️ Risk Sentinel Analyse:\n\n📊 Aktuelles Marktrisiko: MITTEL (6.1/10)\n\n✅ Empfohlene Position:\n• Max. 5% pro Trade\n• Stop-Loss: -8% unter Einstieg\n• Take-Profit: +15% Ziel\n• Hebel: Max. 2x\n\n⚠️ Risikowarnung:\n• Correlation BTC/ETH: 0.87 (hoch)\n• Portfolio-Konzentration: 73% Top-2\n• Empfehlung: Diversifikation erhöhen\n\n💡 Defensiv-Strategie:\nStablecoins: 15% halten\nGold-Token (PAXG): 5% beimischen',
     ),
   ];
 

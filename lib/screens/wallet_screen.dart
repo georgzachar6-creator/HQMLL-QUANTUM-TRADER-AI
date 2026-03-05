@@ -564,32 +564,124 @@ class _WalletScreenState extends State<WalletScreen>
   }
 
   Widget _buildSendSuccess(dynamic p) {
+    final txHash = '0x${_rnd.nextInt(0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}${_rnd.nextInt(0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}...';
+    final steps = [
+      ('Transaktion signiert', true),
+      ('An Netzwerk gesendet', true),
+      ('Vom Node akzeptiert', true),
+      ('Bestätigung ausstehend', false),
+    ];
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 90, height: 90,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: p.positive.withValues(alpha: 0.1),
-                border: Border.all(color: p.positive, width: 2)),
-            child: Icon(Icons.check_circle_outline, color: p.positive, size: 50),
-          ),
-          const SizedBox(height: 20),
-          Text('TRANSAKTION GESENDET!', style: GoogleFonts.rajdhani(
-              color: p.positive, fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 2)),
-          const SizedBox(height: 8),
-          Text('Emma bestätigt: Transaktion erfolgreich übermittelt.',
-              style: TextStyle(color: p.textSecondary, fontSize: 13), textAlign: TextAlign.center),
-          const SizedBox(height: 6),
-          Text('TX: 0x${_rnd.nextInt(999999999).toRadixString(16).padLeft(8, '0').toUpperCase()}',
-              style: GoogleFonts.robotoMono(color: p.primary, fontSize: 11)),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () => setState(() { _sendConfirmed = false; _amountCtrl.clear(); _addressCtrl.clear(); }),
-            style: ElevatedButton.styleFrom(backgroundColor: p.primary, foregroundColor: p.background, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-            child: Text('Neue Transaktion', style: GoogleFonts.rajdhani(fontSize: 14, fontWeight: FontWeight.bold)),
-          ),
-        ],
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Erfolgs-Kreis mit Glow
+            Container(
+              width: 100, height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: p.positive.withValues(alpha: 0.1),
+                border: Border.all(color: p.positive, width: 2.5),
+                boxShadow: [
+                  BoxShadow(color: p.positive.withValues(alpha: 0.4), blurRadius: 30, spreadRadius: 4),
+                ],
+              ),
+              child: Icon(Icons.check_circle_outline, color: p.positive, size: 54),
+            ),
+            const SizedBox(height: 20),
+            Text('TRANSAKTION GESENDET!',
+                style: GoogleFonts.rajdhani(
+                    color: p.positive, fontSize: 20, fontWeight: FontWeight.bold, letterSpacing: 2)),
+            const SizedBox(height: 6),
+            Text('Emma bestätigt: Transaktion erfolgreich übermittelt.',
+                style: TextStyle(color: p.textSecondary, fontSize: 13), textAlign: TextAlign.center),
+            const SizedBox(height: 20),
+            // TX-Hash
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: p.surfaceVariant,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: p.primary.withValues(alpha: 0.2)),
+              ),
+              child: Row(children: [
+                Icon(Icons.tag, color: p.primary, size: 14),
+                const SizedBox(width: 8),
+                Expanded(child: Text(txHash,
+                    style: GoogleFonts.robotoMono(color: p.primary, fontSize: 11))),
+                GestureDetector(
+                  onTap: () => Clipboard.setData(ClipboardData(text: txHash)),
+                  child: Icon(Icons.copy, color: p.textSecondary, size: 16),
+                ),
+              ]),
+            ),
+            const SizedBox(height: 16),
+            // Bestätigungs-Schritte
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: p.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: p.primary.withValues(alpha: 0.15)),
+              ),
+              child: Column(
+                children: steps.asMap().entries.map((e) {
+                  final done = e.value.$2;
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 5),
+                    child: Row(children: [
+                      Container(
+                        width: 20, height: 20,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: done ? p.positive.withValues(alpha: 0.15) : p.surfaceVariant,
+                          border: Border.all(color: done ? p.positive : p.textSecondary),
+                        ),
+                        child: Icon(
+                          done ? Icons.check : Icons.hourglass_empty,
+                          color: done ? p.positive : p.textSecondary,
+                          size: 12,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(e.value.$1,
+                          style: TextStyle(
+                              color: done ? p.textPrimary : p.textSecondary,
+                              fontSize: 12,
+                              fontWeight: done ? FontWeight.w600 : FontWeight.normal)),
+                    ]),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Emma Sicherheits-Badge
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(Icons.verified_user, color: p.positive, size: 14),
+              const SizedBox(width: 6),
+              Text('HQMLL Zero-Trust Security · Verifiziert',
+                  style: TextStyle(color: p.positive, fontSize: 11, fontWeight: FontWeight.bold)),
+            ]),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () => setState(() {
+                _sendConfirmed = false;
+                _amountCtrl.clear();
+                _addressCtrl.clear();
+              }),
+              icon: const Icon(Icons.add_circle_outline, size: 16),
+              label: Text('Neue Transaktion',
+                  style: GoogleFonts.rajdhani(fontSize: 14, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: p.primary,
+                  foregroundColor: p.background,
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            ),
+          ],
+        ),
       ),
     );
   }

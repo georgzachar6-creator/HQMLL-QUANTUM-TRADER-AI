@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -12,41 +14,101 @@ class TradingScreen extends StatefulWidget {
 }
 
 class _TradingScreenState extends State<TradingScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _tickCtrl;
+  late AnimationController _pulseCtrl;
+  late Timer _priceTimer;
   int _selectedPair = 0;
   String _timeframe = '4H';
+  String _orderType = 'MARKT';
+  bool _isBuy = true;
+  double _quantity = 0.0;
+  bool _orderPlaced = false;
+  final TextEditingController _qtyCtrl = TextEditingController();
+  final Random _rnd = Random();
 
   final List<_TradingPair> _pairs = [
-    _TradingPair('BTC', 'Bitcoin', 67842.50, 2.34, true),
-    _TradingPair('ETH', 'Ethereum', 3548.20, 1.87, true),
-    _TradingPair('SOL', 'Solana', 182.40, -0.52, false),
-    _TradingPair('QEMMA', '\$QEMMA Token', 0.0847, 12.45, true),
-    _TradingPair('BNB', 'BNB Chain', 598.30, 0.94, true),
-    _TradingPair('ADA', 'Cardano', 0.624, -1.23, false),
+    _TradingPair('BTC', 'Bitcoin', 67842.50, 2.34, true, 'bitcoin'),
+    _TradingPair('ETH', 'Ethereum', 3548.20, 1.87, true, 'ethereum'),
+    _TradingPair('SOL', 'Solana', 182.40, -0.52, false, 'solana'),
+    _TradingPair('QEMMA', '\$QEMMA Token', 0.0847, 12.45, true, 'qemma'),
+    _TradingPair('BNB', 'BNB Chain', 598.30, 0.94, true, 'bnb'),
+    _TradingPair('ADA', 'Cardano', 0.624, -1.23, false, 'cardano'),
   ];
 
   final List<String> _timeframes = ['15M', '1H', '4H', '1D', '1W'];
-  final Random _rnd = Random();
+  final List<String> _orderTypes = ['MARKT', 'LIMIT', 'STOP'];
+
+  // Live-Chart-Daten (dynamisch aktualisiert)
+  final Map<int, List<double>> _chartHistory = {};
+  // ignore: unused_field
+  Color? _lastFlashColor;
 
   @override
   void initState() {
     super.initState();
-    _tickCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 3))..repeat();
+    _tickCtrl = AnimationController(
+        vsync: this, duration: const Duration(seconds: 2))..repeat();
+    _pulseCtrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 400));
+
+    // Initialisiere Chart-Verlauf
+    for (int i = 0; i < _pairs.length; i++) {
+      _chartHistory[i] = _generateBaseChart(i);
+    }
+
+    // Live-Preis-Timer: alle 2 Sekunden
+    _priceTimer = Timer.periodic(const Duration(seconds: 2), (_) {
+      if (!mounted) return;
+      setState(() {
+        for (int i = 0; i < _pairs.length; i++) {
+          final volatility = _pairs[i].symbol == 'QEMMA' ? 0.008 : 0.002;
+          final change = (_rnd.nextDouble() - 0.485) * _pairs[i].price * volatility;
+          _pairs[i].livePrice = (_pairs[i].livePrice + change)
+              .clamp(_pairs[i].price * 0.85, _pairs[i].price * 1.15);
+          // Chart aktualisieren
+          final hist = _chartHistory[i]!;
+          hist.add(_pairs[i].livePrice);
+          if (hist.length > 60) hist.removeAt(0);
+          // Trend-Update
+          _pairs[i].liveTrend = change >= 0;
+        }
+        if (_selectedPair < _pairs.length) {
+          _lastFlashColor = _pairs[_selectedPair].liveTrend ? null : null;
+        }
+      });
+      _pulseCtrl.forward(from: 0);
+    });
   }
 
   @override
   void dispose() {
     _tickCtrl.dispose();
+    _pulseCtrl.dispose();
+    _priceTimer.cancel();
+    _qtyCtrl.dispose();
     super.dispose();
   }
 
-  List<FlSpot> _generateChartData(int seed) {
-    final rnd = Random(seed);
+  List<double> _generateBaseChart(int seed) {
+    final rnd = Random(seed * 17);
     double price = 100;
     return List.generate(50, (i) {
-      price += (rnd.nextDouble() - 0.47) * 5;
-      return FlSpot(i.toDouble(), price.clamp(50, 180));
+      price += (rnd.nextDouble() - 0.47) * 4;
+      return price.clamp(60, 160);
+    });
+  }
+
+  List<FlSpot> _getChartSpots(int idx) {
+    final hist = _chartHistory[idx] ?? [];
+    return List.generate(hist.length, (i) => FlSpot(i.toDouble(), hist[i]));
+  }
+
+  void _placeOrder() {
+    HapticFeedback.mediumImpact();
+    setState(() => _orderPlaced = true);
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _orderPlaced = false);
     });
   }
 
@@ -58,9 +120,9 @@ class _TradingScreenState extends State<TradingScreen>
 
     return Column(
       children: [
-        // Scrollable Pair Selector
+        // Pair Selector
         SizedBox(
-          height: 60,
+          height: 62,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -69,22 +131,40 @@ class _TradingScreenState extends State<TradingScreen>
             itemBuilder: (_, i) {
               final selected = _selectedPair == i;
               final pr = _pairs[i];
+              final up = pr.liveTrend;
               return GestureDetector(
                 onTap: () => setState(() => _selectedPair = i),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: selected ? p.primary.withValues(alpha: 0.15) : p.surfaceVariant,
+                    color: selected
+                        ? p.primary.withValues(alpha: 0.15)
+                        : p.surfaceVariant,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: selected ? p.primary : p.primary.withValues(alpha: 0.15)),
+                    border: Border.all(
+                        color: selected
+                            ? p.primary
+                            : p.primary.withValues(alpha: 0.15)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(pr.symbol, style: GoogleFonts.rajdhani(color: selected ? p.primary : p.textPrimary, fontSize: 13, fontWeight: FontWeight.bold)),
-                      Text(pr.changeStr, style: TextStyle(color: pr.isPositive ? p.positive : p.negative, fontSize: 10)),
+                      Text(pr.symbol,
+                          style: GoogleFonts.rajdhani(
+                              color: selected ? p.primary : p.textPrimary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold)),
+                      Text(
+                        pr.symbol == 'QEMMA'
+                            ? '\$${pr.livePrice.toStringAsFixed(4)}'
+                            : '${up ? '▲' : '▼'} \$${pr.livePrice.toStringAsFixed(0)}',
+                        style: TextStyle(
+                            color: up ? p.positive : p.negative,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                 ),
@@ -97,20 +177,17 @@ class _TradingScreenState extends State<TradingScreen>
             padding: const EdgeInsets.all(12),
             child: Column(
               children: [
-                // Price Header Card
-                _buildPriceCard(p, pair),
+                _buildLivePriceCard(p, pair),
                 const SizedBox(height: 12),
-                // Chart
-                _buildChartCard(p, pair),
+                _buildLiveChart(p),
                 const SizedBox(height: 12),
-                // Emma Signal
                 _buildEmmaSignalCard(p, pair),
                 const SizedBox(height: 12),
-                // Order Panel
                 _buildOrderPanel(p, pair),
                 const SizedBox(height: 12),
-                // Market Stats
                 _buildMarketStats(p, pair),
+                const SizedBox(height: 12),
+                _buildOrderBook(p, pair),
               ],
             ),
           ),
@@ -119,18 +196,29 @@ class _TradingScreenState extends State<TradingScreen>
     );
   }
 
-  Widget _buildPriceCard(dynamic p, _TradingPair pair) {
+  Widget _buildLivePriceCard(dynamic p, _TradingPair pair) {
+    final isQemma = pair.symbol == 'QEMMA';
+    final priceStr = isQemma
+        ? '\$${pair.livePrice.toStringAsFixed(4)}'
+        : '\$${pair.livePrice.toStringAsFixed(2)}';
+
     return AnimatedBuilder(
-      animation: _tickCtrl,
+      animation: _pulseCtrl,
       builder: (_, __) {
-        final flicker = sin(_tickCtrl.value * 2 * pi) * 0.5 * (_rnd.nextDouble() * 20 - 10);
-        final displayPrice = pair.price + flicker * 0.01;
+        final glow = _pulseCtrl.value * 0.3;
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: p.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: p.primary.withValues(alpha: 0.2)),
+            border: Border.all(
+                color: p.primary.withValues(alpha: 0.2 + glow)),
+            boxShadow: [
+              BoxShadow(
+                  color: p.primary.withValues(alpha: glow * 0.4),
+                  blurRadius: 12,
+                  spreadRadius: 1),
+            ],
           ),
           child: Row(
             children: [
@@ -138,11 +226,57 @@ class _TradingScreenState extends State<TradingScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('${pair.symbol}/USDT', style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
-                    Text(pair.name, style: TextStyle(color: p.textSecondary, fontSize: 12)),
+                    Row(children: [
+                      Text('${pair.symbol}/USDT',
+                          style: GoogleFonts.rajdhani(
+                              color: p.textPrimary,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1)),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: p.positive.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                                width: 5,
+                                height: 5,
+                                decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: p.positive)),
+                            const SizedBox(width: 4),
+                            Text('LIVE',
+                                style: TextStyle(
+                                    color: p.positive,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                    ]),
+                    Text(pair.name,
+                        style: TextStyle(
+                            color: p.textSecondary, fontSize: 11)),
                     const SizedBox(height: 8),
-                    Text('\$${displayPrice.toStringAsFixed(pair.symbol == 'QEMMA' ? 4 : 2)}',
-                        style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 28, fontWeight: FontWeight.bold)),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder: (child, anim) =>
+                          FadeTransition(opacity: anim, child: child),
+                      child: Text(
+                        priceStr,
+                        key: ValueKey(priceStr),
+                        style: GoogleFonts.rajdhani(
+                            color: pair.liveTrend ? p.positive : p.negative,
+                            fontSize: 30,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -150,23 +284,37 @@ class _TradingScreenState extends State<TradingScreen>
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: (pair.isPositive ? p.positive : p.negative).withValues(alpha: 0.15),
+                      color:
+                          (pair.isPositive ? p.positive : p.negative)
+                              .withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(pair.changeStr,
-                        style: GoogleFonts.rajdhani(color: pair.isPositive ? p.positive : p.negative, fontSize: 16, fontWeight: FontWeight.bold)),
+                        style: GoogleFonts.rajdhani(
+                            color: pair.isPositive ? p.positive : p.negative,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold)),
                   ),
-                  const SizedBox(height: 8),
-                  Text('24H Change', style: TextStyle(color: p.textSecondary, fontSize: 10)),
+                  const SizedBox(height: 6),
+                  Text('24H Change',
+                      style:
+                          TextStyle(color: p.textSecondary, fontSize: 10)),
                   const SizedBox(height: 4),
                   Row(children: [
-                    Icon(Icons.arrow_upward, color: p.positive, size: 12),
-                    Text('H: \$${(pair.price * 1.025).toStringAsFixed(2)}', style: TextStyle(color: p.positive, fontSize: 11)),
-                    const SizedBox(width: 6),
-                    Icon(Icons.arrow_downward, color: p.negative, size: 12),
-                    Text('L: \$${(pair.price * 0.978).toStringAsFixed(2)}', style: TextStyle(color: p.negative, fontSize: 11)),
+                    Icon(Icons.arrow_upward, color: p.positive, size: 11),
+                    Text(
+                        ' H: \$${(pair.price * 1.025).toStringAsFixed(isQemma ? 4 : 2)}',
+                        style: TextStyle(color: p.positive, fontSize: 10)),
+                  ]),
+                  const SizedBox(height: 2),
+                  Row(children: [
+                    Icon(Icons.arrow_downward, color: p.negative, size: 11),
+                    Text(
+                        ' L: \$${(pair.price * 0.978).toStringAsFixed(isQemma ? 4 : 2)}',
+                        style: TextStyle(color: p.negative, fontSize: 10)),
                   ]),
                 ],
               ),
@@ -177,10 +325,13 @@ class _TradingScreenState extends State<TradingScreen>
     );
   }
 
-  Widget _buildChartCard(dynamic p, _TradingPair pair) {
-    final spots = _generateChartData(_selectedPair * 100);
-    final isUp = spots.last.y > spots.first.y;
+  Widget _buildLiveChart(dynamic p) {
+    final spots = _getChartSpots(_selectedPair);
+    if (spots.isEmpty) return const SizedBox.shrink();
+    final isUp = spots.last.y >= spots.first.y;
     final lineColor = isUp ? p.positive : p.negative;
+    final minY = spots.map((s) => s.y).reduce(min) - 2;
+    final maxY = spots.map((s) => s.y).reduce(max) + 2;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -194,7 +345,15 @@ class _TradingScreenState extends State<TradingScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Preis-Chart', style: GoogleFonts.rajdhani(color: p.primary, fontSize: 14, fontWeight: FontWeight.bold)),
+              Row(children: [
+                Icon(Icons.show_chart, color: p.primary, size: 16),
+                const SizedBox(width: 6),
+                Text('Quantum Chart',
+                    style: GoogleFonts.rajdhani(
+                        color: p.primary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold)),
+              ]),
               Row(
                 children: _timeframes.map((tf) {
                   final selected = _timeframe == tf;
@@ -202,12 +361,19 @@ class _TradingScreenState extends State<TradingScreen>
                     onTap: () => setState(() => _timeframe = tf),
                     child: Container(
                       margin: const EdgeInsets.only(left: 4),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: selected ? p.primary : p.surfaceVariant,
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Text(tf, style: TextStyle(color: selected ? p.background : p.textSecondary, fontSize: 10, fontWeight: FontWeight.bold)),
+                      child: Text(tf,
+                          style: TextStyle(
+                              color: selected
+                                  ? p.background
+                                  : p.textSecondary,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold)),
                     ),
                   );
                 }).toList(),
@@ -216,13 +382,17 @@ class _TradingScreenState extends State<TradingScreen>
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 160,
+            height: 180,
             child: LineChart(
               LineChartData(
+                minY: minY,
+                maxY: maxY,
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
-                  getDrawingHorizontalLine: (_) => FlLine(color: p.primary.withValues(alpha: 0.08), strokeWidth: 1),
+                  getDrawingHorizontalLine: (_) => FlLine(
+                      color: p.primary.withValues(alpha: 0.07),
+                      strokeWidth: 1),
                 ),
                 titlesData: const FlTitlesData(show: false),
                 borderData: FlBorderData(show: false),
@@ -230,15 +400,29 @@ class _TradingScreenState extends State<TradingScreen>
                   LineChartBarData(
                     spots: spots,
                     isCurved: true,
+                    curveSmoothness: 0.3,
                     color: lineColor,
-                    barWidth: 2,
-                    dotData: const FlDotData(show: false),
+                    barWidth: 2.5,
+                    dotData: FlDotData(
+                      show: true,
+                      checkToShowDot: (spot, barData) =>
+                          spot == barData.spots.last,
+                      getDotPainter: (_, __, ___, ____) =>
+                          FlDotCirclePainter(
+                              radius: 4,
+                              color: lineColor,
+                              strokeWidth: 2,
+                              strokeColor: p.background),
+                    ),
                     belowBarData: BarAreaData(
                       show: true,
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [lineColor.withValues(alpha: 0.3), lineColor.withValues(alpha: 0.0)],
+                        colors: [
+                          lineColor.withValues(alpha: 0.3),
+                          lineColor.withValues(alpha: 0.0)
+                        ],
                       ),
                     ),
                   ),
@@ -247,23 +431,28 @@ class _TradingScreenState extends State<TradingScreen>
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.auto_awesome, color: p.primary, size: 12),
-              const SizedBox(width: 4),
-              Text('Quantum-Resonanz-Overlay aktiv', style: TextStyle(color: p.textSecondary, fontSize: 10)),
-            ],
-          ),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(Icons.auto_awesome, color: p.primary, size: 11),
+            const SizedBox(width: 4),
+            Text('Quantum-Resonanz-Overlay · Live-Daten',
+                style: TextStyle(color: p.textSecondary, fontSize: 10)),
+          ]),
         ],
       ),
     );
   }
 
   Widget _buildEmmaSignalCard(dynamic p, _TradingPair pair) {
-    final signal = pair.isPositive ? 'KAUFEN' : 'HALTEN';
-    final signalColor = pair.isPositive ? p.positive : p.secondary;
-    final confidence = 72 + _rnd.nextInt(15);
+    final signals = ['KAUFEN', 'KAUFEN', 'HALTEN', 'VERKAUFEN'];
+    final signal =
+        pair.isPositive ? signals[0] : (pair.change.abs() > 1 ? signals[3] : signals[2]);
+    final signalColor = signal == 'KAUFEN'
+        ? p.positive
+        : signal == 'VERKAUFEN'
+            ? p.negative
+            : p.secondary;
+    final conf = 72 + _rnd.nextInt(16);
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -271,41 +460,96 @@ class _TradingScreenState extends State<TradingScreen>
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: p.primary.withValues(alpha: 0.3)),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(colors: [p.primary, p.secondary])),
-            child: Icon(Icons.remove_red_eye, color: p.background, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Emma Oracle Signal', style: GoogleFonts.rajdhani(color: p.primary, fontSize: 13, fontWeight: FontWeight.bold)),
-                Text('RSI: ${55 + _rnd.nextInt(20)} · Resonanz: +${(0.6 + _rnd.nextDouble() * 0.3).toStringAsFixed(2)}', style: TextStyle(color: p.textSecondary, fontSize: 11)),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: signalColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8), border: Border.all(color: signalColor.withValues(alpha: 0.5))),
-                child: Text(signal, style: GoogleFonts.rajdhani(color: signalColor, fontSize: 13, fontWeight: FontWeight.bold)),
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient:
+                        LinearGradient(colors: [p.primary, p.secondary])),
+                child: Icon(Icons.remove_red_eye,
+                    color: p.background, size: 18),
               ),
-              const SizedBox(height: 2),
-              Text('$confidence% Konfidenz', style: TextStyle(color: p.textSecondary, fontSize: 10)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Emma Oracle Signal',
+                        style: GoogleFonts.rajdhani(
+                            color: p.primary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold)),
+                    Text(
+                        'RSI: ${55 + _rnd.nextInt(20)} · Resonanz: +${(0.6 + _rnd.nextDouble() * 0.3).toStringAsFixed(2)} · Agenten: 5/6',
+                        style: TextStyle(
+                            color: p.textSecondary, fontSize: 11)),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                        color: signalColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color: signalColor.withValues(alpha: 0.5))),
+                    child: Text(signal,
+                        style: GoogleFonts.rajdhani(
+                            color: signalColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(height: 2),
+                  Text('$conf% Konfidenz',
+                      style: TextStyle(
+                          color: p.textSecondary, fontSize: 10)),
+                ],
+              ),
             ],
           ),
+          const SizedBox(height: 12),
+          // Agenten-Konsens-Leiste
+          Row(children: [
+            Text('Agenten-Konsens:',
+                style: TextStyle(color: p.textSecondary, fontSize: 11)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: conf / 100.0,
+                  backgroundColor: p.negative.withValues(alpha: 0.2),
+                  valueColor: AlwaysStoppedAnimation(signalColor),
+                  minHeight: 6,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text('$conf%',
+                style: GoogleFonts.rajdhani(
+                    color: signalColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold)),
+          ]),
         ],
       ),
     );
   }
 
   Widget _buildOrderPanel(dynamic p, _TradingPair pair) {
+    final total = _quantity * pair.livePrice;
+    final fee = total * 0.001;
+    final isQemma = pair.symbol == 'QEMMA';
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -316,25 +560,257 @@ class _TradingScreenState extends State<TradingScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Order eingeben', style: GoogleFonts.rajdhani(color: p.primary, fontSize: 14, fontWeight: FontWeight.bold)),
+          Text('Order eingeben',
+              style: GoogleFonts.rajdhani(
+                  color: p.primary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
+          // Kauf / Verkauf Toggle
           Row(children: [
-            Expanded(child: _OrderTypeBtn(label: 'KAUFEN', color: p.positive, bg: p.background)),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _isBuy = true),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: _isBuy
+                        ? p.positive.withValues(alpha: 0.2)
+                        : p.surfaceVariant,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                        color: _isBuy
+                            ? p.positive
+                            : p.primary.withValues(alpha: 0.15)),
+                  ),
+                  child: Text('KAUFEN',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.rajdhani(
+                          color: _isBuy ? p.positive : p.textSecondary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ),
             const SizedBox(width: 8),
-            Expanded(child: _OrderTypeBtn(label: 'VERKAUFEN', color: p.negative, bg: p.background)),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _isBuy = false),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: !_isBuy
+                        ? p.negative.withValues(alpha: 0.2)
+                        : p.surfaceVariant,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                        color: !_isBuy
+                            ? p.negative
+                            : p.primary.withValues(alpha: 0.15)),
+                  ),
+                  child: Text('VERKAUFEN',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.rajdhani(
+                          color: !_isBuy ? p.negative : p.textSecondary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ),
           ]),
           const SizedBox(height: 12),
+          // Order-Typ
+          Row(
+            children: _orderTypes.map((ot) {
+              final sel = _orderType == ot;
+              return GestureDetector(
+                onTap: () => setState(() => _orderType = ot),
+                child: Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color:
+                        sel ? p.primary : p.surfaceVariant,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(ot,
+                      style: TextStyle(
+                          color: sel ? p.background : p.textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold)),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 12),
+          // Preis-Info
           Row(children: [
-            Expanded(child: _InfoTile(label: 'Preis (USDT)', value: '\$${pair.price.toStringAsFixed(2)}', p: p)),
+            Expanded(
+              child: _InfoTile(
+                  label: 'Preis (USDT)',
+                  value: isQemma
+                      ? '\$${pair.livePrice.toStringAsFixed(4)}'
+                      : '\$${pair.livePrice.toStringAsFixed(2)}',
+                  p: p),
+            ),
             const SizedBox(width: 8),
-            Expanded(child: _InfoTile(label: 'Menge', value: '0.00 ${pair.symbol}', p: p)),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Menge (${pair.symbol})',
+                      style: TextStyle(
+                          color: p.textSecondary, fontSize: 10)),
+                  const SizedBox(height: 4),
+                  TextField(
+                    controller: _qtyCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true),
+                    style:
+                        GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 13),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: p.surfaceVariant,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 8),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide.none),
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(
+                              color: p.primary.withValues(alpha: 0.2))),
+                      focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide:
+                              BorderSide(color: p.primary, width: 1.5)),
+                      hintText: '0.00',
+                      hintStyle: TextStyle(
+                          color: p.textSecondary, fontSize: 12),
+                    ),
+                    onChanged: (v) {
+                      setState(() =>
+                          _quantity = double.tryParse(v) ?? 0.0);
+                    },
+                  ),
+                ],
+              ),
+            ),
           ]),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
+          // Quick-Prozente
           Row(children: [
-            Expanded(child: _InfoTile(label: 'Gesamt', value: '\$0.00', p: p)),
+            Text('Schnell:',
+                style: TextStyle(
+                    color: p.textSecondary, fontSize: 10)),
             const SizedBox(width: 8),
-            Expanded(child: _InfoTile(label: 'Gebühr (0.1%)', value: '\$0.00', p: p)),
+            ...['25%', '50%', '75%', '100%'].map((pct) {
+              final factor = int.parse(pct.replaceAll('%', '')) / 100.0;
+              return GestureDetector(
+                onTap: () {
+                  const maxBudget = 1000.0;
+                  final qty = (maxBudget * factor) / pair.livePrice;
+                  setState(() {
+                    _quantity = qty;
+                    _qtyCtrl.text = qty.toStringAsFixed(4);
+                  });
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(right: 6),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: p.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                        color: p.primary.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(pct,
+                      style: TextStyle(
+                          color: p.primary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold)),
+                ),
+              );
+            }),
           ]),
+          const SizedBox(height: 10),
+          Row(children: [
+            Expanded(
+              child: _InfoTile(
+                  label: 'Gesamt (USDT)',
+                  value:
+                      '\$${total.toStringAsFixed(2)}',
+                  p: p),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _InfoTile(
+                  label: 'Gebühr (0.1%)',
+                  value: '\$${fee.toStringAsFixed(4)}',
+                  p: p),
+            ),
+          ]),
+          const SizedBox(height: 14),
+          // Order Button
+          if (_orderPlaced)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: p.positive.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: p.positive),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.check_circle, color: p.positive, size: 18),
+                  const SizedBox(width: 8),
+                  Text('Order erfolgreich platziert!',
+                      style: GoogleFonts.rajdhani(
+                          color: p.positive,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold)),
+                ],
+              ),
+            )
+          else
+            GestureDetector(
+              onTap: _quantity > 0 ? _placeOrder : null,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: _isBuy
+                        ? [p.positive, p.positive.withValues(alpha: 0.7)]
+                        : [p.negative, p.negative.withValues(alpha: 0.7)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: _quantity > 0
+                      ? [
+                          BoxShadow(
+                              color: (_isBuy ? p.positive : p.negative)
+                                  .withValues(alpha: 0.4),
+                              blurRadius: 12)
+                        ]
+                      : [],
+                ),
+                child: Text(
+                  '${_isBuy ? "KAUFEN" : "VERKAUFEN"} ${pair.symbol}',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.rajdhani(
+                      color: _quantity > 0 ? p.background : p.background.withValues(alpha: 0.5),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -351,24 +827,165 @@ class _TradingScreenState extends State<TradingScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Markt-Statistiken', style: GoogleFonts.rajdhani(color: p.primary, fontSize: 14, fontWeight: FontWeight.bold)),
+          Text('Markt-Statistiken',
+              style: GoogleFonts.rajdhani(
+                  color: p.primary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           ...[
-            ('Marktkapitalisierung', '\$${(pair.price * 19700000).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}'),
-            ('24H Volumen', '\$${(pair.price * 850000).toStringAsFixed(0)}'),
+            ('Marktkapitalisierung',
+                '\$${(pair.livePrice * 19700000).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}'),
+            ('24H Volumen',
+                '\$${(pair.livePrice * 850000).toStringAsFixed(0)}'),
             ('Umlaufangebot', '19.7M ${pair.symbol}'),
             ('Quantum-Score', '${72 + _rnd.nextInt(20)}/100'),
             ('Agenten-Konsens', '5/6 Bullisch'),
+            ('Volatilität (24H)', '${(2.1 + _rnd.nextDouble() * 3).toStringAsFixed(1)}%'),
           ].map((e) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(e.$1,
+                        style: TextStyle(
+                            color: p.textSecondary, fontSize: 12)),
+                    Text(e.$2,
+                        style: GoogleFonts.rajdhani(
+                            color: p.textPrimary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              )),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrderBook(dynamic p, _TradingPair pair) {
+    final rnd = Random(_selectedPair * 3 + 7);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: p.primary.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Order Book',
+              style: GoogleFonts.rajdhani(
+                  color: p.primary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('KAUFEN',
+                      style: TextStyle(
+                          color: p.positive,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  ...List.generate(5, (i) {
+                    final price = pair.livePrice * (1 - (i + 1) * 0.002);
+                    final vol = (rnd.nextDouble() * 2 + 0.1);
+                    return _OrderBookRow(
+                        price: price,
+                        volume: vol,
+                        color: p.positive,
+                        bg: p.positive,
+                        p: p,
+                        isAsk: false);
+                  }),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('VERKAUFEN',
+                      style: TextStyle(
+                          color: p.negative,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  ...List.generate(5, (i) {
+                    final price = pair.livePrice * (1 + (i + 1) * 0.002);
+                    final vol = (rnd.nextDouble() * 2 + 0.1);
+                    return _OrderBookRow(
+                        price: price,
+                        volume: vol,
+                        color: p.negative,
+                        bg: p.negative,
+                        p: p,
+                        isAsk: true);
+                  }),
+                ],
+              ),
+            ),
+          ]),
+        ],
+      ),
+    );
+  }
+}
+
+class _OrderBookRow extends StatelessWidget {
+  final double price;
+  final double volume;
+  final Color color;
+  final Color bg;
+  final dynamic p;
+  final bool isAsk;
+  const _OrderBookRow(
+      {required this.price,
+      required this.volume,
+      required this.color,
+      required this.bg,
+      required this.p,
+      required this.isAsk});
+
+  @override
+  Widget build(BuildContext context) {
+    final isQemma = price < 1;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 3),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: FractionallySizedBox(
+              widthFactor: (volume / 3.0).clamp(0.1, 1.0),
+              alignment:
+                  isAsk ? Alignment.centerRight : Alignment.centerLeft,
+              child: Container(
+                  color: bg.withValues(alpha: 0.07)),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(e.$1, style: TextStyle(color: p.textSecondary, fontSize: 12)),
-                Text(e.$2, style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+                Text(
+                    isQemma
+                        ? price.toStringAsFixed(4)
+                        : price.toStringAsFixed(1),
+                    style: TextStyle(
+                        color: color, fontSize: 11)),
+                Text(volume.toStringAsFixed(3),
+                    style: TextStyle(
+                        color: p.textSecondary, fontSize: 11)),
               ],
             ),
-          )),
+          ),
         ],
       ),
     );
@@ -381,47 +998,44 @@ class _TradingPair {
   final double price;
   final double change;
   final bool isPositive;
-  _TradingPair(this.symbol, this.name, this.price, this.change, this.isPositive);
-  String get changeStr => '${isPositive ? '+' : ''}${change.toStringAsFixed(2)}%';
-}
+  final String id;
+  double livePrice;
+  bool liveTrend;
 
-class _OrderTypeBtn extends StatelessWidget {
-  final String label;
-  final Color color;
-  final Color bg;
-  const _OrderTypeBtn({required this.label, required this.color, required this.bg});
-  @override
-  Widget build(BuildContext context) {
-    return ElevatedButton(
-      onPressed: () {},
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color.withValues(alpha: 0.15),
-        foregroundColor: color,
-        side: BorderSide(color: color.withValues(alpha: 0.5)),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-      ),
-      child: Text(label, style: GoogleFonts.rajdhani(fontWeight: FontWeight.bold, fontSize: 14)),
-    );
-  }
+  _TradingPair(this.symbol, this.name, this.price, this.change,
+      this.isPositive, this.id)
+      : livePrice = price,
+        liveTrend = isPositive;
+
+  String get changeStr =>
+      '${isPositive ? '+' : ''}${change.toStringAsFixed(2)}%';
 }
 
 class _InfoTile extends StatelessWidget {
   final String label;
   final String value;
   final dynamic p;
-  const _InfoTile({required this.label, required this.value, required this.p});
+  const _InfoTile(
+      {required this.label, required this.value, required this.p});
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(color: p.surfaceVariant, borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(
+          color: p.surfaceVariant,
+          borderRadius: BorderRadius.circular(10)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(color: p.textSecondary, fontSize: 10)),
+          Text(label,
+              style:
+                  TextStyle(color: p.textSecondary, fontSize: 10)),
           const SizedBox(height: 2),
-          Text(value, style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+          Text(value,
+              style: GoogleFonts.rajdhani(
+                  color: p.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600)),
         ],
       ),
     );
