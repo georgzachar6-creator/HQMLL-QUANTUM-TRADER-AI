@@ -24,6 +24,7 @@ class _TradingScreenState extends State<TradingScreen>
   bool _isBuy = true;
   double _quantity = 0.0;
   bool _orderPlaced = false;
+  int _totalTick = 0;
   final TextEditingController _qtyCtrl = TextEditingController();
   final Random _rnd = Random();
 
@@ -38,9 +39,11 @@ class _TradingScreenState extends State<TradingScreen>
 
   final List<String> _timeframes = ['15M', '1H', '4H', '1D', '1W'];
   final List<String> _orderTypes = ['MARKT', 'LIMIT', 'STOP'];
+  bool _showCandles = true; // Kerzen / Linie umschalten
 
   // Live-Chart-Daten (dynamisch aktualisiert)
   final Map<int, List<double>> _chartHistory = {};
+  final Map<int, List<_Candle>> _candleHistory = {};
   // ignore: unused_field
   Color? _lastFlashColor;
 
@@ -55,11 +58,13 @@ class _TradingScreenState extends State<TradingScreen>
     // Initialisiere Chart-Verlauf
     for (int i = 0; i < _pairs.length; i++) {
       _chartHistory[i] = _generateBaseChart(i);
+      _candleHistory[i] = _generateCandles(i);
     }
 
     // Live-Preis-Timer: alle 2 Sekunden
     _priceTimer = Timer.periodic(const Duration(seconds: 2), (_) {
       if (!mounted) return;
+      _totalTick++;
       setState(() {
         for (int i = 0; i < _pairs.length; i++) {
           final volatility = _pairs[i].symbol == 'QEMMA' ? 0.008 : 0.002;
@@ -70,6 +75,21 @@ class _TradingScreenState extends State<TradingScreen>
           final hist = _chartHistory[i]!;
           hist.add(_pairs[i].livePrice);
           if (hist.length > 60) hist.removeAt(0);
+          // Kerzen aktualisieren
+          final candles = _candleHistory[i]!;
+          final lastCandle = candles.last;
+          final newClose = _pairs[i].livePrice;
+          candles[candles.length - 1] = _Candle(
+            lastCandle.open,
+            newClose > lastCandle.high ? newClose : lastCandle.high,
+            newClose < lastCandle.low  ? newClose : lastCandle.low,
+            newClose,
+          );
+          // Neue Kerze alle 5 Updates
+          if (_totalTick % 5 == 0) {
+            candles.add(_Candle(newClose, newClose, newClose, newClose));
+            if (candles.length > 30) candles.removeAt(0);
+          }
           // Trend-Update
           _pairs[i].liveTrend = change >= 0;
         }
@@ -96,6 +116,20 @@ class _TradingScreenState extends State<TradingScreen>
     return List.generate(50, (i) {
       price += (rnd.nextDouble() - 0.47) * 4;
       return price.clamp(60, 160);
+    });
+  }
+
+  List<_Candle> _generateCandles(int seed) {
+    final rnd = Random(seed * 31 + 7);
+    double price = 100;
+    return List.generate(24, (i) {
+      final open = price;
+      final move = (rnd.nextDouble() - 0.47) * 5;
+      final close = (open + move).clamp(60.0, 160.0);
+      final high = [open, close].reduce(max) + rnd.nextDouble() * 2;
+      final low  = [open, close].reduce(min) - rnd.nextDouble() * 2;
+      price = close;
+      return _Candle(open, high.clamp(60.0, 165.0), low.clamp(55.0, 160.0), close);
     });
   }
 
@@ -326,15 +360,8 @@ class _TradingScreenState extends State<TradingScreen>
   }
 
   Widget _buildLiveChart(dynamic p) {
-    final spots = _getChartSpots(_selectedPair);
-    if (spots.isEmpty) return const SizedBox.shrink();
-    final isUp = spots.last.y >= spots.first.y;
-    final lineColor = isUp ? p.positive : p.negative;
-    final minY = spots.map((s) => s.y).reduce(min) - 2;
-    final maxY = spots.map((s) => s.y).reduce(max) + 2;
-
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: p.surface,
         borderRadius: BorderRadius.circular(16),
@@ -342,18 +369,49 @@ class _TradingScreenState extends State<TradingScreen>
       ),
       child: Column(
         children: [
+          // Header mit Toggle
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(children: [
-                Icon(Icons.show_chart, color: p.primary, size: 16),
-                const SizedBox(width: 6),
-                Text('Quantum Chart',
-                    style: GoogleFonts.rajdhani(
-                        color: p.primary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold)),
-              ]),
+              Icon(
+                _showCandles ? Icons.candlestick_chart : Icons.show_chart,
+                color: p.primary, size: 16,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                _showCandles ? 'Kerzen-Chart' : 'Linien-Chart',
+                style: GoogleFonts.rajdhani(
+                  color: p.primary, fontSize: 14, fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              // Kerzen / Linie Toggle
+              GestureDetector(
+                onTap: () => setState(() => _showCandles = !_showCandles),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: p.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: p.primary.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _showCandles ? Icons.show_chart : Icons.candlestick_chart,
+                        color: p.primary, size: 12,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _showCandles ? 'LINIE' : 'KERZEN',
+                        style: GoogleFonts.spaceMono(color: p.primary, fontSize: 8),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              // Timeframe
               Row(
                 children: _timeframes.map((tf) {
                   final selected = _timeframe == tf;
@@ -361,82 +419,100 @@ class _TradingScreenState extends State<TradingScreen>
                     onTap: () => setState(() => _timeframe = tf),
                     child: Container(
                       margin: const EdgeInsets.only(left: 4),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
                       decoration: BoxDecoration(
                         color: selected ? p.primary : p.surfaceVariant,
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Text(tf,
-                          style: TextStyle(
-                              color: selected
-                                  ? p.background
-                                  : p.textSecondary,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold)),
+                      child: Text(tf, style: TextStyle(
+                        color: selected ? p.background : p.textSecondary,
+                        fontSize: 9, fontWeight: FontWeight.bold,
+                      )),
                     ),
                   );
                 }).toList(),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           SizedBox(
-            height: 180,
-            child: LineChart(
-              LineChartData(
-                minY: minY,
-                maxY: maxY,
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  getDrawingHorizontalLine: (_) => FlLine(
-                      color: p.primary.withValues(alpha: 0.07),
-                      strokeWidth: 1),
-                ),
-                titlesData: const FlTitlesData(show: false),
-                borderData: FlBorderData(show: false),
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: spots,
-                    isCurved: true,
-                    curveSmoothness: 0.3,
-                    color: lineColor,
-                    barWidth: 2.5,
-                    dotData: FlDotData(
-                      show: true,
-                      checkToShowDot: (spot, barData) =>
-                          spot == barData.spots.last,
-                      getDotPainter: (_, __, ___, ____) =>
-                          FlDotCirclePainter(
-                              radius: 4,
-                              color: lineColor,
-                              strokeWidth: 2,
-                              strokeColor: p.background),
-                    ),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          lineColor.withValues(alpha: 0.3),
-                          lineColor.withValues(alpha: 0.0)
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            height: 190,
+            child: _showCandles
+                ? _buildCandleChart(p)
+                : _buildLineChart(p),
           ),
           const SizedBox(height: 8),
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             Icon(Icons.auto_awesome, color: p.primary, size: 11),
             const SizedBox(width: 4),
-            Text('Quantum-Resonanz-Overlay · Live-Daten',
-                style: TextStyle(color: p.textSecondary, fontSize: 10)),
+            Text('Quantum-Resonanz · Live', style: TextStyle(
+              color: p.textSecondary, fontSize: 10,
+            )),
           ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCandleChart(dynamic p) {
+    final candles = _candleHistory[_selectedPair] ?? [];
+    if (candles.isEmpty) return const SizedBox.shrink();
+    return CustomPaint(
+      painter: _CandlePainter(
+        candles: candles,
+        positiveColor: p.positive,
+        negativeColor: p.negative,
+        gridColor: p.primary.withValues(alpha: 0.06),
+        textColor: p.textSecondary,
+      ),
+      child: const SizedBox.expand(),
+    );
+  }
+
+  Widget _buildLineChart(dynamic p) {
+    final spots = _getChartSpots(_selectedPair);
+    if (spots.isEmpty) return const SizedBox.shrink();
+    final isUp = spots.last.y >= spots.first.y;
+    final lineColor = isUp ? p.positive : p.negative;
+    final minY = spots.map((s) => s.y).reduce(min) - 2;
+    final maxY = spots.map((s) => s.y).reduce(max) + 2;
+
+    return LineChart(
+      LineChartData(
+        minY: minY, maxY: maxY,
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          getDrawingHorizontalLine: (_) => FlLine(
+            color: p.primary.withValues(alpha: 0.07), strokeWidth: 1,
+          ),
+        ),
+        titlesData: const FlTitlesData(show: false),
+        borderData: FlBorderData(show: false),
+        lineBarsData: [
+          LineChartBarData(
+            spots: spots,
+            isCurved: true, curveSmoothness: 0.3,
+            color: lineColor, barWidth: 2.5,
+            dotData: FlDotData(
+              show: true,
+              checkToShowDot: (spot, barData) => spot == barData.spots.last,
+              getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                radius: 4, color: lineColor,
+                strokeWidth: 2, strokeColor: p.background,
+              ),
+            ),
+            belowBarData: BarAreaData(
+              show: true,
+              gradient: LinearGradient(
+                begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                colors: [
+                  lineColor.withValues(alpha: 0.3),
+                  lineColor.withValues(alpha: 0.0),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1040,4 +1116,98 @@ class _InfoTile extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Candle Data ────────────────────────────────────────
+class _Candle {
+  final double open, high, low, close;
+  bool get isBullish => close >= open;
+  _Candle(this.open, this.high, this.low, this.close);
+}
+
+// ── Candlestick Painter ────────────────────────────────
+class _CandlePainter extends CustomPainter {
+  final List<_Candle> candles;
+  final Color positiveColor, negativeColor, gridColor, textColor;
+  const _CandlePainter({
+    required this.candles,
+    required this.positiveColor,
+    required this.negativeColor,
+    required this.gridColor,
+    required this.textColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (candles.isEmpty) return;
+
+    final allValues = candles.expand((c) => [c.high, c.low]).toList();
+    final minVal = allValues.reduce(min) - 1;
+    final maxVal = allValues.reduce(max) + 1;
+    final range = maxVal - minVal;
+    if (range == 0) return;
+
+    double toY(double v) => size.height * (1 - (v - minVal) / range);
+
+    // Grid-Linien
+    final gridPaint = Paint()..color = gridColor..strokeWidth = 1;
+    for (int i = 1; i < 5; i++) {
+      final y = size.height * i / 5;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    final candleCount = candles.length;
+    final totalWidth = size.width;
+    final candleWidth = (totalWidth / candleCount).clamp(4.0, 18.0);
+    final bodyWidth = (candleWidth * 0.65).clamp(3.0, 14.0);
+
+    for (int i = 0; i < candleCount; i++) {
+      final c = candles[i];
+      final x = i * candleWidth + candleWidth / 2;
+      final color = c.isBullish ? positiveColor : negativeColor;
+
+      final candlePaint = Paint()
+        ..color = color
+        ..style = PaintingStyle.fill;
+
+      final wickPaint = Paint()
+        ..color = color.withAlpha(180)
+        ..strokeWidth = 1.2
+        ..style = PaintingStyle.stroke;
+
+      // Wick oben + unten
+      canvas.drawLine(
+        Offset(x, toY(c.high)),
+        Offset(x, toY(c.isBullish ? c.close : c.open)),
+        wickPaint,
+      );
+      canvas.drawLine(
+        Offset(x, toY(c.isBullish ? c.open : c.close)),
+        Offset(x, toY(c.low)),
+        wickPaint,
+      );
+
+      // Körper
+      final bodyTop    = toY(c.isBullish ? c.close : c.open);
+      final bodyBottom = toY(c.isBullish ? c.open  : c.close);
+      final bodyHeight = (bodyBottom - bodyTop).abs().clamp(1.5, size.height);
+
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+            x - bodyWidth / 2,
+            bodyTop,
+            bodyWidth,
+            bodyHeight,
+          ),
+          const Radius.circular(1.5),
+        ),
+        candlePaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_CandlePainter old) =>
+      old.candles != candles || old.candles.length != candles.length;
 }

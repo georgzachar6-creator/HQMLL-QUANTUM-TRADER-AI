@@ -14,6 +14,7 @@ import 'wallet_screen.dart';
 import 'alarm_screen.dart';
 import 'market_screen.dart';
 import 'ai_forge_screen.dart';
+import 'god_mode_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -169,6 +170,34 @@ class _MainScaffoldState extends State<MainScaffold>
                       // Agent Status
                       _AgentStatusIndicator(palette: p),
                       const SizedBox(width: 8),
+                      // God Mode Button
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const GodModeScreen()),
+                        ),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            color: tp.godModeEnabled
+                                ? p.primary.withValues(alpha: 0.15)
+                                : p.surface,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: tp.godModeEnabled
+                                  ? p.primary.withValues(alpha: 0.6)
+                                  : p.primary.withValues(alpha: 0.2),
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.security,
+                            color: tp.godModeEnabled ? p.primary : p.textSecondary,
+                            size: 17,
+                          ),
+                        ),
+                      ),
                       // Notification Button
                       GestureDetector(
                         onTap: () => _showNotificationPanel(context, p),
