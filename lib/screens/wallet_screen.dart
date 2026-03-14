@@ -68,7 +68,18 @@ class _WalletScreenState extends State<WalletScreen>
       appBar: AppBar(
         backgroundColor: p.surface,
         title: Row(children: [
-          Icon(Icons.account_balance_wallet_outlined, color: p.primary, size: 18),
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: p.primary.withValues(alpha: 0.5), width: 1.5),
+              boxShadow: [BoxShadow(color: p.primary.withValues(alpha: 0.3), blurRadius: 8)],
+            ),
+            child: ClipOval(
+              child: Image.asset('assets/icons/app_icon.png', fit: BoxFit.cover),
+            ),
+          ),
           const SizedBox(width: 8),
           Text('QUANTUM WALLET',
               style: GoogleFonts.rajdhani(
@@ -417,8 +428,17 @@ class _WalletScreenState extends State<WalletScreen>
               border: Border.all(color: p.primary.withValues(alpha: 0.3)),
             ),
             child: Row(children: [
-              Container(width: 32, height: 32, decoration: BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(colors: [p.primary, p.secondary])),
-                  child: Icon(Icons.remove_red_eye, color: p.background, size: 16)),
+              Container(
+                width: 32, height: 32,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: p.primary.withValues(alpha: 0.5), width: 1.5),
+                  boxShadow: [BoxShadow(color: p.primary.withValues(alpha: 0.3), blurRadius: 6)],
+                ),
+                child: ClipOval(
+                  child: Image.asset('assets/icons/app_icon.png', fit: BoxFit.cover),
+                ),
+              ),
               const SizedBox(width: 10),
               Expanded(child: Text('Emma: Alle Transaktionen werden von HQMLL-Security überwacht. Zero-Trust aktiv.',
                   style: GoogleFonts.exo(color: p.textPrimary, fontSize: 11, height: 1.4))),
@@ -577,7 +597,7 @@ class _WalletScreenState extends State<WalletScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Erfolgs-Kreis mit Glow
+            // Erfolgs-Kreis mit App Icon + Glow
             Container(
               width: 100, height: 100,
               decoration: BoxDecoration(
@@ -588,7 +608,26 @@ class _WalletScreenState extends State<WalletScreen>
                   BoxShadow(color: p.positive.withValues(alpha: 0.4), blurRadius: 30, spreadRadius: 4),
                 ],
               ),
-              child: Icon(Icons.check_circle_outline, color: p.positive, size: 54),
+              child: ClipOval(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Image.asset('assets/icons/app_icon.png', fit: BoxFit.cover, width: 100, height: 100),
+                    Positioned(
+                      bottom: 4, right: 4,
+                      child: Container(
+                        width: 26, height: 26,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: p.positive,
+                          border: Border.all(color: p.background, width: 2),
+                        ),
+                        child: Icon(Icons.check, color: p.background, size: 14),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 20),
             Text('TRANSAKTION GESENDET!',
