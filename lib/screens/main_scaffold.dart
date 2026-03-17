@@ -15,6 +15,7 @@ import 'alarm_screen.dart';
 import 'market_screen.dart';
 import 'ai_forge_screen.dart';
 import 'god_mode_screen.dart';
+import 'news_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -32,6 +33,7 @@ class _MainScaffoldState extends State<MainScaffold>
     _NavItem(icon: Icons.remove_red_eye_outlined, activeIcon: Icons.remove_red_eye, label: 'ORACLE'),
     _NavItem(icon: Icons.candlestick_chart_outlined, activeIcon: Icons.candlestick_chart, label: 'TRADING'),
     _NavItem(icon: Icons.bar_chart_rounded, activeIcon: Icons.bar_chart, label: 'MARKT'),
+    _NavItem(icon: Icons.newspaper_outlined, activeIcon: Icons.newspaper_rounded, label: 'NEWS'),
     _NavItem(icon: Icons.pie_chart_outline, activeIcon: Icons.pie_chart, label: 'PORTFOLIO'),
     _NavItem(icon: Icons.token_outlined, activeIcon: Icons.token, label: 'QEMMA'),
     _NavItem(icon: Icons.account_balance_wallet_outlined, activeIcon: Icons.account_balance_wallet, label: 'WALLET'),
@@ -64,6 +66,7 @@ class _MainScaffoldState extends State<MainScaffold>
       const OracleScreen(),
       const TradingScreen(),
       const MarketScreen(),
+      const NewsScreen(),
       const PortfolioScreen(),
       const TokenScreen(),
       const WalletScreen(),

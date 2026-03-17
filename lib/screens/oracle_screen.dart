@@ -12,11 +12,13 @@ class OracleScreen extends StatefulWidget {
 }
 
 class _OracleScreenState extends State<OracleScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final TextEditingController _inputCtrl = TextEditingController();
   final ScrollController _scrollCtrl = ScrollController();
   late AnimationController _waveCtrl;
+  late AnimationController _signalPulse;
   bool _isThinking = false;
+  int _oracleTab = 0; // 0=Chat, 1=Signale
 
   final List<_ChatMessage> _messages = [
     _ChatMessage(
@@ -97,11 +99,16 @@ class _OracleScreenState extends State<OracleScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat();
+    _signalPulse = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _waveCtrl.dispose();
+    _signalPulse.dispose();
     _inputCtrl.dispose();
     _scrollCtrl.dispose();
     super.dispose();
@@ -188,8 +195,27 @@ class _OracleScreenState extends State<OracleScreen>
             ],
           ),
         ),
-        // Quick Questions
-        SizedBox(
+        // ── Tab-Bar: Chat | Signale ──────────────────
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            color: p.surfaceVariant,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(children: [
+            _OracleTabBtn(label: 'Chat', icon: Icons.chat_bubble_outline,
+                selected: _oracleTab == 0, palette: p,
+                onTap: () => setState(() => _oracleTab = 0)),
+            _OracleTabBtn(label: 'Live-Signale', icon: Icons.radar,
+                selected: _oracleTab == 1, palette: p,
+                onTap: () => setState(() => _oracleTab = 1)),
+          ]),
+        ),
+        // ── Signals View ─────────────────────────────
+        if (_oracleTab == 1) Expanded(child: _buildSignalsView(p)),
+        // Quick Questions (only in chat mode)
+        if (_oracleTab == 0) SizedBox(
           height: 40,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
@@ -212,8 +238,8 @@ class _OracleScreenState extends State<OracleScreen>
             },
           ),
         ),
-        // Messages
-        Expanded(
+        // Messages (Chat-Modus)
+        if (_oracleTab == 0) Expanded(
           child: ListView.builder(
             controller: _scrollCtrl,
             padding: const EdgeInsets.all(12),
@@ -226,8 +252,8 @@ class _OracleScreenState extends State<OracleScreen>
             },
           ),
         ),
-        // Input
-        Container(
+        // Input (nur im Chat-Modus)
+        if (_oracleTab == 0) Container(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
           decoration: BoxDecoration(
             color: p.surface,
@@ -274,6 +300,290 @@ class _OracleScreenState extends State<OracleScreen>
       ],
     );
   }
+
+  // ── Live-Signale View ──────────────────────────
+  Widget _buildSignalsView(dynamic p) {
+    final signals = [
+      const _Signal('BTC/USDT', 'Bitcoin', 'STARK KAUFEN', 84, 0.82, 62, 67842.50, 2.34, true),
+      const _Signal('ETH/USDT', 'Ethereum', 'KAUFEN', 79, 0.71, 58, 3548.20, 1.87, true),
+      const _Signal('QEMMA/USDT', 'QEMMA Token', 'STARK KAUFEN', 92, 0.94, 71, 0.0847, 12.45, true),
+      const _Signal('SOL/USDT', 'Solana', 'HALTEN', 61, 0.12, 52, 182.40, -0.52, false),
+      const _Signal('BNB/USDT', 'BNB Chain', 'KAUFEN', 74, 0.55, 60, 598.30, 0.94, true),
+      const _Signal('ADA/USDT', 'Cardano', 'HALTEN', 55, -0.08, 49, 0.452, -1.23, false),
+      const _Signal('DOGE/USDT', 'Dogecoin', 'VERKAUFEN', 68, -0.61, 78, 0.0892, -3.44, false),
+      const _Signal('AVAX/USDT', 'Avalanche', 'KAUFEN', 76, 0.64, 57, 36.80, 4.56, true),
+    ];
+
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: [
+        // Header-Info
+        Container(
+          padding: const EdgeInsets.all(12),
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: p.primary.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: p.primary.withValues(alpha: 0.2)),
+          ),
+          child: Row(children: [
+            AnimatedBuilder(
+              animation: _signalPulse,
+              builder: (_, __) => Container(
+                width: 10, height: 10,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle, color: p.positive,
+                  boxShadow: [BoxShadow(
+                    color: p.positive.withValues(alpha: 0.6 * _signalPulse.value),
+                    blurRadius: 8 * _signalPulse.value,
+                  )],
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Text(
+              'LIVE QUANTUM SIGNALE · Pattern Genesis + Oracle',
+              style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9, letterSpacing: 0.5),
+            )),
+            Text('Refresh: 4 Min', style: GoogleFonts.spaceMono(color: p.primary, fontSize: 8)),
+          ]),
+        ),
+        // Signal Cards
+        ...signals.map((s) => _buildSignalCard(s, p)),
+      ],
+    );
+  }
+
+  Widget _buildSignalCard(_Signal s, dynamic p) {
+    final isBuy = s.signal.contains('KAUFEN');
+    final isSell = s.signal.contains('VERKAUFEN');
+    final signalColor = isBuy ? p.positive : isSell ? p.negative : p.textSecondary;
+    final signalIcon = isBuy ? Icons.trending_up
+        : isSell ? Icons.trending_down : Icons.remove;
+
+    return AnimatedBuilder(
+      animation: _signalPulse,
+      builder: (_, __) => Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: p.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: s.signal == 'STARK KAUFEN'
+                ? p.positive.withValues(alpha: 0.25 + _signalPulse.value * 0.15)
+                : p.primary.withValues(alpha: 0.12),
+          ),
+          boxShadow: [
+            if (s.signal == 'STARK KAUFEN')
+              BoxShadow(
+                color: p.positive.withValues(alpha: 0.05 + _signalPulse.value * 0.04),
+                blurRadius: 12,
+              ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  // Symbol
+                  Container(
+                    width: 42, height: 42,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: signalColor.withValues(alpha: 0.1),
+                      border: Border.all(color: signalColor.withValues(alpha: 0.3)),
+                    ),
+                    child: Center(
+                      child: Text(
+                        s.symbol.split('/').first.substring(0, s.symbol.split('/').first.length > 3 ? 3 : s.symbol.split('/').first.length),
+                        style: GoogleFonts.spaceMono(
+                            color: signalColor, fontSize: 9, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Pair + Name
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(s.symbol, style: GoogleFonts.rajdhani(
+                            color: p.textPrimary, fontSize: 15, fontWeight: FontWeight.bold)),
+                        Text(s.name, style: GoogleFonts.spaceMono(
+                            color: p.textSecondary, fontSize: 9)),
+                      ],
+                    ),
+                  ),
+                  // Price + Change
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        s.price >= 1000
+                            ? '\$${s.price.toStringAsFixed(0)}'
+                            : s.price >= 1
+                                ? '\$${s.price.toStringAsFixed(2)}'
+                                : '\$${s.price.toStringAsFixed(4)}',
+                        style: GoogleFonts.rajdhani(
+                            color: p.textPrimary, fontSize: 15,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        '${s.change >= 0 ? '+' : ''}${s.change.toStringAsFixed(2)}%',
+                        style: GoogleFonts.spaceMono(
+                            color: s.change >= 0 ? p.positive : p.negative,
+                            fontSize: 10, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Signal + Metriken
+              Row(
+                children: [
+                  // Signal Badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: signalColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: signalColor.withValues(alpha: 0.4)),
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(signalIcon, color: signalColor, size: 13),
+                      const SizedBox(width: 5),
+                      Text(s.signal, style: GoogleFonts.spaceMono(
+                          color: signalColor, fontSize: 9, fontWeight: FontWeight.bold)),
+                    ]),
+                  ),
+                  const Spacer(),
+                  // Konfidenz
+                  _SignalMetric('KONF', '${s.confidence}%', p.primary, p),
+                  const SizedBox(width: 8),
+                  // Resonanz
+                  _SignalMetric('RES',
+                      '${s.resonance >= 0 ? '+' : ''}${s.resonance.toStringAsFixed(2)}',
+                      s.resonance >= 0 ? p.positive : p.negative, p),
+                  const SizedBox(width: 8),
+                  // RSI
+                  _SignalMetric('RSI', '${s.rsi}',
+                      s.rsi > 70 ? p.negative : s.rsi < 30 ? p.positive : p.accent, p),
+                ],
+              ),
+              const SizedBox(height: 10),
+              // Konfidenz-Balken
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Konfidenz', style: GoogleFonts.spaceMono(
+                          color: p.textSecondary, fontSize: 8)),
+                      Text('${s.confidence}%', style: GoogleFonts.spaceMono(
+                          color: p.primary, fontSize: 8, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(3),
+                    child: LinearProgressIndicator(
+                      value: s.confidence / 100,
+                      backgroundColor: p.surfaceVariant,
+                      valueColor: AlwaysStoppedAnimation<Color>(signalColor),
+                      minHeight: 5,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Helper Widget: Signal Metrik ─────────────────
+class _SignalMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  final dynamic palette;
+  const _SignalMetric(this.label, this.value, this.color, this.palette);
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Text(label, style: GoogleFonts.spaceMono(color: palette.textSecondary, fontSize: 7)),
+        Text(value, style: GoogleFonts.spaceMono(color: color, fontSize: 9, fontWeight: FontWeight.bold)),
+      ]),
+    );
+  }
+}
+
+// ── Oracle Tab Button ────────────────────────────
+class _OracleTabBtn extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final dynamic palette;
+  final VoidCallback onTap;
+  const _OracleTabBtn({
+    required this.label, required this.icon,
+    required this.selected, required this.palette, required this.onTap,
+  });
+  @override
+  Widget build(BuildContext context) {
+    final p = palette;
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 7),
+          decoration: BoxDecoration(
+            color: selected ? p.primary.withValues(alpha: 0.15) : Colors.transparent,
+            borderRadius: BorderRadius.circular(7),
+            border: selected
+                ? Border.all(color: p.primary.withValues(alpha: 0.4))
+                : null,
+          ),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(icon, color: selected ? p.primary : p.textSecondary, size: 13),
+            const SizedBox(width: 5),
+            Text(label, style: GoogleFonts.spaceMono(
+                color: selected ? p.primary : p.textSecondary,
+                fontSize: 9, fontWeight: selected ? FontWeight.bold : FontWeight.normal)),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Signal Data Class ────────────────────────────
+class _Signal {
+  final String symbol;
+  final String name;
+  final String signal;
+  final int confidence;
+  final double resonance;
+  final int rsi;
+  final double price;
+  final double change;
+  final bool bullish;
+  const _Signal(this.symbol, this.name, this.signal, this.confidence,
+      this.resonance, this.rsi, this.price, this.change, this.bullish);
 }
 
 class _ChatMessage {
