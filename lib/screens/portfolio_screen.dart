@@ -188,6 +188,8 @@ class _PortfolioScreenState extends State<PortfolioScreen>
               const SizedBox(height: 12),
               _buildDonutChart(p),
               const SizedBox(height: 12),
+              _buildPnLCard(p),
+              const SizedBox(height: 12),
               _buildEmmaAnalysisBanner(p),
               const SizedBox(height: 12),
               _buildAssetsList(p),
@@ -195,6 +197,8 @@ class _PortfolioScreenState extends State<PortfolioScreen>
               _buildPerformanceCard(p),
               const SizedBox(height: 12),
               _buildRiskMetrics(p),
+              const SizedBox(height: 12),
+              _buildTaxReportCard(p),
             ],
           ),
         ),
@@ -1536,6 +1540,235 @@ class _PortfolioScreenState extends State<PortfolioScreen>
       ),
     );
   }
+
+  // ── P&L Dashboard ──────────────────────────────
+  Widget _buildPnLCard(dynamic p) {
+    final pnlData = [
+      const _PnLEntry('BTC',  '+\$3.284,20', '+8.4%',  true,  0xFFF7931A),
+      const _PnLEntry('ETH',  '+\$1.847,50', '+6.2%',  true,  0xFF627EEA),
+      const _PnLEntry('QEMMA','+\$94,30',    '+12.4%', true,  0xFF00FFB2),
+      const _PnLEntry('SOL',  '-\$124,80',   '-3.1%',  false, 0xFF9945FF),
+      const _PnLEntry('BNB',  '+\$312,40',   '+5.7%',  true,  0xFFF3BA2F),
+      const _PnLEntry('ADA',  '-\$48,20',    '-2.3%',  false, 0xFF0033AD),
+    ];
+    const totalPnL = '+\$5.365,40';
+    const totalPct = '+11.2%';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: p.positive.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Container(width: 36, height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: p.positive.withValues(alpha: 0.12),
+                border: Border.all(color: p.positive.withValues(alpha: 0.4)),
+              ),
+              child: Icon(Icons.trending_up, color: p.positive, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('P&L ÜBERSICHT', style: GoogleFonts.rajdhani(
+                  color: p.positive, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+              Text('Unrealisierte Gewinne & Verluste', style: GoogleFonts.spaceMono(
+                  color: p.textSecondary, fontSize: 9)),
+            ])),
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text(totalPnL, style: GoogleFonts.rajdhani(
+                  color: p.positive, fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(totalPct, style: GoogleFonts.spaceMono(
+                  color: p.positive, fontSize: 10, fontWeight: FontWeight.bold)),
+            ]),
+          ]),
+          const SizedBox(height: 14),
+          // P&L Zeilen
+          ...pnlData.map((entry) => Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            decoration: BoxDecoration(
+              color: (entry.positive ? p.positive : p.negative).withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: (entry.positive ? p.positive : p.negative).withValues(alpha: 0.15),
+              ),
+            ),
+            child: Row(children: [
+              Container(width: 30, height: 30,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(entry.color).withValues(alpha: 0.15),
+                  border: Border.all(color: Color(entry.color).withValues(alpha: 0.4)),
+                ),
+                child: Center(child: Text(
+                  entry.symbol.substring(0, entry.symbol.length > 3 ? 3 : entry.symbol.length),
+                  style: GoogleFonts.spaceMono(color: Color(entry.color), fontSize: 7, fontWeight: FontWeight.bold),
+                )),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Text(entry.symbol, style: GoogleFonts.rajdhani(
+                  color: p.textPrimary, fontSize: 14, fontWeight: FontWeight.bold))),
+              Text(entry.pnlAbs, style: GoogleFonts.rajdhani(
+                  color: entry.positive ? p.positive : p.negative,
+                  fontSize: 13, fontWeight: FontWeight.bold)),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  color: (entry.positive ? p.positive : p.negative).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: Text(entry.pnlPct, style: GoogleFonts.spaceMono(
+                    color: entry.positive ? p.positive : p.negative,
+                    fontSize: 9, fontWeight: FontWeight.bold)),
+              ),
+            ]),
+          )),
+        ],
+      ),
+    );
+  }
+
+  // ── Steuer-Report ──────────────────────────────
+  Widget _buildTaxReportCard(dynamic p) {
+    bool generating = false;
+    return StatefulBuilder(
+      builder: (ctx, setSt) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: p.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: p.primary.withValues(alpha: 0.15)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Container(width: 36, height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: p.primary.withValues(alpha: 0.1),
+                  border: Border.all(color: p.primary.withValues(alpha: 0.3)),
+                ),
+                child: Icon(Icons.receipt_long_outlined, color: p.primary, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('STEUER-REPORT', style: GoogleFonts.rajdhani(
+                    color: p.primary, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                Text('Crypto-Steuerübersicht 2025/2026', style: GoogleFonts.spaceMono(
+                    color: p.textSecondary, fontSize: 9)),
+              ])),
+            ]),
+            const SizedBox(height: 14),
+            // Steuer-Metriken
+            Row(children: [
+              Expanded(child: _TaxMetric('Realisierte Gewinne', '+\$8.240', p.positive, p)),
+              const SizedBox(width: 10),
+              Expanded(child: _TaxMetric('Realisierte Verluste', '-\$1.380', p.negative, p)),
+            ]),
+            const SizedBox(height: 10),
+            Row(children: [
+              Expanded(child: _TaxMetric('Steuerpflichtiger Gewinn', '+\$6.860', p.accent, p)),
+              const SizedBox(width: 10),
+              Expanded(child: _TaxMetric('Haltefrist > 1 Jahr', '\$4.200 steuerfrei', p.positive, p)),
+            ]),
+            const SizedBox(height: 14),
+            // Export-Buttons
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: p.surfaceVariant,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: p.primary.withValues(alpha: 0.1)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('EXPORT FORMATE', style: GoogleFonts.spaceMono(
+                      color: p.textSecondary, fontSize: 8, letterSpacing: 1)),
+                  const SizedBox(height: 10),
+                  Row(children: [
+                    Expanded(child: _ExportButton(
+                      icon: Icons.table_chart_outlined, label: 'CSV Export',
+                      sublabel: 'Alle Trades', color: p.positive, p: p,
+                      onTap: () async {
+                        setSt(() => generating = true);
+                        await Future.delayed(const Duration(milliseconds: 1500));
+                        setSt(() => generating = false);
+                        if (ctx.mounted) {
+                          ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                          backgroundColor: p.positive.withValues(alpha: 0.9),
+                          content: Text('CSV exportiert: quantum_trades_2025.csv',
+                              style: TextStyle(color: p.background)),
+                          duration: const Duration(seconds: 3),
+                        ));
+                        }
+                      },
+                    )),
+                    const SizedBox(width: 8),
+                    Expanded(child: _ExportButton(
+                      icon: Icons.picture_as_pdf_outlined, label: 'PDF Report',
+                      sublabel: 'Steuerbericht', color: p.negative, p: p,
+                      onTap: () async {
+                        setSt(() => generating = true);
+                        await Future.delayed(const Duration(milliseconds: 1500));
+                        setSt(() => generating = false);
+                        if (ctx.mounted) {
+                          ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                          backgroundColor: p.primary.withValues(alpha: 0.9),
+                          content: Text('PDF generiert: steuer_report_2025.pdf',
+                              style: TextStyle(color: p.background)),
+                          duration: const Duration(seconds: 3),
+                        ));
+                        }
+                      },
+                    )),
+                    const SizedBox(width: 8),
+                    Expanded(child: _ExportButton(
+                      icon: Icons.code_outlined, label: 'API Export',
+                      sublabel: 'JSON Format', color: p.accent, p: p,
+                      onTap: () => ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                        backgroundColor: p.accent.withValues(alpha: 0.9),
+                        content: Text('API-Export: Webhook konfiguriert.',
+                            style: TextStyle(color: p.background)),
+                        duration: const Duration(seconds: 2),
+                      )),
+                    )),
+                  ]),
+                  if (generating) ...[
+                    const SizedBox(height: 10),
+                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      SizedBox(width: 14, height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: p.primary)),
+                      const SizedBox(width: 8),
+                      Text('Generiere Report...', style: GoogleFonts.spaceMono(
+                          color: p.textSecondary, fontSize: 9)),
+                    ]),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(children: [
+              Icon(Icons.info_outline, color: p.textSecondary, size: 12),
+              const SizedBox(width: 6),
+              Expanded(child: Text(
+                'Nicht als Steuerberatung zu verstehen. Konsultieren Sie einen Steuerberater.',
+                style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8),
+              )),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ── Data Classes ──────────────────────────────────
@@ -1558,4 +1791,72 @@ class _ChatMessage {
   final DateTime time;
   const _ChatMessage(
       {required this.text, required this.isEmma, required this.time});
+}
+
+// ── P&L + Tax Helper Classes ──────────────────────
+class _PnLEntry {
+  final String symbol, pnlAbs, pnlPct;
+  final bool positive;
+  final int color;
+  const _PnLEntry(this.symbol, this.pnlAbs, this.pnlPct, this.positive, this.color);
+}
+
+class _TaxMetric extends StatelessWidget {
+  final String label, value;
+  final Color color;
+  final dynamic p;
+  const _TaxMetric(this.label, this.value, this.color, this.p);
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label, style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
+        const SizedBox(height: 4),
+        Text(value, style: GoogleFonts.rajdhani(
+            color: color, fontSize: 14, fontWeight: FontWeight.bold)),
+      ]),
+    );
+  }
+}
+
+class _ExportButton extends StatelessWidget {
+  final IconData icon;
+  final String label, sublabel;
+  final Color color;
+  final dynamic p;
+  final VoidCallback onTap;
+  const _ExportButton({
+    required this.icon, required this.label, required this.sublabel,
+    required this.color, required this.p, required this.onTap,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Column(children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 4),
+          Text(label, style: GoogleFonts.rajdhani(
+              color: color, fontSize: 11, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center),
+          Text(sublabel, style: GoogleFonts.spaceMono(
+              color: p.textSecondary, fontSize: 7),
+              textAlign: TextAlign.center),
+        ]),
+      ),
+    );
+  }
 }

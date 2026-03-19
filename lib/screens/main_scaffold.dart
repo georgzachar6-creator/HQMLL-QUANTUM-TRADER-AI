@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -85,9 +87,16 @@ class _MainScaffoldState extends State<MainScaffold>
       child: Scaffold(
         backgroundColor: p.background,
         appBar: _buildAppBar(context, tp, p),
-        body: IndexedStack(
-          index: _selectedIndex,
-          children: screens,
+        body: Column(
+          children: [
+            _LiveTickerBanner(palette: p),
+            Expanded(
+              child: IndexedStack(
+                index: _selectedIndex,
+                children: screens,
+              ),
+            ),
+          ],
         ),
         floatingActionButton: _buildFAB(p),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -578,4 +587,139 @@ class _Notification {
     required this.isNew,
     required this.type,
   });
+}
+
+// ═══════════════════════════════════════════════════════
+// Live Ticker Banner
+// ═══════════════════════════════════════════════════════
+class _LiveTickerBanner extends StatefulWidget {
+  final dynamic palette;
+  const _LiveTickerBanner({required this.palette});
+  @override
+  State<_LiveTickerBanner> createState() => _LiveTickerBannerState();
+}
+
+class _LiveTickerBannerState extends State<_LiveTickerBanner>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _scrollCtrl;
+  late Timer _priceTimer;
+  final Random _rng = Random();
+
+  final List<_TickerItem> _items = [
+    _TickerItem('BTC',  67842.50, 2.34),
+    _TickerItem('ETH',  3548.20,  1.87),
+    _TickerItem('QEMMA',0.0847,  12.45),
+    _TickerItem('SOL',  182.40,  -0.52),
+    _TickerItem('BNB',  598.30,   0.94),
+    _TickerItem('ADA',  0.452,   -1.23),
+    _TickerItem('AVAX', 36.80,    4.56),
+    _TickerItem('MATIC',0.892,   -2.34),
+    _TickerItem('DOT',  7.92,    -0.88),
+    _TickerItem('LINK', 14.62,    2.11),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 30),
+    )..repeat();
+    _priceTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!mounted) return;
+      setState(() {
+        for (final item in _items) {
+          final delta = (_rng.nextDouble() - 0.5) * 0.4;
+          item.price *= (1 + delta / 100);
+          item.change += delta * 0.1;
+          item.change = item.change.clamp(-15.0, 15.0);
+          item.up = delta >= 0;
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollCtrl.dispose();
+    _priceTimer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.palette;
+    return Container(
+      height: 28,
+      decoration: BoxDecoration(
+        color: p.surface,
+        border: Border(
+          bottom: BorderSide(color: p.primary.withValues(alpha: 0.15)),
+        ),
+      ),
+      child: AnimatedBuilder(
+        animation: _scrollCtrl,
+        builder: (_, __) {
+          return ClipRect(
+            child: OverflowBox(
+              alignment: Alignment.centerLeft,
+              maxWidth: double.infinity,
+              child: Transform.translate(
+                offset: Offset(-_scrollCtrl.value * 900, 0),
+                child: Row(
+                  children: [
+                    ..._items.map((item) => _buildTickerChip(item, p)),
+                    ..._items.map((item) => _buildTickerChip(item, p)),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildTickerChip(_TickerItem item, dynamic p) {
+    final color = item.up ? p.positive : p.negative;
+    final priceStr = item.price >= 1000
+        ? '\$${item.price.toStringAsFixed(0)}'
+        : item.price >= 1
+            ? '\$${item.price.toStringAsFixed(2)}'
+            : '\$${item.price.toStringAsFixed(4)}';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(item.symbol,
+              style: GoogleFonts.spaceMono(
+                  color: p.textSecondary, fontSize: 9,
+                  fontWeight: FontWeight.bold)),
+          const SizedBox(width: 5),
+          Text(priceStr,
+              style: GoogleFonts.rajdhani(
+                  color: p.textPrimary, fontSize: 11,
+                  fontWeight: FontWeight.bold)),
+          const SizedBox(width: 4),
+          Icon(item.up ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+              color: color, size: 14),
+          Text('${item.change >= 0 ? '+' : ''}${item.change.toStringAsFixed(2)}%',
+              style: GoogleFonts.spaceMono(color: color, fontSize: 8)),
+          Container(
+            width: 1, height: 14, margin: const EdgeInsets.only(left: 12),
+            color: p.primary.withValues(alpha: 0.15),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TickerItem {
+  final String symbol;
+  double price;
+  double change;
+  bool up;
+  _TickerItem(this.symbol, this.price, this.change) : up = change >= 0;
 }

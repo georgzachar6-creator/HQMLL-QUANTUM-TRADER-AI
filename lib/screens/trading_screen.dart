@@ -222,6 +222,8 @@ class _TradingScreenState extends State<TradingScreen>
                 _buildMarketStats(p, pair),
                 const SizedBox(height: 12),
                 _buildOrderBook(p, pair),
+                const SizedBox(height: 12),
+                _buildDepthChart(p, pair),
               ],
             ),
           ),
@@ -1012,6 +1014,94 @@ class _TradingScreenState extends State<TradingScreen>
       ),
     );
   }
+
+  // ── Depth Chart ─────────────────────────────────
+  Widget _buildDepthChart(dynamic p, _TradingPair pair) {
+    final rnd = Random(_selectedPair * 11 + 5);
+    // Generiere Bid/Ask Depth Daten
+    final bids = <double>[];
+    final asks = <double>[];
+    double bidAccum = 0;
+    double askAccum = 0;
+    for (int i = 0; i < 20; i++) {
+      bidAccum += rnd.nextDouble() * 3 + 0.5;
+      askAccum += rnd.nextDouble() * 3 + 0.5;
+      bids.add(bidAccum);
+      asks.add(askAccum);
+    }
+    final maxDepth = [bids.last, asks.last].reduce((a, b) => a > b ? a : b);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: p.primary.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Text('MARKTTIEFE', style: GoogleFonts.rajdhani(
+                color: p.primary, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1)),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: p.surfaceVariant, borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text('${pair.symbol}/USDT', style: GoogleFonts.spaceMono(
+                  color: p.textSecondary, fontSize: 8)),
+            ),
+          ]),
+          const SizedBox(height: 12),
+          // Depth Chart Canvas
+          SizedBox(
+            height: 120,
+            child: CustomPaint(
+              painter: _DepthChartPainter(
+                bids: bids, asks: asks, maxDepth: maxDepth,
+                bidColor: p.positive, askColor: p.negative,
+                gridColor: p.primary.withValues(alpha: 0.06),
+              ),
+              size: const Size(double.infinity, 120),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Legend
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Container(width: 12, height: 3,
+                decoration: BoxDecoration(color: p.positive, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(width: 5),
+            Text('Bids (Käufer)', style: GoogleFonts.spaceMono(
+                color: p.textSecondary, fontSize: 8)),
+            const SizedBox(width: 20),
+            Container(width: 12, height: 3,
+                decoration: BoxDecoration(color: p.negative, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(width: 5),
+            Text('Asks (Verkäufer)', style: GoogleFonts.spaceMono(
+                color: p.textSecondary, fontSize: 8)),
+          ]),
+          const SizedBox(height: 10),
+          // Spread Info
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: p.surfaceVariant,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: p.primary.withValues(alpha: 0.1)),
+            ),
+            child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+              _DepthMetric('Best Bid', '\$${(pair.livePrice * 0.9995).toStringAsFixed(2)}', p.positive, p),
+              _DepthMetric('Spread', '\$${(pair.livePrice * 0.001).toStringAsFixed(2)}', p.accent, p),
+              _DepthMetric('Best Ask', '\$${(pair.livePrice * 1.0005).toStringAsFixed(2)}', p.negative, p),
+              _DepthMetric('Bid/Ask Vol', '${bids.last.toStringAsFixed(1)}/${asks.last.toStringAsFixed(1)}', p.primary, p),
+            ]),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _OrderBookRow extends StatelessWidget {
@@ -1210,4 +1300,106 @@ class _CandlePainter extends CustomPainter {
   @override
   bool shouldRepaint(_CandlePainter old) =>
       old.candles != candles || old.candles.length != candles.length;
+}
+
+// ── Depth Chart Painter ────────────────────────────
+class _DepthChartPainter extends CustomPainter {
+  final List<double> bids, asks;
+  final double maxDepth;
+  final Color bidColor, askColor, gridColor;
+  const _DepthChartPainter({
+    required this.bids, required this.asks, required this.maxDepth,
+    required this.bidColor, required this.askColor, required this.gridColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Grid
+    final gridPaint = Paint()..color = gridColor..strokeWidth = 0.5;
+    for (int i = 1; i < 4; i++) {
+      final y = size.height / 4 * i;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    final w = size.width / 2;
+    final h = size.height;
+
+    // Draw bids (left side, green, mirrored)
+    final bidFill = Paint()
+      ..color = bidColor.withValues(alpha: 0.15)
+      ..style = PaintingStyle.fill;
+    final bidLine = Paint()
+      ..color = bidColor.withValues(alpha: 0.8)
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+
+    final bidPath = Path()..moveTo(w, h);
+    for (int i = 0; i < bids.length; i++) {
+      final x = w - (i / bids.length) * w;
+      final y = h - (bids[i] / maxDepth) * h;
+      bidPath.lineTo(x, y);
+    }
+    bidPath.lineTo(0, h);
+    bidPath.close();
+    canvas.drawPath(bidPath, bidFill);
+
+    final bidLinePath = Path()..moveTo(w, h - (bids[0] / maxDepth) * h);
+    for (int i = 1; i < bids.length; i++) {
+      final x = w - (i / bids.length) * w;
+      final y = h - (bids[i] / maxDepth) * h;
+      bidLinePath.lineTo(x, y);
+    }
+    canvas.drawPath(bidLinePath, bidLine);
+
+    // Draw asks (right side, red)
+    final askFill = Paint()
+      ..color = askColor.withValues(alpha: 0.15)
+      ..style = PaintingStyle.fill;
+    final askLine = Paint()
+      ..color = askColor.withValues(alpha: 0.8)
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+
+    final askPath = Path()..moveTo(w, h);
+    for (int i = 0; i < asks.length; i++) {
+      final x = w + (i / asks.length) * w;
+      final y = h - (asks[i] / maxDepth) * h;
+      askPath.lineTo(x, y);
+    }
+    askPath.lineTo(size.width, h);
+    askPath.close();
+    canvas.drawPath(askPath, askFill);
+
+    final askLinePath = Path()..moveTo(w, h - (asks[0] / maxDepth) * h);
+    for (int i = 1; i < asks.length; i++) {
+      final x = w + (i / asks.length) * w;
+      final y = h - (asks[i] / maxDepth) * h;
+      askLinePath.lineTo(x, y);
+    }
+    canvas.drawPath(askLinePath, askLine);
+
+    // Center line
+    canvas.drawLine(Offset(w, 0), Offset(w, h),
+        Paint()..color = Colors.white.withValues(alpha: 0.2)..strokeWidth = 1);
+  }
+
+  @override
+  bool shouldRepaint(_DepthChartPainter old) => true;
+}
+
+// ── Depth Metric ───────────────────────────────────
+class _DepthMetric extends StatelessWidget {
+  final String label, value;
+  final Color color;
+  final dynamic p;
+  const _DepthMetric(this.label, this.value, this.color, this.p);
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      Text(label, style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 7)),
+      const SizedBox(height: 3),
+      Text(value, style: GoogleFonts.rajdhani(
+          color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+    ]);
+  }
 }

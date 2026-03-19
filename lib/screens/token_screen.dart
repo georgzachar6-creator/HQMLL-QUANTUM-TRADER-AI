@@ -134,6 +134,8 @@ class _TokenScreenState extends State<TokenScreen>
           const SizedBox(height: 12),
           _buildLiveMiningCard(p),
           const SizedBox(height: 12),
+          _buildStakingDashboard(p),
+          const SizedBox(height: 12),
           _buildQuestsCard(p),
           const SizedBox(height: 12),
           _buildTokenomicsCard(p),
@@ -143,6 +145,217 @@ class _TokenScreenState extends State<TokenScreen>
           _buildListingRoadmap(p),
         ],
       ),
+    );
+  }
+
+  // ── Staking Dashboard ──────────────────────────
+  Widget _buildStakingDashboard(dynamic p) {
+    // APY Rechner State (inlined mit StatefulBuilder)
+    return StatefulBuilder(
+      builder: (ctx, setSt) {
+        double stakeAmount = 500.0;
+        const double apyTier1 = 340.0; // < 1000 QEMMA
+        const double apyTier2 = 520.0; // >= 1000 QEMMA
+        const double apyTier3 = 780.0; // >= 10000 QEMMA
+
+        double apy = stakeAmount < 1000 ? apyTier1 : stakeAmount < 10000 ? apyTier2 : apyTier3;
+        double dailyReward = stakeAmount * (apy / 100) / 365;
+        double weeklyReward = dailyReward * 7;
+        double monthlyReward = dailyReward * 30;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: p.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: p.accent.withValues(alpha: 0.3)),
+            boxShadow: [BoxShadow(color: p.accent.withValues(alpha: 0.06), blurRadius: 12)],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(children: [
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(colors: [p.accent, p.secondary]),
+                    boxShadow: [BoxShadow(color: p.accent.withValues(alpha: 0.4), blurRadius: 8)],
+                  ),
+                  child: const Icon(Icons.savings_outlined, color: Colors.black, size: 18),
+                ),
+                const SizedBox(width: 10),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('STAKING DASHBOARD', style: GoogleFonts.rajdhani(
+                      color: p.accent, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                  Text('Proof-of-Intelligence Yield Farming', style: GoogleFonts.spaceMono(
+                      color: p.textSecondary, fontSize: 9)),
+                ])),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: p.positive.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: p.positive.withValues(alpha: 0.3)),
+                  ),
+                  child: Text('AKTIV', style: GoogleFonts.spaceMono(
+                      color: p.positive, fontSize: 9, fontWeight: FontWeight.bold)),
+                ),
+              ]),
+              const SizedBox(height: 16),
+
+              // APY-Tier-Karten
+              Row(children: [
+                _StakingTierCard('SILVER', '< 1K', '${apyTier1.toInt()}%', p.primary, p),
+                const SizedBox(width: 8),
+                _StakingTierCard('GOLD', '1K–10K', '${apyTier2.toInt()}%', p.accent, p),
+                const SizedBox(width: 8),
+                _StakingTierCard('DIAMOND', '> 10K', '${apyTier3.toInt()}%', Colors.cyanAccent, p),
+              ]),
+              const SizedBox(height: 16),
+
+              // Gestakter Betrag
+              Row(children: [
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('MEIN STAKE', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    Text('1.284', style: GoogleFonts.rajdhani(
+                        color: p.accent, fontSize: 22, fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 6),
+                    Text('QEMMA', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 10)),
+                  ]),
+                  Text('≈ \$108.76', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 10)),
+                ])),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('AKTUELLER APY', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
+                  const SizedBox(height: 4),
+                  Text('340%', style: GoogleFonts.rajdhani(
+                      color: p.positive, fontSize: 22, fontWeight: FontWeight.bold)),
+                  Text('Silver Tier', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 10)),
+                ])),
+              ]),
+              const SizedBox(height: 16),
+
+              // Rewards-Übersicht
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: p.surfaceVariant,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: p.accent.withValues(alpha: 0.15)),
+                ),
+                child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+                  _RewardColumn('TÄGLICH', '+${dailyReward.toStringAsFixed(1)}', p.positive, p),
+                  Container(width: 1, height: 36, color: p.primary.withValues(alpha: 0.15)),
+                  _RewardColumn('WÖCHENTLICH', '+${weeklyReward.toStringAsFixed(1)}', p.positive, p),
+                  Container(width: 1, height: 36, color: p.primary.withValues(alpha: 0.15)),
+                  _RewardColumn('MONATLICH', '+${monthlyReward.toStringAsFixed(1)}', p.accent, p),
+                ]),
+              ),
+              const SizedBox(height: 16),
+
+              // APY-Rechner
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: p.primary.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: p.primary.withValues(alpha: 0.2)),
+                ),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Icon(Icons.calculate_outlined, color: p.primary, size: 14),
+                    const SizedBox(width: 6),
+                    Text('APY-RECHNER', style: GoogleFonts.spaceMono(
+                        color: p.primary, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                  ]),
+                  const SizedBox(height: 10),
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                    Text('Betrag: ${stakeAmount.toInt()} QEMMA',
+                        style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 13, fontWeight: FontWeight.bold)),
+                    Text('APY: ${apy.toInt()}%', style: GoogleFonts.rajdhani(
+                        color: p.accent, fontSize: 13, fontWeight: FontWeight.bold)),
+                  ]),
+                  SliderTheme(
+                    data: SliderThemeData(
+                      trackHeight: 3,
+                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+                      activeTrackColor: p.accent,
+                      inactiveTrackColor: p.surfaceVariant,
+                      thumbColor: p.accent,
+                      overlayColor: p.accent.withValues(alpha: 0.15),
+                    ),
+                    child: Slider(
+                      value: stakeAmount,
+                      min: 10,
+                      max: 50000,
+                      divisions: 100,
+                      onChanged: (v) => setSt(() => stakeAmount = v),
+                    ),
+                  ),
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                    _CalcResult('7T', '+${(stakeAmount*(apy/100)/365*7).toStringAsFixed(1)} QEMMA', p),
+                    _CalcResult('30T', '+${(stakeAmount*(apy/100)/365*30).toStringAsFixed(1)} QEMMA', p),
+                    _CalcResult('1 Jahr', '+${(stakeAmount*(apy/100)).toStringAsFixed(1)} QEMMA', p),
+                  ]),
+                ]),
+              ),
+              const SizedBox(height: 14),
+
+              // Stake/Unstake Buttons
+              Row(children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: p.accent.withValues(alpha: 0.15),
+                      foregroundColor: p.accent,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          side: BorderSide(color: p.accent.withValues(alpha: 0.4))),
+                      elevation: 0,
+                    ),
+                    icon: const Icon(Icons.add_circle_outline, size: 16),
+                    label: Text('Staken', style: GoogleFonts.rajdhani(
+                        fontSize: 14, fontWeight: FontWeight.bold)),
+                    onPressed: () => ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                      backgroundColor: p.accent.withValues(alpha: 0.9),
+                      content: Text('Stake gestartet! QEMMA wird gesperrt.',
+                          style: TextStyle(color: p.background)),
+                      duration: const Duration(seconds: 2),
+                    )),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: p.surfaceVariant,
+                      foregroundColor: p.textSecondary,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          side: BorderSide(color: p.primary.withValues(alpha: 0.2))),
+                      elevation: 0,
+                    ),
+                    icon: const Icon(Icons.remove_circle_outline, size: 16),
+                    label: Text('Unstaken', style: GoogleFonts.rajdhani(
+                        fontSize: 14, fontWeight: FontWeight.bold)),
+                    onPressed: () => ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                      backgroundColor: p.surface,
+                      content: Text('Cooldown: 7 Tage nach Unstaking.',
+                          style: TextStyle(color: p.textSecondary)),
+                      duration: const Duration(seconds: 2),
+                    )),
+                  ),
+                ),
+              ]),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -1012,4 +1225,71 @@ class _MiningPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_MiningPainter old) => old.t != t;
+}
+
+// ── Staking Helper Widgets ─────────────────────────
+class _StakingTierCard extends StatelessWidget {
+  final String tier;
+  final String range;
+  final String apy;
+  final Color color;
+  final dynamic p;
+  const _StakingTierCard(this.tier, this.range, this.apy, this.color, this.p);
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
+        ),
+        child: Column(children: [
+          Text(tier, style: GoogleFonts.spaceMono(
+              color: color, fontSize: 8, fontWeight: FontWeight.bold, letterSpacing: 1)),
+          const SizedBox(height: 4),
+          Text(apy, style: GoogleFonts.rajdhani(
+              color: color, fontSize: 17, fontWeight: FontWeight.bold)),
+          Text('APY', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 7)),
+          const SizedBox(height: 2),
+          Text(range, style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 7)),
+        ]),
+      ),
+    );
+  }
+}
+
+class _RewardColumn extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  final dynamic p;
+  const _RewardColumn(this.label, this.value, this.color, this.p);
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      Text(label, style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 7)),
+      const SizedBox(height: 4),
+      Text(value, style: GoogleFonts.rajdhani(
+          color: color, fontSize: 13, fontWeight: FontWeight.bold)),
+      Text('QEMMA', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 7)),
+    ]);
+  }
+}
+
+class _CalcResult extends StatelessWidget {
+  final String period;
+  final String value;
+  final dynamic p;
+  const _CalcResult(this.period, this.value, this.p);
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      Text(period, style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
+      const SizedBox(height: 2),
+      Text(value, style: GoogleFonts.rajdhani(
+          color: p.primary, fontSize: 11, fontWeight: FontWeight.bold)),
+    ]);
+  }
 }
