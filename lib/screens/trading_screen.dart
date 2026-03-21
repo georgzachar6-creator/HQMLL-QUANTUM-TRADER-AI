@@ -25,7 +25,16 @@ class _TradingScreenState extends State<TradingScreen>
   double _quantity = 0.0;
   bool _orderPlaced = false;
   int _totalTick = 0;
+  // ignore: unused_field
+  double _limitPrice = 0.0;
+  // ignore: unused_field
+  double _stopPrice = 0.0;
+  double _takeProfitPct = 0.0;
+  double _stopLossPct = 0.0;
+  bool _showAdvanced = false;
   final TextEditingController _qtyCtrl = TextEditingController();
+  final TextEditingController _limitCtrl = TextEditingController();
+  final TextEditingController _stopCtrl = TextEditingController();
   final Random _rnd = Random();
 
   final List<_TradingPair> _pairs = [
@@ -107,6 +116,8 @@ class _TradingScreenState extends State<TradingScreen>
     _pulseCtrl.dispose();
     _priceTimer.cancel();
     _qtyCtrl.dispose();
+    _limitCtrl.dispose();
+    _stopCtrl.dispose();
     super.dispose();
   }
 
@@ -816,12 +827,211 @@ class _TradingScreenState extends State<TradingScreen>
             }),
           ]),
           const SizedBox(height: 10),
+          // ── Limit/Stop Preis (wenn LIMIT/STOP gewählt) ──
+          if (_orderType == 'LIMIT' || _orderType == 'STOP') ...[
+            Row(
+              children: [
+                Expanded(child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(_orderType == 'LIMIT' ? 'Limit-Preis (USDT)' : 'Stop-Preis (USDT)',
+                        style: TextStyle(color: p.textSecondary, fontSize: 10)),
+                    const SizedBox(height: 4),
+                    TextField(
+                      controller: _orderType == 'LIMIT' ? _limitCtrl : _stopCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      style: GoogleFonts.rajdhani(color: p.primary, fontSize: 14,
+                          fontWeight: FontWeight.bold),
+                      decoration: InputDecoration(
+                        filled: true, fillColor: p.primary.withValues(alpha: 0.06),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide.none),
+                        enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: p.primary.withValues(alpha: 0.35))),
+                        focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide(color: p.primary, width: 1.5)),
+                        hintText: pair.livePrice >= 100
+                            ? pair.livePrice.toStringAsFixed(2)
+                            : pair.livePrice.toStringAsFixed(4),
+                        hintStyle: TextStyle(color: p.textSecondary, fontSize: 12),
+                        prefixText: '\$ ',
+                        prefixStyle: TextStyle(color: p.primary),
+                      ),
+                      onChanged: (v) => setState(() {
+                        if (_orderType == 'LIMIT') {
+                          _limitPrice = double.tryParse(v) ?? 0.0;
+                        } else {
+                          _stopPrice = double.tryParse(v) ?? 0.0;
+                        }
+                      }),
+                    ),
+                  ],
+                )),
+                const SizedBox(width: 8),
+                // Preset-Buttons
+                Column(
+                  children: [
+                    _PricePresetBtn(
+                      label: '-1%',
+                      color: p.negative,
+                      p: p,
+                      onTap: () {
+                        final price = pair.livePrice * 0.99;
+                        _limitCtrl.text = price.toStringAsFixed(
+                            price >= 100 ? 2 : 4);
+                        setState(() => _limitPrice = price);
+                      },
+                    ),
+                    const SizedBox(height: 4),
+                    _PricePresetBtn(
+                      label: '+1%',
+                      color: p.positive,
+                      p: p,
+                      onTap: () {
+                        final price = pair.livePrice * 1.01;
+                        _limitCtrl.text = price.toStringAsFixed(
+                            price >= 100 ? 2 : 4);
+                        setState(() => _limitPrice = price);
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+          ],
+          // ── Erweiterte Optionen Toggle ────────────
+          GestureDetector(
+            onTap: () => setState(() => _showAdvanced = !_showAdvanced),
+            child: Row(children: [
+              Icon(_showAdvanced ? Icons.expand_less : Icons.expand_more,
+                  color: p.primary, size: 16),
+              const SizedBox(width: 6),
+              Text('Take Profit / Stop Loss',
+                  style: GoogleFonts.spaceMono(color: p.primary, fontSize: 9,
+                      fontWeight: FontWeight.bold)),
+              const Spacer(),
+              if (_takeProfitPct > 0 || _stopLossPct > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: p.positive.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text('Aktiv', style: GoogleFonts.spaceMono(
+                      color: p.positive, fontSize: 8, fontWeight: FontWeight.bold)),
+                ),
+            ]),
+          ),
+          if (_showAdvanced) ...[
+            const SizedBox(height: 10),
+            // Take Profit Slider
+            _TpSlLabel('Take Profit', '${_takeProfitPct.toStringAsFixed(1)}%',
+                p.positive, p),
+            SliderTheme(
+              data: SliderThemeData(
+                trackHeight: 3,
+                thumbSize: const WidgetStatePropertyAll(Size.fromRadius(7)),
+                activeTrackColor: p.positive,
+                inactiveTrackColor: p.surfaceVariant,
+                thumbColor: p.positive,
+                overlayColor: p.positive.withValues(alpha: 0.15),
+              ),
+              child: Slider(
+                value: _takeProfitPct,
+                min: 0, max: 50,
+                divisions: 50,
+                onChanged: (v) => setState(() => _takeProfitPct = v),
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('0%', style: TextStyle(color: p.textSecondary, fontSize: 9)),
+                if (_takeProfitPct > 0 && _quantity > 0)
+                  Text(
+                    'Ziel: \$${(pair.livePrice * (1 + _takeProfitPct / 100)).toStringAsFixed(pair.livePrice >= 100 ? 2 : 4)}',
+                    style: GoogleFonts.spaceMono(color: p.positive, fontSize: 9),
+                  ),
+                Text('+50%', style: TextStyle(color: p.textSecondary, fontSize: 9)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            // Stop Loss Slider
+            _TpSlLabel('Stop Loss', '-${_stopLossPct.toStringAsFixed(1)}%',
+                p.negative, p),
+            SliderTheme(
+              data: SliderThemeData(
+                trackHeight: 3,
+                thumbSize: const WidgetStatePropertyAll(Size.fromRadius(7)),
+                activeTrackColor: p.negative,
+                inactiveTrackColor: p.surfaceVariant,
+                thumbColor: p.negative,
+                overlayColor: p.negative.withValues(alpha: 0.15),
+              ),
+              child: Slider(
+                value: _stopLossPct,
+                min: 0, max: 30,
+                divisions: 30,
+                onChanged: (v) => setState(() => _stopLossPct = v),
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('0%', style: TextStyle(color: p.textSecondary, fontSize: 9)),
+                if (_stopLossPct > 0 && _quantity > 0)
+                  Text(
+                    'SL: \$${(pair.livePrice * (1 - _stopLossPct / 100)).toStringAsFixed(pair.livePrice >= 100 ? 2 : 4)}',
+                    style: GoogleFonts.spaceMono(color: p.negative, fontSize: 9),
+                  ),
+                Text('-30%', style: TextStyle(color: p.textSecondary, fontSize: 9)),
+              ],
+            ),
+            const SizedBox(height: 6),
+            // Risk/Reward Anzeige
+            if (_takeProfitPct > 0 && _stopLossPct > 0)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: p.primary.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: p.primary.withValues(alpha: 0.15)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Risk/Reward', style: GoogleFonts.spaceMono(
+                        color: p.textSecondary, fontSize: 9)),
+                    Text(
+                      '1 : ${(_takeProfitPct / _stopLossPct).toStringAsFixed(1)}',
+                      style: GoogleFonts.rajdhani(
+                          color: _takeProfitPct / _stopLossPct >= 2
+                              ? p.positive : p.accent,
+                          fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      _takeProfitPct / _stopLossPct >= 2 ? '✅ Gut' : '⚠️ Niedrig',
+                      style: GoogleFonts.spaceMono(
+                          color: _takeProfitPct / _stopLossPct >= 2
+                              ? p.positive : p.accent,
+                          fontSize: 8),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 6),
+          ],
+          const SizedBox(height: 10),
           Row(children: [
             Expanded(
               child: _InfoTile(
                   label: 'Gesamt (USDT)',
-                  value:
-                      '\$${total.toStringAsFixed(2)}',
+                  value: '\$${total.toStringAsFixed(2)}',
                   p: p),
             ),
             const SizedBox(width: 8),
@@ -1401,5 +1611,57 @@ class _DepthMetric extends StatelessWidget {
       Text(value, style: GoogleFonts.rajdhani(
           color: color, fontSize: 11, fontWeight: FontWeight.bold)),
     ]);
+  }
+}
+
+// ── Price Preset Button ───────────────────────────
+class _PricePresetBtn extends StatelessWidget {
+  final String label;
+  final Color color;
+  final dynamic p;
+  final VoidCallback onTap;
+  const _PricePresetBtn({required this.label, required this.color,
+      required this.p, required this.onTap});
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Text(label, style: GoogleFonts.spaceMono(
+            color: color, fontSize: 9, fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+}
+
+// ── TP/SL Label Row ───────────────────────────────
+class _TpSlLabel extends StatelessWidget {
+  final String label, value;
+  final Color color;
+  final dynamic p;
+  const _TpSlLabel(this.label, this.value, this.color, this.p);
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(value, style: GoogleFonts.spaceMono(
+              color: color, fontSize: 9, fontWeight: FontWeight.bold)),
+        ),
+      ],
+    );
   }
 }

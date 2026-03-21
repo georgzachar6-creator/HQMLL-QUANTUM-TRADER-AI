@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/theme_provider.dart';
-import 'main_scaffold.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+  final Widget nextScreen;
+  const SplashScreen({super.key, required this.nextScreen});
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
@@ -112,7 +112,7 @@ class _SplashScreenState extends State<SplashScreen>
       if (mounted) {
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
-            pageBuilder: (_, __, ___) => const MainScaffold(),
+            pageBuilder: (_, __, ___) => widget.nextScreen,
             transitionsBuilder: (_, anim, __, child) =>
                 FadeTransition(opacity: anim, child: child),
             transitionDuration: const Duration(milliseconds: 900),
@@ -653,6 +653,41 @@ class _SplashEyePainter extends CustomPainter {
           Paint()..color = p.secondary.withValues(alpha: 0.85));
       canvas.drawCircle(dotPos, dotSize + 3,
           Paint()..color = p.secondary.withValues(alpha: 0.15));
+    }
+
+    // ── DARK ENERGY PULSAR EFFEKT ──────────────────
+    final darkPulse = (sin(t * 3 * pi) + 1) / 2;
+
+    // Pulsierender Dark-Energy-Ring
+    for (int ring = 4; ring >= 1; ring--) {
+      final expandRadius = maxR * (0.9 + ring * 0.08 + darkPulse * 0.12);
+      final alpha = (0.12 - ring * 0.02) * (1 - darkPulse * 0.5);
+      canvas.drawCircle(center, expandRadius,
+        Paint()
+          ..color = const Color(0xFF6A0DAD).withValues(alpha: alpha.clamp(0, 1))
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.0 - ring * 0.3,
+      );
+    }
+
+    // Quantum Partikel-Wellen
+    for (int i = 0; i < 8; i++) {
+      final angle = t * 2 * pi * 0.7 + i * pi / 4;
+      final waveR = maxR * (0.3 + darkPulse * 0.4);
+      final particlePos = center + Offset(cos(angle) * waveR, sin(angle) * waveR);
+      canvas.drawCircle(particlePos, 1.5 + darkPulse * 2,
+        Paint()..color = const Color(0xFF00E5FF).withValues(alpha: 0.4 + darkPulse * 0.4));
+    }
+
+    // Frequenz-Gitter (Dark Energy Matrix)
+    final gridPaint = Paint()
+      ..color = p.primary.withValues(alpha: 0.04 + darkPulse * 0.04)
+      ..strokeWidth = 0.5;
+    for (int i = -3; i <= 3; i++) {
+      final x = center.dx + i * maxR / 3;
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+      final y = center.dy + i * maxR / 3;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
   }
 

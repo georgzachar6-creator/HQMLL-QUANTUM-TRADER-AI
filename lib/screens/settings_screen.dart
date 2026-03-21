@@ -116,6 +116,30 @@ class SettingsScreen extends StatelessWidget {
           ]),
           const SizedBox(height: 16),
 
+          // ══════ META-GENIUS & TR2 RECURSIVE ══════
+          _SectionTitle(title: 'META-GENIUS · TR2 RECURSIVE', icon: Icons.psychology_alt, palette: p),
+          const SizedBox(height: 8),
+          _buildMetaGeniusCard(context, p, tp),
+          const SizedBox(height: 16),
+
+          // ══════ BROKER API INTEGRATION ══════
+          _SectionTitle(title: 'BROKER API INTEGRATION', icon: Icons.api, palette: p),
+          const SizedBox(height: 8),
+          _buildBrokerApiCard(context, p, tp),
+          const SizedBox(height: 16),
+
+          // ══════ DEVOPS CONNECTOREN ══════
+          _SectionTitle(title: 'DEVOPS · CLOUD CONNECTOREN', icon: Icons.cloud_outlined, palette: p),
+          const SizedBox(height: 8),
+          _buildDevOpsCard(context, p),
+          const SizedBox(height: 16),
+
+          // ══════ KREALOGIIK DENK-SYSTEM ══════
+          _SectionTitle(title: 'KREALOGIK DENK-SYSTEM', icon: Icons.account_tree_outlined, palette: p),
+          const SizedBox(height: 8),
+          _buildKrealogikCard(context, p, tp),
+          const SizedBox(height: 16),
+
           // SECTION: Über
           _SectionTitle(title: 'ÜBER HQMLL', icon: Icons.info_outline, palette: p),
           const SizedBox(height: 8),
@@ -277,6 +301,536 @@ class SettingsScreen extends StatelessWidget {
     if (v <= 0.6) return 'Mittel';
     if (v <= 0.8) return 'Hoch';
     return 'Extrem';
+  }
+
+  // ══ META-GENIUS & TR2 RECURSIVE CARD ══
+  Widget _buildMetaGeniusCard(BuildContext context, dynamic p, ThemeProvider tp) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [p.surfaceVariant, const Color(0xFF0D0D1A)],
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: p.secondary.withValues(alpha: 0.5)),
+      ),
+      child: Column(children: [
+        // Meta-Genius Header
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [p.secondary.withValues(alpha: 0.2), Colors.transparent]),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          child: Row(children: [
+            Container(
+              width: 40, height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(colors: [p.secondary, p.primary]),
+                boxShadow: [BoxShadow(color: p.secondary.withValues(alpha: 0.5), blurRadius: 12)],
+              ),
+              child: const Icon(Icons.psychology_alt, color: Colors.white, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('META-GENIUS ENGINE', style: GoogleFonts.rajdhani(color: p.secondary, fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 1)),
+              Text('Selbstlernend · Selbstoptimierend · Rekursiv', style: TextStyle(color: p.textSecondary, fontSize: 10)),
+            ])),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: p.positive.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8), border: Border.all(color: p.positive.withValues(alpha: 0.4))),
+              child: Text('AKTIV', style: GoogleFonts.spaceMono(color: p.positive, fontSize: 9, fontWeight: FontWeight.bold)),
+            ),
+          ]),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(children: [
+            // AI-Modus Auswahl
+            _MetaSelector(
+              label: 'AI-DENK-MODUS', p: p,
+              options: const ['META-GENIUS', 'TR2 RECURSIVE', 'KREALOGIK', 'ORACLE-MODE', 'DEEP-RESEARCH'],
+              selected: 0,
+              onSelect: (i) => _showMetaModeDialog(context, p, i),
+            ),
+            const SizedBox(height: 12),
+            // TR2 Recursive Schleife
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: p.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: p.primary.withValues(alpha: 0.25)),
+              ),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Icon(Icons.loop, color: p.primary, size: 16),
+                  const SizedBox(width: 6),
+                  Text('TR2 RECURSIVE LOOP', style: GoogleFonts.spaceMono(color: p.primary, fontSize: 10, fontWeight: FontWeight.bold)),
+                  const Spacer(),
+                  Text('Tiefe: 7 · Zyklen: ∞', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
+                ]),
+                const SizedBox(height: 8),
+                _RecursiveLoopViz(p: p),
+                const SizedBox(height: 8),
+                Row(children: [
+                  Expanded(child: _MetricChip('Iterations/s', '1.247', p.primary, p)),
+                  const SizedBox(width: 6),
+                  Expanded(child: _MetricChip('Konfidenz', '94.7%', p.positive, p)),
+                  const SizedBox(width: 6),
+                  Expanded(child: _MetricChip('Meta-Ebene', 'L-7', p.secondary, p)),
+                ]),
+              ]),
+            ),
+            const SizedBox(height: 12),
+            // Self-Improvement Tracker
+            _buildSelfImprovementTracker(p),
+            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(child: _ActionBtn('KALIBRIEREN', Icons.tune, p.primary, p, () => _showCalibrationDialog(context, p))),
+              const SizedBox(width: 8),
+              Expanded(child: _ActionBtn('RESET', Icons.restore, p.negative, p, () {})),
+              const SizedBox(width: 8),
+              Expanded(child: _ActionBtn('REPORT', Icons.analytics_outlined, p.secondary, p, () => _showMetaReport(context, p))),
+            ]),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  Widget _buildSelfImprovementTracker(dynamic p) {
+    final metrics = [
+      ('Denk-Geschwindigkeit', 0.87, p.primary),
+      ('Muster-Erkennung', 0.94, p.positive),
+      ('Kreativitäts-Index', 0.76, p.secondary),
+      ('Fehlerkorrektur', 0.91, p.positive),
+      ('Meta-Abstraktion', 0.83, p.primary),
+    ];
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: p.surfaceVariant.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('SELBSTVERBESSERUNGS-TRACKER', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9, letterSpacing: 0.5)),
+        const SizedBox(height: 8),
+        ...metrics.map((m) => Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Row(children: [
+            SizedBox(width: 130, child: Text(m.$1, style: TextStyle(color: p.textSecondary, fontSize: 10))),
+            Expanded(child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: m.$2, minHeight: 6,
+                backgroundColor: p.surfaceVariant,
+                valueColor: AlwaysStoppedAnimation(m.$3),
+              ),
+            )),
+            const SizedBox(width: 6),
+            SizedBox(width: 34, child: Text('${(m.$2 * 100).toInt()}%', style: GoogleFonts.spaceMono(color: m.$3, fontSize: 9))),
+          ]),
+        )),
+      ]),
+    );
+  }
+
+  // ══ BROKER API CARD ══
+  Widget _buildBrokerApiCard(BuildContext context, dynamic p, ThemeProvider tp) {
+    final brokers = [
+      _BrokerInfo('Binance', 'binance', true, true, '0.1%', p.positive),
+      _BrokerInfo('Kraken', 'kraken', false, false, '0.16%', p.textSecondary),
+      _BrokerInfo('Coinbase Pro', 'coinbase', false, false, '0.6%', p.textSecondary),
+      _BrokerInfo('Bybit', 'bybit', false, false, '0.1%', p.textSecondary),
+      _BrokerInfo('OKX', 'okx', false, false, '0.1%', p.textSecondary),
+      _BrokerInfo('Bitget', 'bitget', false, false, '0.1%', p.textSecondary),
+      _BrokerInfo('KuCoin', 'kucoin', false, false, '0.1%', p.textSecondary),
+      _BrokerInfo('Huobi/HTX', 'huobi', false, false, '0.2%', p.textSecondary),
+    ];
+    return Container(
+      decoration: BoxDecoration(
+        color: p.surfaceVariant,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: p.primary.withValues(alpha: 0.3)),
+      ),
+      child: Column(children: [
+        Container(
+          padding: const EdgeInsets.all(14),
+          child: Row(children: [
+            Icon(Icons.api, color: p.primary, size: 22),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('BROKER API CONNECTOREN', style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
+              Text('Sidebar-Auswahl · Live-Marktdaten', style: TextStyle(color: p.textSecondary, fontSize: 11)),
+            ])),
+            GestureDetector(
+              onTap: () => _showAddBrokerDialog(context, p),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: [p.primary, p.secondary]),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text('+ API', style: GoogleFonts.spaceMono(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ]),
+        ),
+        Divider(color: p.primary.withValues(alpha: 0.15), height: 1),
+        ...brokers.map((b) => _BrokerTile(broker: b, p: p, onTap: () => _showBrokerConfig(context, p, b))),
+      ]),
+    );
+  }
+
+  // ══ DEVOPS CONNECTOREN CARD ══
+  Widget _buildDevOpsCard(BuildContext context, dynamic p) {
+    final connectors = [
+      const _DevConnector('GitHub', Icons.code, 'VERBUNDEN', Color(0xFF4078C8), true, 'quantumtrader/hqmll-app'),
+      const _DevConnector('Vercel', Icons.rocket_launch_outlined, 'BEREIT', Color(0xFF000000), false, 'hqmll.vercel.app'),
+      const _DevConnector('Netlify', Icons.cloud_upload_outlined, 'BEREIT', Color(0xFF00C7B7), false, 'hqmll.netlify.app'),
+      const _DevConnector('Docker', Icons.inventory_2_outlined, 'BEREIT', Color(0xFF2496ED), false, 'ghcr.io/saks/hqmll'),
+      const _DevConnector('Azure', Icons.cloud_outlined, 'BEREIT', Color(0xFF0089D6), false, 'hqmll.azurewebsites.net'),
+      const _DevConnector('Firebase', Icons.local_fire_department_outlined, 'VERBUNDEN', Color(0xFFFFCA28), true, 'hqmll-quantum.firebaseapp.com'),
+    ];
+    return Container(
+      decoration: BoxDecoration(
+        color: p.surfaceVariant,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: p.secondary.withValues(alpha: 0.3)),
+      ),
+      child: Column(children: [
+        Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(children: [
+            Icon(Icons.hub, color: p.secondary, size: 22),
+            const SizedBox(width: 10),
+            Expanded(child: Text('DEPLOYMENT · CI/CD PIPELINE', style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 14, fontWeight: FontWeight.bold))),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: p.positive.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8), border: Border.all(color: p.positive.withValues(alpha: 0.3))),
+              child: Text('2/6 LIVE', style: GoogleFonts.spaceMono(color: p.positive, fontSize: 9)),
+            ),
+          ]),
+        ),
+        Divider(color: p.secondary.withValues(alpha: 0.15), height: 1),
+        ...connectors.map((c) => _DevConnectorTile(connector: c, p: p, onTap: () => _showConnectorDialog(context, p, c))),
+        Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(children: [
+            Expanded(child: _ActionBtn('DEPLOY ALL', Icons.rocket_launch, p.secondary, p, () => _showDeployDialog(context, p))),
+            const SizedBox(width: 8),
+            Expanded(child: _ActionBtn('CI/CD LOG', Icons.receipt_long_outlined, p.primary, p, () => _showCicdLog(context, p))),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  // ══ KREALOGIK DENK-SYSTEM CARD ══
+  Widget _buildKrealogikCard(BuildContext context, dynamic p, ThemeProvider tp) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [const Color(0xFF1A0030), p.surfaceVariant],
+          begin: Alignment.topRight, end: Alignment.bottomLeft,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF9C27B0).withValues(alpha: 0.4)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(colors: [Color(0xFF9C27B0), Color(0xFF673AB7)]),
+              boxShadow: [BoxShadow(color: Color(0x559C27B0), blurRadius: 12)],
+            ),
+            child: const Icon(Icons.auto_fix_high, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('KREALOGIK™ DENK-SYSTEM', style: GoogleFonts.rajdhani(color: const Color(0xFFCE93D8), fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 1)),
+            Text('Kreatives Logik · Algorithmisches Handeln', style: TextStyle(color: p.textSecondary, fontSize: 10)),
+          ])),
+        ]),
+        const SizedBox(height: 14),
+        // Denk-Loop Visualisierung
+        _KrealogikLoopWidget(p: p),
+        const SizedBox(height: 14),
+        // Handlungs-Module
+        Text('HANDLUNGS-MODULE', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
+        const SizedBox(height: 8),
+        Wrap(spacing: 6, runSpacing: 6, children: [
+          'ANALYSE', 'MUSTER', 'PROGNOSE', 'ENTSCHEIDUNG',
+          'OPTIMIERUNG', 'FEEDBACK', 'ADAPTION', 'EVOLUTION',
+        ].map((m) => GestureDetector(
+          onTap: () => _showModuleInfo(context, p, m),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFF9C27B0).withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0xFF9C27B0).withValues(alpha: 0.4)),
+            ),
+            child: Text(m, style: GoogleFonts.spaceMono(color: const Color(0xFFCE93D8), fontSize: 9, fontWeight: FontWeight.bold)),
+          ),
+        )).toList()),
+        const SizedBox(height: 14),
+        // Zukunfts-Aussagen
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              const Icon(Icons.auto_awesome, color: Color(0xFFCE93D8), size: 14),
+              const SizedBox(width: 6),
+              Text('QUANTUM-PROGNOSE 2025–2027', style: GoogleFonts.spaceMono(color: const Color(0xFFCE93D8), fontSize: 9)),
+            ]),
+            const SizedBox(height: 8),
+            ...[
+              'BTC erreicht \$250.000 bis Q4 2025 (Konfidenz: 78%)',
+              'QEMMA Token Top-100 Listing bis Q2 2025',
+              'HQMLL Platform 1M+ Nutzer bis Ende 2026',
+              'Quantum-KI übertrifft menschliche Trader um 340%',
+            ].map((s) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(children: [
+                const Icon(Icons.arrow_forward_ios, color: Color(0xFF9C27B0), size: 9),
+                const SizedBox(width: 6),
+                Expanded(child: Text(s, style: TextStyle(color: p.textSecondary, fontSize: 10, height: 1.4))),
+              ]),
+            )),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  // ══ DIALOGE ══
+  void _showMetaModeDialog(BuildContext context, dynamic p, int mode) {
+    final modes = ['META-GENIUS', 'TR2 RECURSIVE', 'KREALOGIK', 'ORACLE-MODE', 'DEEP-RESEARCH'];
+    final descs = [
+      'Höchste KI-Ebene · Selbstlernend · Rekursive Selbstverbesserung',
+      'TR2 Loop mit 7 Rekursions-Ebenen · Maximale Präzision',
+      'Kreatives Denken · Innovative Handlungsstrategien',
+      'Quantum-Orakel · Probabilistische Zukunftsvorhersagen',
+      'Deep-Web Alpha · Versteckte Markt-Informationen',
+    ];
+    showDialog(context: context, builder: (_) => AlertDialog(
+      backgroundColor: p.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: p.primary.withValues(alpha: 0.4))),
+      title: Text('AI-Modus: ${modes[mode]}', style: GoogleFonts.rajdhani(color: p.primary, fontSize: 16, fontWeight: FontWeight.bold)),
+      content: Text(descs[mode], style: TextStyle(color: p.textSecondary, fontSize: 13)),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text('ABBRECHEN', style: TextStyle(color: p.textSecondary))),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: p.primary),
+          onPressed: () { Navigator.pop(context); },
+          child: const Text('AKTIVIEREN', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ));
+  }
+
+  void _showCalibrationDialog(BuildContext context, dynamic p) {
+    showDialog(context: context, builder: (_) => AlertDialog(
+      backgroundColor: p.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: p.secondary.withValues(alpha: 0.4))),
+      title: Text('META-KALIBRIERUNG', style: GoogleFonts.rajdhani(color: p.secondary, fontSize: 16, fontWeight: FontWeight.bold)),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        Text('Starte Quantum-Kalibrierung aller Meta-Module?', style: TextStyle(color: p.textSecondary, fontSize: 13)),
+        const SizedBox(height: 12),
+        LinearProgressIndicator(value: 0.73, color: p.secondary, backgroundColor: p.surfaceVariant),
+        const SizedBox(height: 6),
+        Text('Letzter Kalibrierungslauf: vor 12 Std', style: TextStyle(color: p.textSecondary, fontSize: 11)),
+      ]),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text('SCHLIESSEN', style: TextStyle(color: p.textSecondary))),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: p.secondary),
+          onPressed: () => Navigator.pop(context),
+          child: const Text('STARTEN', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ));
+  }
+
+  void _showMetaReport(BuildContext context, dynamic p) {
+    showDialog(context: context, builder: (_) => AlertDialog(
+      backgroundColor: p.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: p.primary.withValues(alpha: 0.4))),
+      title: Text('META-GENIUS REPORT', style: GoogleFonts.rajdhani(color: p.primary, fontSize: 16, fontWeight: FontWeight.bold)),
+      content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _reportRow('TR2-Iterationen heute', '14.847', p),
+        _reportRow('Erkannte Muster', '1.293', p),
+        _reportRow('Entscheidungen', '847', p),
+        _reportRow('Trefferquote', '94.7%', p),
+        _reportRow('Lernrate', '0.0847', p),
+        _reportRow('Meta-Ebene', 'L-7 (MAX)', p),
+        _reportRow('Uptime', '99.97%', p),
+      ]),
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('OK', style: TextStyle(color: p.primary)))],
+    ));
+  }
+
+  Widget _reportRow(String label, String value, dynamic p) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(children: [
+        Expanded(child: Text(label, style: TextStyle(color: p.textSecondary, fontSize: 12))),
+        Text(value, style: GoogleFonts.spaceMono(color: p.primary, fontSize: 12, fontWeight: FontWeight.bold)),
+      ]),
+    );
+  }
+
+  void _showAddBrokerDialog(BuildContext context, dynamic p) {
+    final ctrlKey = TextEditingController();
+    final ctrlSecret = TextEditingController();
+    showDialog(context: context, builder: (_) => AlertDialog(
+      backgroundColor: p.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: p.primary.withValues(alpha: 0.4))),
+      title: Text('BROKER API HINZUFÜGEN', style: GoogleFonts.rajdhani(color: p.primary, fontSize: 16, fontWeight: FontWeight.bold)),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        TextField(
+          controller: ctrlKey,
+          style: TextStyle(color: p.textPrimary, fontSize: 13),
+          decoration: InputDecoration(
+            labelText: 'API Key', labelStyle: TextStyle(color: p.textSecondary, fontSize: 12),
+            filled: true, fillColor: p.surfaceVariant,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: ctrlSecret,
+          obscureText: true,
+          style: TextStyle(color: p.textPrimary, fontSize: 13),
+          decoration: InputDecoration(
+            labelText: 'API Secret', labelStyle: TextStyle(color: p.textSecondary, fontSize: 12),
+            filled: true, fillColor: p.surfaceVariant,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+          ),
+        ),
+      ]),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text('ABBRECHEN', style: TextStyle(color: p.textSecondary))),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: p.primary),
+          onPressed: () => Navigator.pop(context),
+          child: const Text('VERBINDEN', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ));
+  }
+
+  void _showBrokerConfig(BuildContext context, dynamic p, _BrokerInfo b) {
+    showDialog(context: context, builder: (_) => AlertDialog(
+      backgroundColor: p.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: b.statusColor.withValues(alpha: 0.4))),
+      title: Text(b.name.toUpperCase(), style: GoogleFonts.rajdhani(color: b.statusColor, fontSize: 16, fontWeight: FontWeight.bold)),
+      content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _reportRow('Status', b.connected ? 'VERBUNDEN' : 'NICHT VERBUNDEN', p),
+        _reportRow('API Key', b.connected ? '••••••••4F9C' : 'Nicht konfiguriert', p),
+        _reportRow('Trading', b.tradingEnabled ? 'AKTIVIERT' : 'NUR LESEN', p),
+        _reportRow('Gebühr', b.fee, p),
+        _reportRow('Latenz', b.connected ? '12ms' : '—', p),
+      ]),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text('SCHLIESSEN', style: TextStyle(color: p.textSecondary))),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: b.statusColor),
+          onPressed: () => Navigator.pop(context),
+          child: Text(b.connected ? 'TRENNEN' : 'VERBINDEN', style: const TextStyle(color: Colors.white)),
+        ),
+      ],
+    ));
+  }
+
+  void _showConnectorDialog(BuildContext context, dynamic p, _DevConnector c) {
+    showDialog(context: context, builder: (_) => AlertDialog(
+      backgroundColor: p.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: c.color.withValues(alpha: 0.4))),
+      title: Row(children: [
+        Icon(c.icon, color: c.color, size: 20),
+        const SizedBox(width: 8),
+        Text(c.name.toUpperCase(), style: GoogleFonts.rajdhani(color: c.color, fontSize: 16, fontWeight: FontWeight.bold)),
+      ]),
+      content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _reportRow('Status', c.status, p),
+        _reportRow('URL', c.url, p),
+        _reportRow('Auto-Deploy', c.connected ? 'AKTIVIERT' : 'MANUELL', p),
+        _reportRow('Build', c.connected ? 'ERFOLGREICH' : '—', p),
+      ]),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text('ABBRECHEN', style: TextStyle(color: p.textSecondary))),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: c.color),
+          onPressed: () => Navigator.pop(context),
+          child: Text(c.connected ? 'KONFIGURIEREN' : 'VERBINDEN', style: const TextStyle(color: Colors.white, fontSize: 12)),
+        ),
+      ],
+    ));
+  }
+
+  void _showDeployDialog(BuildContext context, dynamic p) {
+    showDialog(context: context, builder: (_) => AlertDialog(
+      backgroundColor: p.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: p.secondary.withValues(alpha: 0.4))),
+      title: Text('DEPLOYMENT STARTEN', style: GoogleFonts.rajdhani(color: p.secondary, fontSize: 16, fontWeight: FontWeight.bold)),
+      content: Text('Alle konfigurierten Plattformen gleichzeitig deployen?\n\nVercel · Netlify · Docker · Azure', style: TextStyle(color: p.textSecondary, fontSize: 13)),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: Text('ABBRECHEN', style: TextStyle(color: p.textSecondary))),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: p.secondary),
+          onPressed: () => Navigator.pop(context),
+          child: const Text('DEPLOY', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ));
+  }
+
+  void _showCicdLog(BuildContext context, dynamic p) {
+    showDialog(context: context, builder: (_) => AlertDialog(
+      backgroundColor: p.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: p.primary.withValues(alpha: 0.4))),
+      title: Text('CI/CD LOG', style: GoogleFonts.rajdhani(color: p.primary, fontSize: 16, fontWeight: FontWeight.bold)),
+      content: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('[2025-03-17 14:35] ✅ GitHub Push → main', style: GoogleFonts.spaceMono(color: p.positive, fontSize: 10)),
+        Text('[2025-03-17 14:36] ✅ Flutter Build Web', style: GoogleFonts.spaceMono(color: p.positive, fontSize: 10)),
+        Text('[2025-03-17 14:37] ✅ APK Release Build 56.1MB', style: GoogleFonts.spaceMono(color: p.positive, fontSize: 10)),
+        Text('[2025-03-17 14:38] ⏳ Vercel Deploy pending', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 10)),
+        Text('[2025-03-17 14:38] ⏳ Netlify Deploy pending', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 10)),
+        Text('[2025-03-17 14:39] 🔄 Docker Build in queue', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 10)),
+      ])),
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('SCHLIESSEN', style: TextStyle(color: p.primary)))],
+    ));
+  }
+
+  void _showModuleInfo(BuildContext context, dynamic p, String module) {
+    final infos = {
+      'ANALYSE': 'Tiefenanalyse von Marktdaten mittels Quantum-Algorithmen',
+      'MUSTER': 'Erkennung wiederkehrender Patterns in historischen Kursdaten',
+      'PROGNOSE': 'Probabilistische Vorhersagen basierend auf TR2-Rekursion',
+      'ENTSCHEIDUNG': 'Autonome Handelsentscheidungen mit KreaLogik',
+      'OPTIMIERUNG': 'Kontinuierliche Portfolio-Optimierung in Echtzeit',
+      'FEEDBACK': 'Rückkopplungsschleife für Selbstlern-Kalibrierung',
+      'ADAPTION': 'Dynamische Anpassung an neue Marktbedingungen',
+      'EVOLUTION': 'Evolutionäre Algorithmen für langfristige Strategien',
+    };
+    showDialog(context: context, builder: (_) => AlertDialog(
+      backgroundColor: p.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: Color(0x669C27B0))),
+      title: Text('MODUL: $module', style: GoogleFonts.rajdhani(color: const Color(0xFFCE93D8), fontSize: 16, fontWeight: FontWeight.bold)),
+      content: Text(infos[module] ?? '', style: TextStyle(color: p.textSecondary, fontSize: 13)),
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK', style: TextStyle(color: Color(0xFFCE93D8))))],
+    ));
   }
 
   void _confirmGodMode(BuildContext context, ThemeProvider tp, bool enable, dynamic p) {
@@ -515,4 +1069,287 @@ class _ColorDot extends StatelessWidget {
   const _ColorDot({required this.color});
   @override
   Widget build(BuildContext context) => Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 0.5)));
+}
+
+// ═══════════════════════════════════════════════════
+// META-GENIUS HELPER WIDGETS
+// ═══════════════════════════════════════════════════
+
+class _MetaSelector extends StatelessWidget {
+  final String label;
+  final List<String> options;
+  final int selected;
+  final dynamic p;
+  final Function(int) onSelect;
+  const _MetaSelector({required this.label, required this.options, required this.selected, required this.p, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
+      const SizedBox(height: 6),
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(children: options.asMap().entries.map((e) {
+          final isSelected = e.key == selected;
+          return GestureDetector(
+            onTap: () => onSelect(e.key),
+            child: Container(
+              margin: const EdgeInsets.only(right: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                gradient: isSelected ? LinearGradient(colors: [p.primary, p.secondary]) : null,
+                color: isSelected ? null : p.surfaceVariant,
+                borderRadius: BorderRadius.circular(8),
+                border: isSelected ? null : Border.all(color: p.primary.withValues(alpha: 0.3)),
+              ),
+              child: Text(e.value, style: GoogleFonts.spaceMono(
+                color: isSelected ? Colors.white : p.textSecondary,
+                fontSize: 9, fontWeight: FontWeight.bold,
+              )),
+            ),
+          );
+        }).toList()),
+      ),
+    ]);
+  }
+}
+
+class _RecursiveLoopViz extends StatelessWidget {
+  final dynamic p;
+  const _RecursiveLoopViz({required this.p});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 40,
+      child: CustomPaint(painter: _LoopPainter(p: p)),
+    );
+  }
+}
+
+class _LoopPainter extends CustomPainter {
+  final dynamic p;
+  const _LoopPainter({required this.p});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..strokeWidth = 2..style = PaintingStyle.stroke;
+    const levels = 7;
+    for (int i = 0; i < levels; i++) {
+      final progress = i / levels;
+      paint.color = Color.lerp(p.primary, p.secondary, progress)!.withValues(alpha: 0.7 - progress * 0.3);
+      final y = size.height * 0.5;
+      final x1 = size.width * (i / levels);
+      final x2 = size.width * ((i + 1) / levels);
+      final cp1 = Offset(x1 + (x2 - x1) * 0.3, y - 15);
+      final cp2 = Offset(x1 + (x2 - x1) * 0.7, y + 15);
+      final path = Path()..moveTo(x1, y)..cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, x2, y);
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
+}
+
+class _MetricChip extends StatelessWidget {
+  final String label, value;
+  final Color color;
+  final dynamic p;
+  const _MetricChip(this.label, this.value, this.color, this.p);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Column(children: [
+        Text(value, style: GoogleFonts.rajdhani(color: color, fontSize: 14, fontWeight: FontWeight.bold)),
+        Text(label, style: TextStyle(color: p.textSecondary, fontSize: 8), textAlign: TextAlign.center),
+      ]),
+    );
+  }
+}
+
+class _ActionBtn extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final dynamic p;
+  final VoidCallback onTap;
+  const _ActionBtn(this.label, this.icon, this.color, this.p, this.onTap);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 9),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
+        ),
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(icon, color: color, size: 13),
+          const SizedBox(width: 5),
+          Text(label, style: GoogleFonts.spaceMono(color: color, fontSize: 9, fontWeight: FontWeight.bold)),
+        ]),
+      ),
+    );
+  }
+}
+
+class _BrokerInfo {
+  final String name, id, fee;
+  final bool connected, tradingEnabled;
+  final Color statusColor;
+  const _BrokerInfo(this.name, this.id, this.connected, this.tradingEnabled, this.fee, this.statusColor);
+}
+
+class _BrokerTile extends StatelessWidget {
+  final _BrokerInfo broker;
+  final dynamic p;
+  final VoidCallback onTap;
+  const _BrokerTile({required this.broker, required this.p, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Row(children: [
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: p.surfaceVariant,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: broker.connected ? broker.statusColor.withValues(alpha: 0.4) : p.primary.withValues(alpha: 0.1)),
+            ),
+            child: Center(child: Text(broker.name[0], style: GoogleFonts.rajdhani(color: broker.connected ? broker.statusColor : p.textSecondary, fontSize: 16, fontWeight: FontWeight.bold))),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(broker.name, style: TextStyle(color: p.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+            Text('Gebühr: ${broker.fee} · ${broker.tradingEnabled ? "Trading aktiv" : "Nur lesen"}', style: TextStyle(color: p.textSecondary, fontSize: 10)),
+          ])),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: broker.statusColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: broker.statusColor.withValues(alpha: 0.35)),
+            ),
+            child: Text(broker.connected ? 'LIVE' : 'VERBINDEN', style: GoogleFonts.spaceMono(color: broker.statusColor, fontSize: 8, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: 6),
+          Icon(Icons.arrow_forward_ios, color: p.textSecondary, size: 12),
+        ]),
+      ),
+    );
+  }
+}
+
+class _DevConnector {
+  final String name, status, url;
+  final IconData icon;
+  final Color color;
+  final bool connected;
+  const _DevConnector(this.name, this.icon, this.status, this.color, this.connected, this.url);
+}
+
+class _DevConnectorTile extends StatelessWidget {
+  final _DevConnector connector;
+  final dynamic p;
+  final VoidCallback onTap;
+  const _DevConnectorTile({required this.connector, required this.p, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Row(children: [
+          Container(
+            width: 36, height: 36,
+            decoration: BoxDecoration(
+              color: connector.color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: connector.color.withValues(alpha: 0.4)),
+            ),
+            child: Icon(connector.icon, color: connector.color, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(connector.name, style: TextStyle(color: p.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+            Text(connector.url, style: TextStyle(color: p.textSecondary, fontSize: 10), overflow: TextOverflow.ellipsis),
+          ])),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: connector.connected ? p.positive.withValues(alpha: 0.12) : p.surfaceVariant,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: connector.connected ? p.positive.withValues(alpha: 0.4) : p.primary.withValues(alpha: 0.2)),
+            ),
+            child: Text(connector.status, style: GoogleFonts.spaceMono(color: connector.connected ? p.positive : p.textSecondary, fontSize: 8, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: 6),
+          Icon(Icons.arrow_forward_ios, color: p.textSecondary, size: 12),
+        ]),
+      ),
+    );
+  }
+}
+
+class _KrealogikLoopWidget extends StatelessWidget {
+  final dynamic p;
+  const _KrealogikLoopWidget({required this.p});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 70,
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const _KreaNode('DENKEN', Icons.lightbulb_outline, Color(0xFF9C27B0)),
+          Icon(Icons.arrow_forward, color: const Color(0xFF9C27B0).withValues(alpha: 0.5), size: 14),
+          const _KreaNode('HANDELN', Icons.flash_on, Color(0xFF673AB7)),
+          Icon(Icons.arrow_forward, color: const Color(0xFF673AB7).withValues(alpha: 0.5), size: 14),
+          const _KreaNode('LERNEN', Icons.school_outlined, Color(0xFF3F51B5)),
+          Icon(Icons.arrow_forward, color: const Color(0xFF3F51B5).withValues(alpha: 0.5), size: 14),
+          const _KreaNode('EVOLVIEREN', Icons.trending_up, Color(0xFF2196F3)),
+          Icon(Icons.loop, color: const Color(0xFF9C27B0).withValues(alpha: 0.5), size: 14),
+        ],
+      ),
+    );
+  }
+}
+
+class _KreaNode extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  const _KreaNode(this.label, this.icon, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+      Icon(icon, color: color, size: 18),
+      const SizedBox(height: 3),
+      Text(label, style: TextStyle(color: color, fontSize: 7, fontWeight: FontWeight.bold)),
+    ]);
+  }
 }

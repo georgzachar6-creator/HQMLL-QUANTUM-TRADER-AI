@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
 import 'screens/splash_screen.dart';
+import 'screens/lock_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +29,7 @@ class HQMLLApp extends StatelessWidget {
       title: 'HQMLL Quantum Trader',
       debugShowCheckedModeBanner: false,
       theme: tp.themeData,
-      home: const SplashScreen(),
+      home: const SplashScreen(nextScreen: LockScreen()),
     );
   }
 }

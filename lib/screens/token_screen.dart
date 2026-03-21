@@ -143,6 +143,10 @@ class _TokenScreenState extends State<TokenScreen>
           _buildAgentsCard(p),
           const SizedBox(height: 12),
           _buildListingRoadmap(p),
+          const SizedBox(height: 12),
+          _buildLeaderboard(p),
+          const SizedBox(height: 12),
+          _buildCommunityActivity(p),
         ],
       ),
     );
@@ -1043,6 +1047,204 @@ class _TokenScreenState extends State<TokenScreen>
       ),
     );
   }
+
+  // ── QEMMA Leaderboard ─────────────────────────────
+  Widget _buildLeaderboard(dynamic p) {
+    final leaders = [
+      const _Leader('G. Saks', '0x7A3...F9C2', 1284.5, 1, true),
+      const _Leader('CryptoWolf', '0x2B8...A41F', 987.3, 2, false),
+      const _Leader('QuantumMax', '0x9E1...C78D', 843.1, 3, false),
+      const _Leader('AI_Miner42', '0x4F5...B32E', 756.8, 4, false),
+      const _Leader('DeFi_Pro', '0x1C9...E65A', 621.4, 5, false),
+      const _Leader('SolanaKing', '0x8D2...9F1B', 534.2, 6, false),
+      const _Leader('Blockchain99', '0x3A7...D48C', 489.6, 7, false),
+      const _Leader('EmmaFan', '0x6B4...72E9', 412.3, 8, false),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: p.primary.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.leaderboard, color: p.primary, size: 18),
+            const SizedBox(width: 8),
+            Text('MINING LEADERBOARD', style: GoogleFonts.rajdhani(
+                color: p.primary, fontSize: 15, fontWeight: FontWeight.bold,
+                letterSpacing: 1)),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: p.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text('DIESE WOCHE', style: GoogleFonts.spaceMono(
+                  color: p.primary, fontSize: 7, fontWeight: FontWeight.bold)),
+            ),
+          ]),
+          const SizedBox(height: 14),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(children: [
+              SizedBox(width: 28, child: Text('#', style: GoogleFonts.spaceMono(
+                  color: p.textSecondary, fontSize: 9))),
+              const SizedBox(width: 8),
+              Expanded(child: Text('MINER', style: GoogleFonts.spaceMono(
+                  color: p.textSecondary, fontSize: 9))),
+              Text('QEMMA', style: GoogleFonts.spaceMono(
+                  color: p.textSecondary, fontSize: 9)),
+            ]),
+          ),
+          Divider(color: p.primary.withValues(alpha: 0.1), height: 1),
+          const SizedBox(height: 6),
+          ...leaders.map((l) {
+            final rankColor = l.rank == 1 ? const Color(0xFFFFD700)
+                : l.rank == 2 ? const Color(0xFFC0C0C0)
+                : l.rank == 3 ? const Color(0xFFCD7F32)
+                : (p.textSecondary as Color);
+            final rankIcon = l.rank == 1 ? '🥇' : l.rank == 2 ? '🥈'
+                : l.rank == 3 ? '🥉' : null;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: l.isMe ? p.primary.withValues(alpha: 0.08)
+                    : l.rank <= 3 ? rankColor.withValues(alpha: 0.04)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+                border: l.isMe
+                    ? Border.all(color: p.primary.withValues(alpha: 0.3))
+                    : l.rank <= 3
+                        ? Border.all(color: rankColor.withValues(alpha: 0.2))
+                        : null,
+              ),
+              child: Row(children: [
+                SizedBox(width: 28,
+                  child: rankIcon != null
+                      ? Text(rankIcon, style: const TextStyle(fontSize: 16))
+                      : Text('${l.rank}', style: GoogleFonts.spaceMono(
+                          color: rankColor, fontSize: 11, fontWeight: FontWeight.bold))),
+                const SizedBox(width: 8),
+                Container(
+                  width: 28, height: 28,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: l.isMe ? p.primary.withValues(alpha: 0.15) : p.surfaceVariant,
+                    border: Border.all(color: l.isMe ? p.primary : rankColor.withValues(alpha: 0.3)),
+                  ),
+                  child: l.isMe
+                      ? ClipOval(child: Image.asset('assets/icons/app_icon.png', fit: BoxFit.cover))
+                      : Center(child: Text(l.name[0], style: GoogleFonts.rajdhani(
+                          color: rankColor, fontSize: 13, fontWeight: FontWeight.bold))),
+                ),
+                const SizedBox(width: 8),
+                Expanded(child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Text(l.name, style: GoogleFonts.rajdhani(
+                          color: l.isMe ? p.primary : p.textPrimary,
+                          fontSize: 13, fontWeight: FontWeight.bold)),
+                      if (l.isMe) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: p.primary.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                          child: Text('YOU', style: GoogleFonts.spaceMono(
+                              color: p.primary, fontSize: 7, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ]),
+                    Text(l.address, style: GoogleFonts.spaceMono(
+                        color: p.textSecondary, fontSize: 8)),
+                  ],
+                )),
+                Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                  Text(l.amount.toStringAsFixed(1), style: GoogleFonts.rajdhani(
+                      color: l.isMe ? p.positive : p.textPrimary,
+                      fontSize: 14, fontWeight: FontWeight.bold)),
+                  Text('QEMMA', style: GoogleFonts.spaceMono(
+                      color: p.textSecondary, fontSize: 8)),
+                ]),
+              ]),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  // ── Community Aktivität ───────────────────────────
+  Widget _buildCommunityActivity(dynamic p) {
+    final activities = [
+      const _Activity('🏆 G. Saks hat Quest "BTC-Analyse" abgeschlossen', '2 Min', true),
+      const _Activity('⛏️ CryptoWolf hat 25 QEMMA gemint', '8 Min', false),
+      const _Activity('🎯 QuantumMax erreichte Rang 3', '15 Min', false),
+      const _Activity('💡 AI_Miner42 hat Quest "Sentiment-Rätsel" gestartet', '22 Min', false),
+      const _Activity('🔥 QEMMA Price Alert: +12.45% in 24h', '1 Std', false),
+      const _Activity('🌟 DeFi_Pro Level 5 Staking freigeschaltet', '2 Std', false),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: p.primary.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.people_outline, color: p.secondary, size: 18),
+            const SizedBox(width: 8),
+            Text('COMMUNITY FEED', style: GoogleFonts.rajdhani(
+                color: p.secondary, fontSize: 15, fontWeight: FontWeight.bold,
+                letterSpacing: 1)),
+            const Spacer(),
+            Container(
+              width: 8, height: 8,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle, color: p.positive,
+                boxShadow: [BoxShadow(color: p.positive.withValues(alpha: 0.5), blurRadius: 6)],
+              ),
+            ),
+            const SizedBox(width: 5),
+            Text('LIVE', style: GoogleFonts.spaceMono(
+                color: p.positive, fontSize: 8, fontWeight: FontWeight.bold)),
+          ]),
+          const SizedBox(height: 14),
+          ...activities.map((a) => Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: a.isMe ? p.primary.withValues(alpha: 0.06)
+                  : p.surfaceVariant.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(10),
+              border: a.isMe ? Border.all(color: p.primary.withValues(alpha: 0.2)) : null,
+            ),
+            child: Row(children: [
+              Expanded(child: Text(a.text, style: GoogleFonts.exo(
+                  color: a.isMe ? p.textPrimary : p.textSecondary,
+                  fontSize: 11, height: 1.4))),
+              const SizedBox(width: 8),
+              Text(a.time, style: GoogleFonts.spaceMono(
+                  color: p.textSecondary, fontSize: 8)),
+            ]),
+          )),
+        ],
+      ),
+    );
+  }
 }
 
 // ── Quest Complete Toast ───────────────────────────
@@ -1089,6 +1291,20 @@ class _QuestCompleteToast extends StatelessWidget {
 }
 
 // ── Data & Helper Classes ──────────────────────────
+class _Leader {
+  final String name, address;
+  final double amount;
+  final int rank;
+  final bool isMe;
+  const _Leader(this.name, this.address, this.amount, this.rank, this.isMe);
+}
+
+class _Activity {
+  final String text, time;
+  final bool isMe;
+  const _Activity(this.text, this.time, this.isMe);
+}
+
 class _Quest {
   String name, description;
   int reward;
@@ -1293,3 +1509,9 @@ class _CalcResult extends StatelessWidget {
     ]);
   }
 }
+
+// ════════════════════════════════════════════════════
+// Diese Methoden werden zur _TokenScreenState-Klasse
+// über Extension hinzugefügt (separate Datei nötig)
+// Stattdessen direkt in der Klasse via mixin-Pattern:
+// ════════════════════════════════════════════════════
