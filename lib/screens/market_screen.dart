@@ -15,9 +15,10 @@ class _MarketScreenState extends State<MarketScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _tickCtrl;
   Timer? _priceTimer;
-  int _viewMode = 0; // 0=Liste, 1=Heatmap
+  int _viewMode = 0; // 0=Liste, 1=Heatmap, 2=Orderbook, 3=Top-Movers
   String _sortBy = 'rank'; // rank, change, volume
   String _filter = 'All'; // All, Gainers, Losers
+  String _obSymbol = 'BTC/USDT';
   final Random _rng = Random(55);
 
   final List<_Coin> _coins = [
@@ -143,13 +144,19 @@ class _MarketScreenState extends State<MarketScreen>
         children: [
           // Market summary bar
           _buildSummaryBar(p, gainers, losers, avgChange),
-          // Filters
-          _buildFilters(p),
+          // Tab-Leiste
+          _buildTabBar(p),
+          // Filters (nur im Listen-Modus)
+          if (_viewMode == 0) _buildFilters(p),
           // Content
           Expanded(
             child: _viewMode == 0
                 ? _buildListView(p, sorted)
-                : _buildHeatmap(p),
+                : _viewMode == 1
+                    ? _buildHeatmap(p)
+                    : _viewMode == 2
+                        ? _buildOrderBook(p)
+                        : _buildTopMovers(p),
           ),
         ],
       ),
@@ -357,6 +364,400 @@ class _MarketScreenState extends State<MarketScreen>
       },
     );
   }
+
+  // ── TAB BAR ───────────────────────────────────────────
+  Widget _buildTabBar(dynamic p) {
+    final tabs = ['LISTE', 'HEATMAP', 'ORDERBOOK', 'TOP-MOVERS'];
+    return Container(
+      color: p.surface,
+      child: Row(
+        children: tabs.asMap().entries.map((e) {
+          final sel = e.key == _viewMode;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _viewMode = e.key),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 9),
+                decoration: BoxDecoration(
+                  border: Border(bottom: BorderSide(
+                    color: sel ? p.primary : Colors.transparent, width: 2,
+                  )),
+                ),
+                child: Text(e.value,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.spaceMono(
+                    color: sel ? p.primary : p.textSecondary,
+                    fontSize: 8,
+                    fontWeight: sel ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // ── LIVE ORDERBOOK ────────────────────────────────────
+  Widget _buildOrderBook(dynamic p) {
+    final pairs = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'QEMMA/USDT', 'BNB/USDT'];
+    final basePrices = {'BTC/USDT': 67842.50, 'ETH/USDT': 3548.20, 'SOL/USDT': 182.40, 'QEMMA/USDT': 0.0847, 'BNB/USDT': 598.30};
+    final basePrice = basePrices[_obSymbol] ?? 100.0;
+
+    // Generiere Orderbook-Einträge
+    List<_OrderEntry> asks = List.generate(12, (i) {
+      final price = basePrice * (1 + (i + 1) * 0.001 + _rng.nextDouble() * 0.0005);
+      final size = 0.5 + _rng.nextDouble() * 4.5;
+      return _OrderEntry(price, size, false);
+    });
+    List<_OrderEntry> bids = List.generate(12, (i) {
+      final price = basePrice * (1 - (i + 1) * 0.001 - _rng.nextDouble() * 0.0005);
+      final size = 0.5 + _rng.nextDouble() * 5.5;
+      return _OrderEntry(price, size, true);
+    });
+    final maxSize = [...asks, ...bids].map((e) => e.size).reduce(max);
+
+    return Column(children: [
+      // Pair-Selector
+      Container(
+        height: 44,
+        color: p.surface,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          itemCount: pairs.length,
+          itemBuilder: (_, i) {
+            final sel = pairs[i] == _obSymbol;
+            return GestureDetector(
+              onTap: () => setState(() => _obSymbol = pairs[i]),
+              child: Container(
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  gradient: sel ? LinearGradient(colors: [p.primary, p.secondary]) : null,
+                  color: sel ? null : p.surfaceVariant,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(pairs[i], style: GoogleFonts.spaceMono(
+                  color: sel ? Colors.white : p.textSecondary, fontSize: 10, fontWeight: FontWeight.bold,
+                )),
+              ),
+            );
+          },
+        ),
+      ),
+      Expanded(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(12),
+          child: Column(children: [
+            // Spread
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(color: p.surfaceVariant, borderRadius: BorderRadius.circular(12)),
+              child: Row(children: [
+                Expanded(child: Column(children: [
+                  Text('BEST BID', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
+                  Text('\$${basePrice.toStringAsFixed(basePrice < 1 ? 4 : 2)}', style: GoogleFonts.rajdhani(color: p.positive, fontSize: 16, fontWeight: FontWeight.bold)),
+                ])),
+                Column(children: [
+                  Text('SPREAD', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
+                  Text((basePrice * 0.001).toStringAsFixed(basePrice < 1 ? 5 : 2), style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 11)),
+                ]),
+                Expanded(child: Column(children: [
+                  Text('BEST ASK', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
+                  Text('\$${(basePrice * 1.001).toStringAsFixed(basePrice < 1 ? 4 : 2)}', style: GoogleFonts.rajdhani(color: p.negative, fontSize: 16, fontWeight: FontWeight.bold)),
+                ])),
+              ]),
+            ),
+            // Header
+            Row(children: [
+              Expanded(child: Text('PREIS (USDT)', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8))),
+              Text('MENGE', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
+              const SizedBox(width: 40),
+              Text('TOTAL', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
+            ]),
+            const SizedBox(height: 4),
+            // ASKS (Verkaufsorders)
+            ...asks.take(8).map((e) => _buildOrderRow(e, maxSize, p)),
+            // Kurs-Trennlinie
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(children: [
+                Expanded(child: Divider(color: p.primary.withValues(alpha: 0.2))),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: AnimatedBuilder(
+                    animation: _tickCtrl,
+                    builder: (_, __) => Text(
+                      '\$${(basePrice * (1 + (_tickCtrl.value - 0.5) * 0.001)).toStringAsFixed(basePrice < 1 ? 4 : 2)}',
+                      style: GoogleFonts.rajdhani(color: p.primary, fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+                Expanded(child: Divider(color: p.primary.withValues(alpha: 0.2))),
+              ]),
+            ),
+            // BIDS (Kauforders)
+            ...bids.take(8).map((e) => _buildOrderRow(e, maxSize, p)),
+          ]),
+        ),
+      ),
+    ]);
+  }
+
+  Widget _buildOrderRow(_OrderEntry e, double maxSize, dynamic p) {
+    final pct = (e.size / maxSize).clamp(0.0, 1.0);
+    final total = e.price * e.size;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Stack(children: [
+        // Hintergrund-Bar
+        Positioned.fill(
+          child: Align(
+            alignment: e.isBid ? Alignment.centerLeft : Alignment.centerRight,
+            child: FractionallySizedBox(
+              widthFactor: pct,
+              child: Container(color: (e.isBid ? p.positive : p.negative).withValues(alpha: 0.08)),
+            ),
+          ),
+        ),
+        Row(children: [
+          Expanded(child: Text(
+            e.price.toStringAsFixed(e.price < 1 ? 6 : e.price < 10 ? 4 : 2),
+            style: GoogleFonts.spaceMono(color: e.isBid ? p.positive : p.negative, fontSize: 10),
+          )),
+          Text(e.size.toStringAsFixed(3), style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 10)),
+          const SizedBox(width: 4),
+          SizedBox(width: 80, child: Text(total.toStringAsFixed(total > 1000 ? 0 : 2), textAlign: TextAlign.right, style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9))),
+        ]),
+      ]),
+    );
+  }
+
+  // ── TOP MOVERS ────────────────────────────────────────
+  Widget _buildTopMovers(dynamic p) {
+    final topGainers = List<_Coin>.from(_coins)..sort((a, b) => b.change.compareTo(a.change));
+    final topLosers = List<_Coin>.from(_coins)..sort((a, b) => a.change.compareTo(b.change));
+    final topVolume = List<_Coin>.from(_coins)..sort((a, b) => b.volume.compareTo(a.volume));
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(12),
+      child: Column(children: [
+        // Fear & Greed Index
+        _buildFearGreedWidget(p),
+        const SizedBox(height: 12),
+        // Top Gainers
+        _buildMoversSection('🚀 TOP GAINERS', topGainers.take(5).toList(), p, isGainer: true),
+        const SizedBox(height: 12),
+        // Top Losers
+        _buildMoversSection('🔻 TOP LOSERS', topLosers.take(5).toList(), p, isGainer: false),
+        const SizedBox(height: 12),
+        // Top Volume
+        _buildVolumeSection(topVolume.take(5).toList(), p),
+        const SizedBox(height: 12),
+        // Market Dominance
+        _buildDominanceChart(p),
+      ]),
+    );
+  }
+
+  Widget _buildFearGreedWidget(dynamic p) {
+    const fearValue = 68;
+    const label = fearValue > 75 ? 'Extreme Gier' : fearValue > 55 ? 'Gier' : fearValue > 45 ? 'Neutral' : fearValue > 25 ? 'Angst' : 'Extreme Angst';
+    final color = fearValue > 55 ? p.positive : fearValue > 45 ? p.textSecondary : p.negative;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: p.surfaceVariant,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(children: [
+        // Gauge
+        SizedBox(
+          width: 70, height: 70,
+          child: Stack(alignment: Alignment.center, children: [
+            SizedBox.expand(child: AnimatedBuilder(
+              animation: _tickCtrl,
+              builder: (_, __) => CustomPaint(painter: _GaugePainter(fearValue / 100.0, color)),
+            )),
+            Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Text('$fearValue', style: GoogleFonts.rajdhani(color: color, fontSize: 22, fontWeight: FontWeight.bold)),
+              Text('/100', style: TextStyle(color: p.textSecondary, fontSize: 9)),
+            ]),
+          ]),
+        ),
+        const SizedBox(width: 14),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('FEAR & GREED INDEX', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9, letterSpacing: 0.5)),
+          const SizedBox(height: 4),
+          Text(label.toUpperCase(), style: GoogleFonts.rajdhani(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Row(children: [
+            _buildFGBar('EXT.\nANGST', 0.1, p.negative, p),
+            _buildFGBar('ANGST', 0.25, p.negative.withValues(alpha: 0.6), p),
+            _buildFGBar('NEUTRAL', 0.1, p.textSecondary, p),
+            _buildFGBar('GIER', 0.25, p.positive.withValues(alpha: 0.6), p),
+            _buildFGBar('EXT.\nGIER', 0.3, p.positive, p),
+          ]),
+        ])),
+      ]),
+    );
+  }
+
+  Widget _buildFGBar(String label, double width, Color color, dynamic p) {
+    return Expanded(child: Column(children: [
+      Container(height: 6, color: color),
+      const SizedBox(height: 2),
+      Text(label, style: TextStyle(color: p.textSecondary, fontSize: 6), textAlign: TextAlign.center),
+    ]));
+  }
+
+  Widget _buildMoversSection(String title, List<_Coin> coins, dynamic p, {required bool isGainer}) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: p.surfaceVariant,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: (isGainer ? p.positive : p.negative).withValues(alpha: 0.25)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title, style: GoogleFonts.rajdhani(color: isGainer ? p.positive : p.negative, fontSize: 14, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        ...coins.map((c) => Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Row(children: [
+            Container(
+              width: 32, height: 32,
+              decoration: BoxDecoration(
+                color: (isGainer ? p.positive : p.negative).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(child: Text(c.symbol.substring(0, min(3, c.symbol.length)),
+                style: GoogleFonts.rajdhani(color: isGainer ? p.positive : p.negative, fontSize: 9, fontWeight: FontWeight.bold))),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(c.symbol, style: TextStyle(color: p.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+              Text(c.name, style: TextStyle(color: p.textSecondary, fontSize: 10), overflow: TextOverflow.ellipsis),
+            ])),
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text('\$${c.price < 1 ? c.price.toStringAsFixed(4) : c.price.toStringAsFixed(2)}',
+                style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 11)),
+              Text('${c.change >= 0 ? '+' : ''}${c.change.toStringAsFixed(2)}%',
+                style: GoogleFonts.spaceMono(color: isGainer ? p.positive : p.negative, fontSize: 11, fontWeight: FontWeight.bold)),
+            ]),
+          ]),
+        )),
+      ]),
+    );
+  }
+
+  Widget _buildVolumeSection(List<_Coin> coins, dynamic p) {
+    final maxVol = coins.first.volume.toDouble();
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: p.surfaceVariant,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: p.primary.withValues(alpha: 0.25)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('📊 TOP VOLUME (24H)', style: GoogleFonts.rajdhani(color: p.primary, fontSize: 14, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+        ...coins.map((c) => Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Text(c.symbol, style: TextStyle(color: p.textPrimary, fontSize: 12, fontWeight: FontWeight.w600)),
+              const Spacer(),
+              Text(_formatVol(c.volume), style: GoogleFonts.spaceMono(color: p.primary, fontSize: 11)),
+            ]),
+            const SizedBox(height: 3),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(3),
+              child: LinearProgressIndicator(
+                value: c.volume / maxVol,
+                minHeight: 5,
+                backgroundColor: p.background,
+                valueColor: AlwaysStoppedAnimation(Color.lerp(p.primary, p.secondary, c.volume / maxVol)!),
+              ),
+            ),
+          ]),
+        )),
+      ]),
+    );
+  }
+
+  Widget _buildDominanceChart(dynamic p) {
+    final data = [
+      ('BTC', 45.2, p.primary),
+      ('ETH', 17.8, p.secondary),
+      ('Andere', 37.0, p.surfaceVariant),
+    ];
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: p.surfaceVariant,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: p.secondary.withValues(alpha: 0.25)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('🌐 MARKT-DOMINANZ', style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+        Row(children: [
+          ...data.map((d) => Expanded(
+            flex: (d.$2 * 10).toInt(),
+            child: Container(
+              height: 20,
+              color: d.$3,
+              child: Center(child: Text(d.$1, style: GoogleFonts.spaceMono(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold))),
+            ),
+          )),
+        ]),
+        const SizedBox(height: 8),
+        Row(children: data.map((d) => Expanded(child: Row(children: [
+          Container(width: 8, height: 8, color: d.$3, margin: const EdgeInsets.only(right: 4)),
+          Text('${d.$1}: ${d.$2}%', style: TextStyle(color: p.textSecondary, fontSize: 9)),
+        ]))).toList()),
+      ]),
+    );
+  }
+
+  String _formatVol(double v) {
+    if (v >= 1e9) return '${(v / 1e9).toStringAsFixed(1)}B';
+    if (v >= 1e6) return '${(v / 1e6).toStringAsFixed(0)}M';
+    return '${(v / 1e3).toStringAsFixed(0)}K';
+  }
+}
+
+// ── Data Class für Orderbook ───────────────────────────
+class _OrderEntry {
+  final double price, size;
+  final bool isBid;
+  const _OrderEntry(this.price, this.size, this.isBid);
+}
+
+// ── Gauge Painter (Fear & Greed) ──────────────────────
+class _GaugePainter extends CustomPainter {
+  final double value;
+  final Color color;
+  const _GaugePainter(this.value, this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2, cy = size.height * 0.6;
+    final r = size.width * 0.38;
+    final bgPaint = Paint()..color = Colors.white.withValues(alpha: 0.08)..strokeWidth = 6..style = PaintingStyle.stroke;
+    final fgPaint = Paint()..color = color..strokeWidth = 6..style = PaintingStyle.stroke..strokeCap = StrokeCap.round;
+    canvas.drawArc(Rect.fromCircle(center: Offset(cx, cy), radius: r), pi, pi, false, bgPaint);
+    canvas.drawArc(Rect.fromCircle(center: Offset(cx, cy), radius: r), pi, pi * value, false, fgPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
 }
 
 // ── View Toggle ────────────────────────────────────────

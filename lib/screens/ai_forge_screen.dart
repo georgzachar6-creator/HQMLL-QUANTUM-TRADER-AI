@@ -17,7 +17,7 @@ class _AIForgeScreenState extends State<AIForgeScreen>
   bool _isTraining = false;
   double _trainProgress = 0.0;
   int _trainEpoch = 0;
-  int _activeTab = 0; // 0=Agenten, 1=Modell, 2=Training, 3=Logs
+  int _activeTab = 0; // 0=Agenten, 1=Modell, 2=Training, 3=Logs, 4=Orchestrator
   final Random _rng = Random(77);
 
   // Agent weights (0.0 – 1.0)
@@ -205,6 +205,7 @@ class _AIForgeScreenState extends State<AIForgeScreen>
                 _buildModelTab(p),
                 _buildTrainingTab(p),
                 _buildLogsTab(p),
+                _buildOrchestratorTab(p),
               ],
             ),
           ),
@@ -214,7 +215,7 @@ class _AIForgeScreenState extends State<AIForgeScreen>
   }
 
   Widget _buildTabBar(dynamic p) {
-    final tabs = ['AGENTEN', 'MODELL', 'TRAINING', 'LOGS'];
+    final tabs = ['AGENTEN', 'MODELL', 'TRAINING', 'LOGS', 'ORCHESTER'];
     return Container(
       height: 40,
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
@@ -716,6 +717,241 @@ class _AIForgeScreenState extends State<AIForgeScreen>
       fontWeight: FontWeight.bold,
     ));
   }
+
+  // ── TAB 4: Meta-Orchestrator ──────────────────────
+  Widget _buildOrchestratorTab(dynamic p) {
+    const pipelines = [
+      _OPipeline('QUANTUM SCAN', ['Oracle', 'Pattern', 'Sentinel'], 94, true),
+      _OPipeline('SENTIMENT FUSION', ['Weaver', 'Oracle', 'Scout'], 87, true),
+      _OPipeline('RISK ASSESSMENT', ['Sentinel', 'Oracle', 'Meta'], 91, true),
+      _OPipeline('SIGNAL SYNTHESIS', ['Pattern', 'Weaver', 'Meta'], 88, false),
+      _OPipeline('CHAIN ANALYTICS', ['Scout', 'Sentinel', 'Pattern'], 79, true),
+    ];
+    const decisions = [
+      _ODecision('BTC Kaufsignal generiert', '14:32:17', 'AUSGEFÜHRT', true),
+      _ODecision('Portfolio-Rebalancing empfohlen', '14:28:03', 'AUSSTEHEND', false),
+      _ODecision('Stop-Loss Warnung ausgelöst', '14:15:44', 'IGNORIERT', false),
+      _ODecision('QEMMA Mining-Boost aktiviert', '14:02:11', 'AUSGEFÜHRT', true),
+      _ODecision('Sentiment-Shift erkannt: Bullisch', '13:47:28', 'AUSGEFÜHRT', true),
+    ];
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Meta-Orchestrator Status
+          AnimatedBuilder(
+            animation: _pulseCtrl,
+            builder: (_, __) => Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    p.primary.withValues(alpha: 0.06 + _pulseCtrl.value * 0.04),
+                    p.secondary.withValues(alpha: 0.03),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: p.primary.withValues(alpha: 0.15 + _pulseCtrl.value * 0.1),
+                ),
+              ),
+              child: Row(children: [
+                Container(
+                  width: 52, height: 52,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: p.primary.withValues(alpha: 0.1),
+                    border: Border.all(
+                      color: p.primary.withValues(alpha: 0.3 + _pulseCtrl.value * 0.2),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Icon(Icons.hub, color: p.primary, size: 24),
+                ),
+                const SizedBox(width: 14),
+                Expanded(child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('META-ORCHESTRATOR', style: GoogleFonts.rajdhani(
+                        color: p.primary, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                    Text('Zentrales Koordinationssystem · 6 Agenten aktiv',
+                        style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
+                    const SizedBox(height: 6),
+                    Row(children: [
+                      Container(width: 8, height: 8, decoration: BoxDecoration(
+                          shape: BoxShape.circle, color: p.positive,
+                          boxShadow: [BoxShadow(color: p.positive.withValues(alpha: _pulseCtrl.value * 0.7), blurRadius: 8)])),
+                      const SizedBox(width: 6),
+                      Text('ONLINE · Effizienz: 96.8%', style: GoogleFonts.spaceMono(
+                          color: p.positive, fontSize: 9, fontWeight: FontWeight.bold)),
+                    ]),
+                  ],
+                )),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('847.2M', style: GoogleFonts.rajdhani(color: p.accent, fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text('Datenpunkte/Tag', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 7)),
+                    const SizedBox(height: 4),
+                    Text('74.3%', style: GoogleFonts.rajdhani(color: p.positive, fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text('Treffsicherheit', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 7)),
+                  ],
+                ),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Agent-Pipeline
+          _sectionHeader('ANALYSE-PIPELINES', p),
+          const SizedBox(height: 8),
+          ...pipelines.map((pipe) => _buildPipelineCard(pipe, p)),
+          const SizedBox(height: 16),
+
+          // Entscheidungs-Log
+          _sectionHeader('ENTSCHEIDUNGS-LOG (Live)', p),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF0A0F1A),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: p.primary.withValues(alpha: 0.15)),
+            ),
+            child: Column(
+              children: decisions.asMap().entries.map((e) {
+                final i = e.key;
+                final d = e.value;
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    border: i < decisions.length - 1
+                        ? Border(bottom: BorderSide(color: p.primary.withValues(alpha: 0.08)))
+                        : null,
+                  ),
+                  child: Row(children: [
+                    Container(
+                      width: 6, height: 6,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: d.executed ? p.positive : p.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(d.action, style: GoogleFonts.exo(
+                            color: p.textPrimary, fontSize: 11, fontWeight: FontWeight.w500)),
+                        Text(d.timestamp, style: GoogleFonts.spaceMono(
+                            color: p.textSecondary, fontSize: 8)),
+                      ],
+                    )),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: d.status == 'AUSGEFÜHRT'
+                            ? p.positive.withValues(alpha: 0.12)
+                            : d.status == 'AUSSTEHEND'
+                                ? p.accent.withValues(alpha: 0.12)
+                                : p.textSecondary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: Text(d.status, style: GoogleFonts.spaceMono(
+                          color: d.status == 'AUSGEFÜHRT'
+                              ? p.positive
+                              : d.status == 'AUSSTEHEND'
+                                  ? p.accent
+                                  : p.textSecondary,
+                          fontSize: 7, fontWeight: FontWeight.bold)),
+                    ),
+                  ]),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Orchestrator Steuerung
+          _sectionHeader('STEUERUNG', p),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(child: _OrchestratorBtn(
+              label: 'FULL SCAN',
+              icon: Icons.radar,
+              color: p.primary,
+              onTap: () {},
+              palette: p,
+            )),
+            const SizedBox(width: 8),
+            Expanded(child: _OrchestratorBtn(
+              label: 'REBALANCE',
+              icon: Icons.balance,
+              color: p.accent,
+              onTap: () {},
+              palette: p,
+            )),
+            const SizedBox(width: 8),
+            Expanded(child: _OrchestratorBtn(
+              label: 'RESET',
+              icon: Icons.refresh,
+              color: p.negative,
+              onTap: () {},
+              palette: p,
+            )),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPipelineCard(_OPipeline pipe, dynamic p) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: p.primary.withValues(alpha: 0.12)),
+      ),
+      child: Row(children: [
+        Container(
+          width: 8, height: 8,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: pipe.active ? p.positive : p.textSecondary,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(pipe.name, style: GoogleFonts.rajdhani(
+                color: p.textPrimary, fontSize: 12, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 3),
+            Row(children: pipe.agents.asMap().entries.map((e) => Row(mainAxisSize: MainAxisSize.min, children: [
+              if (e.key > 0) Icon(Icons.arrow_right, color: p.primary.withValues(alpha: 0.4), size: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: p.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(e.value, style: GoogleFonts.spaceMono(
+                    color: p.primary, fontSize: 7)),
+              ),
+            ])).toList()),
+          ],
+        )),
+        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text('${pipe.accuracy}%', style: GoogleFonts.rajdhani(
+              color: p.positive, fontSize: 14, fontWeight: FontWeight.bold)),
+          Text('Genauigkeit', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 7)),
+        ]),
+      ]),
+    );
+  }
 }
 
 // ── Agent Card ─────────────────────────────────────────
@@ -1077,4 +1313,50 @@ class _Agent {
   final IconData icon;
   double weight, confidence;
   _Agent(this.name, this.description, this.icon, this.weight, this.confidence, this.status);
+}
+
+// ── Orchestrator Data Models ───────────────────────────
+class _OPipeline {
+  final String name;
+  final List<String> agents;
+  final int accuracy;
+  final bool active;
+  const _OPipeline(this.name, this.agents, this.accuracy, this.active);
+}
+
+class _ODecision {
+  final String action;
+  final String timestamp;
+  final String status;
+  final bool executed;
+  const _ODecision(this.action, this.timestamp, this.status, this.executed);
+}
+
+class _OrchestratorBtn extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+  final dynamic palette;
+  const _OrchestratorBtn({required this.label, required this.icon, required this.color, required this.onTap, required this.palette});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 4),
+          Text(label, style: GoogleFonts.spaceMono(color: color, fontSize: 8, fontWeight: FontWeight.bold)),
+        ]),
+      ),
+    );
+  }
 }

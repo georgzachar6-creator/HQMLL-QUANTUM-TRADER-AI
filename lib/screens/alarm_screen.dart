@@ -185,7 +185,7 @@ class _AlarmScreenState extends State<AlarmScreen>
   }
 
   Widget _buildTabBar(dynamic p) {
-    final tabs = ['Meine Alarme', 'Emma Signale', 'Verlauf'];
+    final tabs = ['Meine Alarme', 'Emma Signale', 'Verlauf', 'KI-Creator'];
     return Container(
       height: 42,
       color: p.surface,
@@ -219,6 +219,7 @@ class _AlarmScreenState extends State<AlarmScreen>
       case 0: return _buildAlertsTab(p);
       case 1: return _buildSignalsTab(p);
       case 2: return _buildHistoryTab(p);
+      case 3: return _buildKICreatorTab(p);
       default: return _buildAlertsTab(p);
     }
   }
@@ -645,6 +646,197 @@ class _AlarmScreenState extends State<AlarmScreen>
     );
   }
 
+  // ── KI-Alarm-Creator Tab ───────────────────────
+  Widget _buildKICreatorTab(dynamic p) {
+    const smartSuggestions = [
+      _SmartAlarm('BTC', 'BTC \$72.000 – Ausbruch-Signal', 72000.0, true, 89, 'Breakout über Widerstand. MA200 + Golden Cross bestätigt. Starkes Kaufsignal.'),
+      _SmartAlarm('BTC', 'BTC \$62.000 – Support-Alarm', 62000.0, false, 84, 'Wichtige Support-Zone. Unter diesem Niveau Drawdown-Risiko erhöht.'),
+      _SmartAlarm('ETH', 'ETH \$3.800 – Resistance', 3800.0, true, 76, 'Psychologische Widerstandszone. Breakout würde Weg zu \$4.200 öffnen.'),
+      _SmartAlarm('QEMMA', 'QEMMA \$0.10 – Meilenstein', 0.10, true, 92, 'Historischer Widerstand. ATH-Versuch bei diesem Level sehr wahrscheinlich.'),
+      _SmartAlarm('SOL', 'SOL \$195 – Range-Oberkante', 195.0, true, 71, 'Oberkante der Konsolidierungszone. Breakout-Bestätigung abwarten.'),
+      _SmartAlarm('BNB', 'BNB \$620 – Momentum-Signal', 620.0, true, 73, 'RSI-Divergenz bullisch. Volumen-Anstieg + bullisches Muster erkannt.'),
+    ];
+
+    const patternAlarms = [
+      _PatternAlarm('Goldenes Kreuz', 'BTC MA50/MA200', Icons.star, 'In ~3 Tagen erwartet', true),
+      _PatternAlarm('RSI Überkauft', 'DOGE > 75', Icons.warning, 'Jetzt aktiv', false),
+      _PatternAlarm('Volumen-Spike', 'ETH +150% Vol.', Icons.bar_chart, 'Heute um 14:00', true),
+      _PatternAlarm('Whale-Alert', '> \$10M BTC Move', Icons.account_balance, 'Letzte 2h erkannt', true),
+    ];
+
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: [
+        // Emma KI Header
+        Container(
+          padding: const EdgeInsets.all(14),
+          margin: const EdgeInsets.only(bottom: 14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [p.primary.withValues(alpha: 0.08), p.accent.withValues(alpha: 0.04)]),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: p.primary.withValues(alpha: 0.25)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(colors: [p.primary, p.secondary]),
+                  ),
+                  child: Icon(Icons.psychology, color: p.background, size: 18),
+                ),
+                const SizedBox(width: 10),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('EMMA KI-ALARM CREATOR', style: GoogleFonts.rajdhani(
+                      color: p.primary, fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                  Text('Quantum-Mustererkennung · Pattern Genesis v3.1',
+                      style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
+                ])),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(color: p.positive.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
+                  child: Text('6 VORSCHLÄGE', style: GoogleFonts.spaceMono(color: p.positive, fontSize: 8, fontWeight: FontWeight.bold)),
+                ),
+              ]),
+              const SizedBox(height: 10),
+              Text(
+                'Emma analysiert Resonanzzyklen, RSI-Divergenzen und Whale-Aktivitäten, um optimale Alarm-Niveaus zu empfehlen.',
+                style: GoogleFonts.exo(color: p.textSecondary, fontSize: 10, height: 1.4),
+              ),
+            ],
+          ),
+        ),
+
+        // Smart Alarm Vorschläge
+        Text('EMMA SMART-ALARME', style: GoogleFonts.spaceMono(
+            color: p.textSecondary, fontSize: 9, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        ...smartSuggestions.map((s) => Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: p.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: p.primary.withValues(alpha: 0.12)),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: (s.isUp ? p.positive : p.negative).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(s.isUp ? Icons.arrow_upward : Icons.arrow_downward,
+                      color: s.isUp ? p.positive : p.negative, size: 10),
+                  const SizedBox(width: 3),
+                  Text(s.coin, style: GoogleFonts.rajdhani(
+                      color: s.isUp ? p.positive : p.negative,
+                      fontSize: 11, fontWeight: FontWeight.bold)),
+                ]),
+              ),
+              const SizedBox(width: 8),
+              Expanded(child: Text(s.label, style: GoogleFonts.exo(
+                  color: p.textPrimary, fontSize: 11, fontWeight: FontWeight.w500))),
+              // KI-Konfidenz
+              Text('${s.confidence}%', style: GoogleFonts.rajdhani(
+                  color: p.primary, fontSize: 13, fontWeight: FontWeight.bold)),
+            ]),
+            const SizedBox(height: 6),
+            Text(s.reasoning, style: GoogleFonts.exo(color: p.textSecondary, fontSize: 9, height: 1.3)),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(child: ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: LinearProgressIndicator(
+                  value: s.confidence / 100,
+                  backgroundColor: p.surfaceVariant,
+                  valueColor: AlwaysStoppedAnimation<Color>(s.isUp ? p.positive : p.negative),
+                  minHeight: 4,
+                ),
+              )),
+              const SizedBox(width: 10),
+              GestureDetector(
+                onTap: () {
+                  setState(() => _alerts.insert(0, _PriceAlert(
+                    s.coin, s.label, s.price, s.isUp, true, s.price * 0.97,
+                  )));
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    backgroundColor: p.surface,
+                    content: Text('✅ Alarm für ${s.coin} bei \$${s.price} aktiviert!',
+                        style: TextStyle(color: p.textPrimary)),
+                    duration: const Duration(seconds: 2),
+                  ));
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: p.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: p.primary.withValues(alpha: 0.3)),
+                  ),
+                  child: Text('+ Aktivieren', style: GoogleFonts.rajdhani(
+                      color: p.primary, fontSize: 11, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ]),
+          ]),
+        )),
+
+        const SizedBox(height: 16),
+
+        // Muster-Alarme
+        Text('MUSTER-TRIGGER', style: GoogleFonts.spaceMono(
+            color: p.textSecondary, fontSize: 9, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        ...patternAlarms.map((pa) => Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: pa.active ? p.surface : p.surfaceVariant,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: (pa.active ? p.accent : p.textSecondary).withValues(alpha: 0.2)),
+          ),
+          child: Row(children: [
+            Container(
+              width: 38, height: 38,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: (pa.active ? p.accent : p.textSecondary).withValues(alpha: 0.1),
+              ),
+              child: Icon(pa.icon, color: pa.active ? p.accent : p.textSecondary, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(pa.name, style: GoogleFonts.exo(
+                  color: pa.active ? p.textPrimary : p.textSecondary,
+                  fontSize: 11, fontWeight: FontWeight.w600)),
+              Text(pa.detail, style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
+              Text(pa.timing, style: GoogleFonts.exo(
+                  color: pa.active ? p.accent : p.textSecondary,
+                  fontSize: 9, fontStyle: FontStyle.italic)),
+            ])),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: (pa.active ? p.accent : p.textSecondary).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(pa.active ? 'BEOBACHTEN' : 'INAKTIV',
+                  style: GoogleFonts.spaceMono(
+                      color: pa.active ? p.accent : p.textSecondary,
+                      fontSize: 7, fontWeight: FontWeight.bold)),
+            ),
+          ]),
+        )),
+      ],
+    );
+  }
+
   void _showAddAlarmDialog(BuildContext context, dynamic p) {
     String selectedCoin = 'BTC';
     final priceCtrl = TextEditingController();
@@ -743,4 +935,20 @@ class _AlertHistory {
   final bool isPositive;
   final DateTime time;
   _AlertHistory(this.title, this.detail, this.isPositive, this.time);
+}
+
+// ── KI Creator Data Models ────────────────────────────
+class _SmartAlarm {
+  final String coin, label, reasoning;
+  final double price;
+  final bool isUp;
+  final int confidence;
+  const _SmartAlarm(this.coin, this.label, this.price, this.isUp, this.confidence, this.reasoning);
+}
+
+class _PatternAlarm {
+  final String name, detail, timing;
+  final IconData icon;
+  final bool active;
+  const _PatternAlarm(this.name, this.detail, this.icon, this.timing, this.active);
 }

@@ -18,7 +18,7 @@ class _OracleScreenState extends State<OracleScreen>
   late AnimationController _waveCtrl;
   late AnimationController _signalPulse;
   bool _isThinking = false;
-  int _oracleTab = 0; // 0=Chat, 1=Signale
+  int _oracleTab = 0; // 0=Chat, 1=Signale, 2=Prognosen
 
   final List<_ChatMessage> _messages = [
     _ChatMessage(
@@ -210,10 +210,15 @@ class _OracleScreenState extends State<OracleScreen>
             _OracleTabBtn(label: 'Live-Signale', icon: Icons.radar,
                 selected: _oracleTab == 1, palette: p,
                 onTap: () => setState(() => _oracleTab = 1)),
+            _OracleTabBtn(label: 'Prognosen', icon: Icons.auto_graph,
+                selected: _oracleTab == 2, palette: p,
+                onTap: () => setState(() => _oracleTab = 2)),
           ]),
         ),
         // ── Signals View ─────────────────────────────
         if (_oracleTab == 1) Expanded(child: _buildSignalsView(p)),
+        // ── Prognosen View ───────────────────────────
+        if (_oracleTab == 2) Expanded(child: _buildPrognosenView(p)),
         // Quick Questions (only in chat mode)
         if (_oracleTab == 0) SizedBox(
           height: 40,
@@ -298,6 +303,171 @@ class _OracleScreenState extends State<OracleScreen>
           ),
         ),
       ],
+    );
+  }
+
+  // ── Prognosen View ──────────────────────────────
+  Widget _buildPrognosenView(dynamic p) {
+    const forecasts = [
+      _Forecast('BTC/USDT', '7 Tage', '+8.3%', 'Bullisch', 82, 'Goldenes Kreuz (MA50/MA200) + Resonanz-Verstärkung 17T-Zyklus. Unterstützung bei \$65k bestätigt.'),
+      _Forecast('ETH/USDT', '7 Tage', '+5.1%', 'Bullisch', 74, 'Layer-2-Aktivität +34% WoW. Gas-Gebühren sinken – bullisches Akkumulationsmuster erkannt.'),
+      _Forecast('QEMMA/USDT', '7 Tage', '+22%', 'Stark Bullisch', 91, 'Mining-APY steigt. Burn-Event in 6T. Resonanz-Score maximal: +0.94. ATH-Versuch wahrscheinlich.'),
+      _Forecast('SOL/USDT', '7 Tage', '-2.1%', 'Neutral', 58, 'Konsolidierungsphase zwischen \$175–195. Volumen rückläufig – kein klarer Trend erkennbar.'),
+      _Forecast('BTC/USDT', '30 Tage', '+24%', 'Stark Bullisch', 79, 'Historischer Halving-Effekt (+120T). Institutionelle Zuflüsse ETF: +\$2.1B letzte Woche. Ziel: \$84k.'),
+      _Forecast('ETH/USDT', '30 Tage', '+18%', 'Bullisch', 71, 'EIP-4844 Nacheffekte. Staking Yield 4.2%. Ziel: \$4.200. Risiko: Makrovolatilität Q3.'),
+      _Forecast('GESAMT MARKT', '30 Tage', '+15%', 'Positiv', 69, 'Fear & Greed: 68. Institutionelle Nachfrage stark. FED-Pause wahrscheinlich. Bull-Markt-Zyklus intakt.'),
+    ];
+
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: [
+        // KI-Prognose Header
+        Container(
+          padding: const EdgeInsets.all(14),
+          margin: const EdgeInsets.only(bottom: 14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [p.primary.withValues(alpha: 0.08), p.secondary.withValues(alpha: 0.04)],
+            ),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: p.primary.withValues(alpha: 0.2)),
+          ),
+          child: Row(children: [
+            AnimatedBuilder(
+              animation: _signalPulse,
+              builder: (_, __) => Icon(
+                Icons.psychology,
+                color: p.primary.withValues(alpha: 0.6 + _signalPulse.value * 0.4),
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('EMMA AI PROGNOSEN', style: GoogleFonts.rajdhani(
+                    color: p.primary, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                Text('Quantum-ML · Pattern Genesis · Risk Sentinel',
+                    style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
+              ],
+            )),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: p.positive.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
+              child: Text('LIVE', style: GoogleFonts.spaceMono(color: p.positive, fontSize: 9, fontWeight: FontWeight.bold)),
+            ),
+          ]),
+        ),
+        // Zeitraum-Chips
+        Row(children: [
+          Text('FILTER:', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
+          const SizedBox(width: 8),
+          ...['7T', '30T', 'ALLE'].map((t) => Container(
+            margin: const EdgeInsets.only(right: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: t == 'ALLE' ? p.primary.withValues(alpha: 0.15) : p.surfaceVariant,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: t == 'ALLE' ? p.primary.withValues(alpha: 0.4) : p.primary.withValues(alpha: 0.1)),
+            ),
+            child: Text(t, style: GoogleFonts.spaceMono(color: t == 'ALLE' ? p.primary : p.textSecondary, fontSize: 8)),
+          )),
+        ]),
+        const SizedBox(height: 12),
+        // Prognose-Karten
+        ...forecasts.map((f) => _buildForecastCard(f, p)),
+        // Disclaimer
+        Container(
+          padding: const EdgeInsets.all(10),
+          margin: const EdgeInsets.only(top: 8),
+          decoration: BoxDecoration(
+            color: p.surfaceVariant,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: p.textSecondary.withValues(alpha: 0.1)),
+          ),
+          child: Row(children: [
+            Icon(Icons.info_outline, color: p.textSecondary, size: 12),
+            const SizedBox(width: 6),
+            Expanded(child: Text(
+              'Alle Prognosen dienen nur zu Informationszwecken. Keine Anlageberatung. Grigori Saks · HQMLL v7.0',
+              style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 7),
+            )),
+          ]),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildForecastCard(_Forecast f, dynamic p) {
+    final isPos = !f.change.startsWith('-');
+    final changeColor = f.bullish.contains('Bullisch') ? p.positive
+        : f.bullish.contains('Neutral') ? p.textSecondary : p.negative;
+
+    return AnimatedBuilder(
+      animation: _signalPulse,
+      builder: (_, __) => Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: p.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isPos
+                ? p.positive.withValues(alpha: 0.12 + _signalPulse.value * 0.06)
+                : p.negative.withValues(alpha: 0.12),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: changeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(f.pair, style: GoogleFonts.spaceMono(
+                    color: changeColor, fontSize: 9, fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: p.surfaceVariant,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(f.horizon, style: GoogleFonts.spaceMono(
+                    color: p.textSecondary, fontSize: 8)),
+              ),
+              const Spacer(),
+              Text(f.change, style: GoogleFonts.rajdhani(
+                  color: isPos ? p.positive : p.negative,
+                  fontSize: 20, fontWeight: FontWeight.bold)),
+            ]),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(child: Text(f.bullish, style: GoogleFonts.exo(
+                  color: changeColor, fontSize: 11, fontWeight: FontWeight.w600))),
+              Text('${f.confidence}%', style: GoogleFonts.spaceMono(
+                  color: p.primary, fontSize: 11, fontWeight: FontWeight.bold)),
+            ]),
+            const SizedBox(height: 6),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(3),
+              child: LinearProgressIndicator(
+                value: f.confidence / 100,
+                backgroundColor: p.surfaceVariant,
+                valueColor: AlwaysStoppedAnimation<Color>(changeColor),
+                minHeight: 4,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(f.reasoning, style: GoogleFonts.exo(
+                color: p.textSecondary, fontSize: 10, height: 1.4)),
+          ],
+        ),
+      ),
     );
   }
 
@@ -781,4 +951,15 @@ class _WavePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_WavePainter old) => old.t != t;
+}
+
+// ── Forecast Data Model ──────────────────────────
+class _Forecast {
+  final String pair;
+  final String horizon;
+  final String change;
+  final String bullish;
+  final int confidence;
+  final String reasoning;
+  const _Forecast(this.pair, this.horizon, this.change, this.bullish, this.confidence, this.reasoning);
 }

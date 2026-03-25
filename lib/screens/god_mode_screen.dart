@@ -352,7 +352,7 @@ class _GodModeScreenState extends State<GodModeScreen>
   //  DASHBOARD
   // ═══════════════════════════════════════════════
   Widget _buildDashboard(dynamic p) {
-    final tabs = ['ÜBERSICHT', 'AGENTEN', 'TRADES', 'SYSTEM'];
+    final tabs = ['ÜBERSICHT', 'AGENTEN', 'TRADES', 'SYSTEM', 'SHADOW'];
     return Column(
       children: [
         // Header
@@ -401,6 +401,7 @@ class _GodModeScreenState extends State<GodModeScreen>
               _buildAgentMonitor(p),
               _buildTradeLog(p),
               _buildSystem(p),
+              _buildShadowResearch(p),
             ],
           ),
         ),
@@ -1152,6 +1153,185 @@ class _GodModeScreenState extends State<GodModeScreen>
       ),
     );
   }
+
+  // ═══ SHADOW RESEARCH ══════════════════════════════════
+  Widget _buildShadowResearch(dynamic p) {
+    const sources = [
+      _ShadowSource('Dark Pool Monitor', 'Institutionelle OTC-Transaktionen', Icons.visibility_off, true, '+\$2.1B BTC Akkumulation erkannt'),
+      _ShadowSource('Whale Alert Feed', 'Wallet-Bewegungen > \$10M', Icons.account_balance_wallet, true, '3 Wale kauften ETH: \$47.3M gesamt'),
+      _ShadowSource('Mempool Analyzer', 'Unbestätigte Transaktionen', Icons.memory, true, 'Hohe Aktivität: 87K txns/h'),
+      _ShadowSource('Exchange Sentiment', 'Orderbook-Tiefe + Funding Rates', Icons.analytics, true, 'BTC Funding: +0.0312% (bullisch)'),
+      _ShadowSource('Tor Research Net', 'Anonyme Marktintelligenz', Icons.security, false, 'Zugang gesperrt · God Mode Level 2'),
+      _ShadowSource('Insider Signal DB', 'Muster vor großen Bewegungen', Icons.bolt, true, '4 historische Muster aktiv erkannt'),
+    ];
+
+    const scenarios = [
+      _QScenario('Bull Case: BTC \$85K', 'BTC bricht über \$72K + Institutionen kaufen', 34, true),
+      _QScenario('Base Case: Konsolidierung', 'BTC seitwärts \$62K–\$72K für 2–3 Wochen', 41, true),
+      _QScenario('Bear Case: Korrektur', 'BTC fällt auf \$58K – Makro-Druck + FED', 18, false),
+      _QScenario('Black Swan: Flash Crash', 'Unerwartetes Ereignis – Drawdown > 20%', 7, false),
+    ];
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Warning Banner
+          Container(
+            padding: const EdgeInsets.all(10),
+            margin: const EdgeInsets.only(bottom: 14),
+            decoration: BoxDecoration(
+              color: p.negative.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: p.negative.withValues(alpha: 0.3)),
+            ),
+            child: Row(children: [
+              Icon(Icons.warning_amber, color: p.negative, size: 16),
+              const SizedBox(width: 8),
+              Expanded(child: Text(
+                'SHADOW RESEARCH – Nur für autorisierte Nutzer. Alle Daten vertraulich. Grigori Saks · God Mode aktiv',
+                style: GoogleFonts.spaceMono(color: p.negative, fontSize: 8),
+              )),
+            ]),
+          ),
+
+          // Shadow Quellen
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Text('GEHEIMQUELLEN', style: GoogleFonts.spaceMono(
+                color: p.textSecondary, fontSize: 9, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: p.positive.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text('5/6 AKTIV', style: GoogleFonts.spaceMono(color: p.positive, fontSize: 8, fontWeight: FontWeight.bold)),
+            ),
+          ]),
+          const SizedBox(height: 8),
+          ...sources.map((s) => Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: s.active ? p.surface : p.surfaceVariant,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: s.active ? p.primary.withValues(alpha: 0.15) : p.textSecondary.withValues(alpha: 0.1),
+              ),
+            ),
+            child: Row(children: [
+              Container(
+                width: 38, height: 38,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: (s.active ? p.primary : p.textSecondary).withValues(alpha: 0.1),
+                ),
+                child: Icon(s.icon, color: s.active ? p.primary : p.textSecondary, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(s.name, style: GoogleFonts.exo(
+                      color: s.active ? p.textPrimary : p.textSecondary,
+                      fontSize: 11, fontWeight: FontWeight.w600)),
+                  Text(s.description, style: GoogleFonts.spaceMono(
+                      color: p.textSecondary, fontSize: 8)),
+                  const SizedBox(height: 3),
+                  Text(s.signal, style: GoogleFonts.exo(
+                      color: s.active ? p.accent : p.textSecondary,
+                      fontSize: 10, fontStyle: FontStyle.italic)),
+                ],
+              )),
+              Container(
+                width: 8, height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: s.active ? p.positive : p.textSecondary,
+                ),
+              ),
+            ]),
+          )),
+
+          const SizedBox(height: 16),
+
+          // Quantum Simulator
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Text('QUANTUM SIMULATOR', style: GoogleFonts.spaceMono(
+                color: p.textSecondary, fontSize: 9, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: p.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text('4 SZENARIEN', style: GoogleFonts.spaceMono(color: p.primary, fontSize: 8)),
+            ),
+          ]),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0A0F1A),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: p.primary.withValues(alpha: 0.15)),
+            ),
+            child: Column(
+              children: [
+                Row(children: [
+                  Icon(Icons.computer, color: p.primary, size: 14),
+                  const SizedBox(width: 6),
+                  Text('Monte-Carlo Simulation · 10.000 Pfade · 30T Horizont',
+                      style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
+                ]),
+                const SizedBox(height: 12),
+                ...scenarios.map((sc) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Container(
+                          width: 8, height: 8,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: sc.bullish ? p.positive : p.negative,
+                          ),
+                        ),
+                        Expanded(child: Text(sc.label, style: GoogleFonts.exo(
+                            color: sc.bullish ? p.textPrimary : p.textSecondary,
+                            fontSize: 11, fontWeight: FontWeight.w500))),
+                        Text('${sc.probability}%', style: GoogleFonts.rajdhani(
+                            color: sc.bullish ? p.positive : p.negative,
+                            fontSize: 14, fontWeight: FontWeight.bold)),
+                      ]),
+                      const SizedBox(height: 3),
+                      Text(sc.condition, style: GoogleFonts.spaceMono(
+                          color: p.textSecondary, fontSize: 8)),
+                      const SizedBox(height: 4),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          value: sc.probability / 100,
+                          backgroundColor: p.surfaceVariant,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            sc.bullish ? p.positive : p.negative,
+                          ),
+                          minHeight: 4,
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ── Helper Widgets ─────────────────────────────────────
@@ -1300,4 +1480,19 @@ class _TradeLog {
   final bool isWin;
   final DateTime time;
   _TradeLog(this.symbol, this.side, this.price, this.amount, this.changePercent, this.isWin, this.time);
+}
+
+// ── Shadow Research Data Models ────────────────────────
+class _ShadowSource {
+  final String name, description, signal;
+  final IconData icon;
+  final bool active;
+  const _ShadowSource(this.name, this.description, this.icon, this.active, this.signal);
+}
+
+class _QScenario {
+  final String label, condition;
+  final int probability;
+  final bool bullish;
+  const _QScenario(this.label, this.condition, this.probability, this.bullish);
 }

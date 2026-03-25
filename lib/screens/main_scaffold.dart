@@ -129,11 +129,28 @@ class _MainScaffoldState extends State<MainScaffold>
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
                     children: [
-                      // Logo + Titel
-                      QuantumEyeWidget(
-                        palette: p,
-                        size: 32,
-                        animate: tp.quantumAnimations,
+                      // Logo + Titel – pulsierender Glow-Ring
+                      AnimatedBuilder(
+                        animation: _glowCtrl,
+                        builder: (_, child) => Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: p.primary.withValues(
+                                    alpha: 0.15 + _glowCtrl.value * 0.25),
+                                blurRadius: 10 + _glowCtrl.value * 8,
+                                spreadRadius: 1 + _glowCtrl.value * 2,
+                              ),
+                            ],
+                          ),
+                          child: child,
+                        ),
+                        child: QuantumEyeWidget(
+                          palette: p,
+                          size: 32,
+                          animate: tp.quantumAnimations,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Column(

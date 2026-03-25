@@ -271,7 +271,7 @@ class _WalletScreenState extends State<WalletScreen>
         Row(children: [
           Expanded(child: _ActionCard(icon: Icons.swap_horiz, label: 'Swap', sublabel: 'Token tauschen', color: p.primary, p: p, onTap: () => _showSwapDialog(context, p))),
           const SizedBox(width: 8),
-          Expanded(child: _ActionCard(icon: Icons.currency_exchange, label: 'Bridge', sublabel: 'Cross-Chain', color: p.secondary, p: p, onTap: () => _showComingSoon(context, p))),
+          Expanded(child: _ActionCard(icon: Icons.currency_exchange, label: 'Bridge', sublabel: 'Cross-Chain', color: p.secondary, p: p, onTap: () => _showBridgeDialog(context, p))),
           const SizedBox(width: 8),
           Expanded(child: _ActionCard(icon: Icons.savings_outlined, label: 'Staking', sublabel: 'Yield farming', color: p.accent, p: p, onTap: () => _showStakingDialog(context, p))),
         ]),
@@ -910,7 +910,7 @@ class _WalletScreenState extends State<WalletScreen>
         duration: const Duration(seconds: 2)));
   }
 
-  void _showComingSoon(BuildContext context, dynamic p) {
+  void _showBridgeDialog(BuildContext context, dynamic p) {
     // Vollständiger Cross-Chain Bridge Dialog
     String fromChain = 'Ethereum';
     String toChain = 'Solana';
