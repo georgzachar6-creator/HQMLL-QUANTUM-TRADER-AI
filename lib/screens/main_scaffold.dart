@@ -17,7 +17,8 @@ import 'alarm_screen.dart';
 import 'market_screen.dart';
 import 'ai_forge_screen.dart';
 import 'god_mode_screen.dart';
-import 'news_screen.dart';
+import 'dashboard_screen.dart';
+import 'download_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -32,16 +33,17 @@ class _MainScaffoldState extends State<MainScaffold>
   late AnimationController _glowCtrl;
 
   final List<_NavItem> _navItems = const [
+    _NavItem(icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard, label: 'DASHBOARD'),
     _NavItem(icon: Icons.remove_red_eye_outlined, activeIcon: Icons.remove_red_eye, label: 'ORACLE'),
     _NavItem(icon: Icons.candlestick_chart_outlined, activeIcon: Icons.candlestick_chart, label: 'TRADING'),
     _NavItem(icon: Icons.bar_chart_rounded, activeIcon: Icons.bar_chart, label: 'MARKT'),
-    _NavItem(icon: Icons.newspaper_outlined, activeIcon: Icons.newspaper_rounded, label: 'NEWS'),
     _NavItem(icon: Icons.pie_chart_outline, activeIcon: Icons.pie_chart, label: 'PORTFOLIO'),
-    _NavItem(icon: Icons.token_outlined, activeIcon: Icons.token, label: 'QEMMA'),
     _NavItem(icon: Icons.account_balance_wallet_outlined, activeIcon: Icons.account_balance_wallet, label: 'WALLET'),
+    _NavItem(icon: Icons.token_outlined, activeIcon: Icons.token, label: 'QEMMA'),
     _NavItem(icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome, label: 'AI FORGE'),
     _NavItem(icon: Icons.notifications_outlined, activeIcon: Icons.notifications, label: 'ALARMS'),
     _NavItem(icon: Icons.settings_outlined, activeIcon: Icons.settings, label: 'SETTINGS'),
+    _NavItem(icon: Icons.download_rounded, activeIcon: Icons.download, label: 'DOWNLOAD'),
   ];
 
   @override
@@ -65,16 +67,17 @@ class _MainScaffoldState extends State<MainScaffold>
     final p = tp.palette;
 
     final screens = [
+      const DashboardScreen(),
       const OracleScreen(),
       const TradingScreen(),
       const MarketScreen(),
-      const NewsScreen(),
       const PortfolioScreen(),
-      const TokenScreen(),
       const WalletScreen(),
+      const TokenScreen(),
       const AIForgeScreen(),
       const AlarmScreen(),
       const SettingsScreen(),
+      const DownloadScreen(),
     ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -259,32 +262,69 @@ class _MainScaffoldState extends State<MainScaffold>
   }
 
   Widget _buildFAB(dynamic p) {
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        color: p.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: p.primary.withValues(alpha: 0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: p.primary.withValues(alpha: 0.15),
-            blurRadius: 12,
-            spreadRadius: 0,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Download FAB (primär)
+        AnimatedBuilder(
+          animation: _glowCtrl,
+          builder: (_, __) => Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [p.primary, const Color(0xFF00A3CC)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: p.primary.withValues(alpha: 0.35 + _glowCtrl.value * 0.2),
+                  blurRadius: 14,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  // Navigate to Download screen (index = screens.length - 1 = 10)
+                  setState(() => _selectedIndex = 10);
+                },
+                child: const Icon(Icons.download_rounded, color: Colors.white, size: 26),
+              ),
+            ),
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(10),
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const QuantumMonitorScreen()),
-          ),
-          child: Icon(Icons.monitor_heart_outlined, color: p.primary, size: 20),
         ),
-      ),
+        const SizedBox(height: 6),
+        // Monitor FAB (sekundär)
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: p.surface,
+            borderRadius: BorderRadius.circular(9),
+            border: Border.all(color: p.primary.withValues(alpha: 0.35)),
+            boxShadow: [BoxShadow(color: p.primary.withValues(alpha: 0.1), blurRadius: 8)],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(9),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const QuantumMonitorScreen()),
+              ),
+              child: Icon(Icons.monitor_heart_outlined, color: p.primary, size: 18),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

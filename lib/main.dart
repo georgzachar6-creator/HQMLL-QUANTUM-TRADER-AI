@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
+import 'services/live_market_service.dart';
+import 'services/coinmarketcap_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/lock_screen.dart';
 
@@ -12,8 +14,12 @@ void main() async {
     statusBarIconBrightness: Brightness.light,
   ));
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => LiveMarketService()),
+        ChangeNotifierProvider(create: (_) => CoinMarketCapService()),
+      ],
       child: const HQMLLApp(),
     ),
   );

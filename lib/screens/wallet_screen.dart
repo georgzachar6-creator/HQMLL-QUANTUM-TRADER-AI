@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/quantum_eye_widget.dart';
+import '../widgets/asset_icon_widget.dart';
+import '../services/live_market_service.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -135,62 +138,97 @@ class _WalletScreenState extends State<WalletScreen>
   }
 
   // ── Balance Header ────────────────────────────
+  // ── Balance Header mit Live-Preisen ───────────
   Widget _buildBalanceHeader(dynamic p, ThemeProvider tp) {
-    final total = _assets.fold<double>(0, (s, a) => s + a.value);
+    final svc = context.watch<LiveMarketService>();
+    double total = 0;
+    for (final a in _assets) {
+      final livePrice = svc.quote(a.symbol)?.price ?? a.price;
+      total += a.balance * livePrice;
+    }
+    final totalEur = total * 0.923;
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [p.surface, p.surfaceVariant],
+          colors: [p.primary.withValues(alpha: 0.08), p.surface],
           begin: Alignment.topLeft, end: Alignment.bottomRight,
         ),
-        border: Border(bottom: BorderSide(color: p.primary.withValues(alpha: 0.15))),
+        border: Border(bottom: BorderSide(color: p.primary.withValues(alpha: 0.12))),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          QuantumEyeWidget(palette: p, size: 52, animate: tp.quantumAnimations),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Gesamtvermögen',
-                    style: GoogleFonts.exo(color: p.textSecondary, fontSize: 11, letterSpacing: 1)),
-                AnimatedBuilder(
-                  animation: _pulseCtrl,
-                  builder: (_, __) => Text(
-                    '\$${(total + _pulseCtrl.value * 12).toStringAsFixed(2)}',
-                    style: GoogleFonts.rajdhani(
-                        color: p.textPrimary, fontSize: 30, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Row(children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: p.positive.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text('+\$108.44 (1.94%)',
-                        style: TextStyle(color: p.positive, fontSize: 11, fontWeight: FontWeight.bold)),
-                  ),
-                  const SizedBox(width: 8),
-                  Text('24h', style: TextStyle(color: p.textSecondary, fontSize: 10)),
-                ]),
-              ],
+          Row(children: [
+            QuantumEyeWidget(palette: p, size: 42, animate: tp.quantumAnimations),
+            const SizedBox(width: 12),
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('HQMLL WALLET', style: GoogleFonts.spaceMono(
+                  color: p.primary, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+              Text('Grigori Saks · Quantum Portfolio', style: GoogleFonts.exo(
+                  color: p.textSecondary, fontSize: 9)),
+            ]),
+            const Spacer(),
+            AnimatedBuilder(animation: _pulseCtrl, builder: (_, __) => Row(children: [
+              Container(width: 7, height: 7, decoration: BoxDecoration(
+                shape: BoxShape.circle, color: p.positive,
+                boxShadow: [BoxShadow(color: p.positive.withValues(alpha: _pulseCtrl.value * 0.8), blurRadius: 8)],
+              )),
+              const SizedBox(width: 5),
+              Text('LIVE', style: GoogleFonts.spaceMono(color: p.positive, fontSize: 8, fontWeight: FontWeight.bold)),
+            ])),
+          ]),
+          const SizedBox(height: 14),
+          Text('Gesamtvermögen', style: GoogleFonts.spaceMono(
+              color: p.textSecondary, fontSize: 9, letterSpacing: 1)),
+          const SizedBox(height: 4),
+          AnimatedBuilder(
+            animation: _pulseCtrl,
+            builder: (_, __) => Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text('\$${_fmtBig(total + _pulseCtrl.value * 8)}', style: GoogleFonts.rajdhani(
+                  color: p.textPrimary, fontSize: 28, fontWeight: FontWeight.bold, height: 1)),
+              const SizedBox(width: 8),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text('€${_fmtBig(totalEur)}', style: GoogleFonts.rajdhani(
+                    color: p.textSecondary, fontSize: 15)),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 8),
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: p.positive.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
+              child: Text('+\$${(total * 0.0234).toStringAsFixed(0)} (2.34%) heute',
+                  style: TextStyle(color: p.positive, fontSize: 10, fontWeight: FontWeight.bold)),
             ),
-          ),
-          Column(
-            children: [
-              _QuickBtn(icon: Icons.send_outlined, label: 'Senden', color: p.primary, onTap: () => setState(() => _tabIndex = 1)),
-              const SizedBox(height: 6),
-              _QuickBtn(icon: Icons.call_received_outlined, label: 'Empfangen', color: p.secondary, onTap: () => setState(() => _tabIndex = 2)),
-            ],
-          ),
+            const Spacer(),
+            _WalletActionBtn(icon: Icons.send_outlined, label: 'Senden', color: p.primary,
+                onTap: () => setState(() => _tabIndex = 1)),
+            const SizedBox(width: 6),
+            _WalletActionBtn(icon: Icons.call_received_outlined, label: 'Empfangen', color: p.secondary,
+                onTap: () => setState(() => _tabIndex = 2)),
+            const SizedBox(width: 6),
+            _WalletActionBtn(icon: Icons.swap_horiz, label: 'Swap', color: p.accent,
+                onTap: () {}),
+          ]),
         ],
       ),
     );
   }
+
+  String _fmtBig(double v) {
+    if (v >= 1e6) return '${(v/1e6).toStringAsFixed(2)}M';
+    if (v >= 1000) {
+      return v.toStringAsFixed(0).replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},');
+    }
+    return v.toStringAsFixed(2);
+  }
+
 
   // ── Tab Bar ────────────────────────────────────
   Widget _buildTabBar(dynamic p) {
@@ -284,6 +322,10 @@ class _WalletScreenState extends State<WalletScreen>
 
   Widget _buildAssetCard(dynamic p, _WalletAsset a) {
     final isSelected = _selectedAsset == a.symbol;
+    final svc = context.watch<LiveMarketService>();
+    final livePrice = svc.quote(a.symbol)?.price ?? a.price;
+    final liveValue = a.balance * livePrice;
+
     return GestureDetector(
       onTap: () => setState(() => _selectedAsset = a.symbol),
       child: AnimatedContainer(
@@ -300,22 +342,8 @@ class _WalletScreenState extends State<WalletScreen>
         ),
         child: Row(
           children: [
-            // Token Icon
-            Container(
-              width: 42, height: 42,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [p.primary.withValues(alpha: 0.25), p.secondary.withValues(alpha: 0.15)],
-                ),
-                border: Border.all(color: p.primary.withValues(alpha: 0.3)),
-              ),
-              child: Center(
-                child: Text(a.symbol.length > 3 ? a.symbol.substring(0, 1) : a.symbol[0],
-                    style: GoogleFonts.rajdhani(
-                        color: p.primary, fontSize: 15, fontWeight: FontWeight.bold)),
-              ),
-            ),
+            // Token Icon – Original CoinGecko
+            AssetIconWidget(symbol: a.symbol, palette: p, size: 44),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -341,7 +369,7 @@ class _WalletScreenState extends State<WalletScreen>
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text('\$${a.value.toStringAsFixed(2)}',
+                Text('\$${liveValue.toStringAsFixed(2)}',
                     style: GoogleFonts.rajdhani(
                         color: p.textPrimary, fontSize: 15, fontWeight: FontWeight.bold)),
                 Text('${a.amount.toStringAsFixed(a.symbol == 'USDT' ? 0 : 4)} ${a.symbol}',
@@ -578,7 +606,108 @@ class _WalletScreenState extends State<WalletScreen>
             child: Text('Gesichert durch HQMLL Zero-Trust Security',
                 style: TextStyle(color: p.textSecondary, fontSize: 10)),
           ),
+          const SizedBox(height: 24),
+
+          // ─ FIAT Transfer Section ─
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [
+                const Color(0xFF003399).withValues(alpha: 0.15),
+                const Color(0xFF006400).withValues(alpha: 0.10),
+              ]),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFF85BB65).withValues(alpha: 0.35)),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                const Icon(Icons.currency_exchange, color: Color(0xFF85BB65), size: 16),
+                const SizedBox(width: 6),
+                Text('FIAT TRANSFER', style: GoogleFonts.rajdhani(
+                  color: const Color(0xFF85BB65), fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF85BB65).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text('SEPA · SWIFT', style: GoogleFonts.rajdhani(color: const Color(0xFF85BB65), fontSize: 9, fontWeight: FontWeight.w700)),
+                ),
+              ]),
+              const SizedBox(height: 12),
+              // EUR/USD amounts row
+              Row(children: [
+                Expanded(child: _fiatInputBox('EUR', '€', '500,00', p, const Color(0xFF003399))),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Column(children: [
+                    const Icon(Icons.swap_horiz, color: Color(0xFF85BB65), size: 20),
+                    Text('1:1.083', style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 9)),
+                  ]),
+                ),
+                Expanded(child: _fiatInputBox('USD', '\$', '541,50', p, const Color(0xFF006400))),
+              ]),
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(child: _fiatMethodBtn('SEPA Überweisung', Icons.account_balance, const Color(0xFF003399), p)),
+                const SizedBox(width: 8),
+                Expanded(child: _fiatMethodBtn('SWIFT Transfer', Icons.send_to_mobile, const Color(0xFF85BB65), p)),
+              ]),
+              const SizedBox(height: 10),
+              Row(children: [
+                Icon(Icons.info_outline, color: p.textSecondary, size: 12),
+                const SizedBox(width: 6),
+                Expanded(child: Text(
+                  'SEPA: kostenlos, 1-2 Werktage · SWIFT: ab 2€, 1-3 Banktage',
+                  style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 10),
+                )),
+              ]),
+            ]),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _fiatInputBox(String currency, String sym, String placeholder, dynamic p, Color accentColor) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: accentColor.withValues(alpha: 0.3)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(currency, style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 9, letterSpacing: 1)),
+        const SizedBox(height: 4),
+        Text('$sym $placeholder', style: GoogleFonts.rajdhani(color: p.text, fontSize: 16, fontWeight: FontWeight.w800)),
+      ]),
+    );
+  }
+
+  Widget _fiatMethodBtn(String label, IconData icon, Color color, dynamic p) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          backgroundColor: color.withValues(alpha: 0.9),
+          content: Text('$label wird vorbereitet...', style: GoogleFonts.rajdhani(color: Colors.white, fontWeight: FontWeight.w700)),
+          duration: const Duration(seconds: 2),
+        ));
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(icon, color: color, size: 14),
+          const SizedBox(width: 6),
+          Text(label, style: GoogleFonts.rajdhani(color: color, fontSize: 11, fontWeight: FontWeight.w700)),
+        ]),
       ),
     );
   }
@@ -727,50 +856,216 @@ class _WalletScreenState extends State<WalletScreen>
 
   // ── Receive Tab ────────────────────────────────
   Widget _buildReceiveTab(dynamic p) {
-    const address = '0x7Gf2Q...HQMLL1985sGS';
-    const solAddress = 'HQMLLqEmma1985SaksGrigori...XqZ9';
+    const ethAddress = '0x7Gf2QmL9kXs3aBvNpR4cYhW8dFtJ5eZ';
+    const solAddress = 'HQMLLqEmma85SaksGrigor1QkJ7mXzR9vBpLt3nW';
+    const btcAddress = '1HQMLL9Grigori1985SaksQuantumEm2XqZkJ';
+
+    final networks = [
+      const _NetworkAddress('Ethereum', 'ERC-20 · ETH / USDT / ERC20 Tokens', ethAddress, Icons.account_balance_wallet, Color(0xFF627EEA)),
+      const _NetworkAddress('Solana', 'SPL · QEMMA / SOL / SPL Tokens', solAddress, Icons.token, Color(0xFF9945FF)),
+      const _NetworkAddress('Bitcoin', 'BTC · Native SegWit', btcAddress, Icons.currency_bitcoin, Color(0xFFF7931A)),
+    ];
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          Text('Empfangen', style: GoogleFonts.rajdhani(color: p.primary, fontSize: 18, fontWeight: FontWeight.bold)),
+          // Header
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(Icons.call_received, color: p.primary, size: 18),
+            const SizedBox(width: 8),
+            Text('EMPFANGEN', style: GoogleFonts.rajdhani(color: p.primary, fontSize: 18, fontWeight: FontWeight.w800, letterSpacing: 2)),
+          ]),
           const SizedBox(height: 4),
-          Text('Senden Sie Assets an diese Adressen', style: TextStyle(color: p.textSecondary, fontSize: 12)),
+          Text('Senden Sie Assets an diese Wallet-Adressen', style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 12)),
           const SizedBox(height: 24),
-          // QR Code Placeholder
+
+          // Asset Selector
           Container(
-            width: 200, height: 200,
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: p.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: p.primary.withValues(alpha: 0.2)),
+            ),
+            child: Row(
+              children: ['QEMMA', 'BTC', 'ETH', 'SOL', 'USDT'].map((sym) {
+                final sel = _selectedAsset == sym;
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () { setState(() => _selectedAsset = sym); HapticFeedback.selectionClick(); },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      decoration: BoxDecoration(
+                        color: sel ? p.primary : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(child: Text(sym, style: GoogleFonts.rajdhani(
+                        color: sel ? p.background : p.textSecondary,
+                        fontSize: 10, fontWeight: FontWeight.w700,
+                      ))),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // QR Code (echtes QR-Widget)
+          Container(
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [BoxShadow(color: p.primary.withValues(alpha: 0.3), blurRadius: 20, spreadRadius: 2)],
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(color: p.primary.withValues(alpha: 0.25), blurRadius: 24, spreadRadius: 2),
+                BoxShadow(color: AssetIconWidget.symbolColor(_selectedAsset).withValues(alpha: 0.2), blurRadius: 16),
+              ],
             ),
-            child: CustomPaint(painter: _QRPainter(p)),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                QrImageView(
+                  data: _receiveAddress(_selectedAsset, ethAddress, solAddress, btcAddress),
+                  version: QrVersions.auto,
+                  size: 180,
+                  backgroundColor: Colors.white,
+                  eyeStyle: const QrEyeStyle(
+                    eyeShape: QrEyeShape.square,
+                    color: Colors.black,
+                  ),
+                  dataModuleStyle: const QrDataModuleStyle(
+                    dataModuleShape: QrDataModuleShape.square,
+                    color: Colors.black,
+                  ),
+                ),
+                // Center Logo
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4)],
+                  ),
+                  child: ClipOval(child: AssetIconWidget(symbol: _selectedAsset, palette: p, size: 36, showBorder: false)),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 20),
-          // Address Cards
-          _AddressCard('Ethereum / ERC-20', address, Icons.account_balance_wallet, p,
-              onCopy: () => _copyAddress(context, address, p)),
-          const SizedBox(height: 10),
-          _AddressCard('Solana / QEMMA', solAddress, Icons.token, p,
-              onCopy: () => _copyAddress(context, solAddress, p)),
-          const SizedBox(height: 20),
+
+          // Selected Address
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: p.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AssetIconWidget.symbolColor(_selectedAsset).withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  AssetIconWidget(symbol: _selectedAsset, palette: p, size: 24, showBorder: false),
+                  const SizedBox(width: 8),
+                  Text('$_selectedAsset Adresse', style: GoogleFonts.rajdhani(color: p.text, fontSize: 13, fontWeight: FontWeight.w700)),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () {
+                      final addr = _receiveAddress(_selectedAsset, ethAddress, solAddress, btcAddress);
+                      _copyAddress(context, addr, p);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: p.primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(children: [
+                        Icon(Icons.copy, color: p.primary, size: 12),
+                        const SizedBox(width: 4),
+                        Text('KOPIEREN', style: GoogleFonts.rajdhani(color: p.primary, fontSize: 10, fontWeight: FontWeight.w700)),
+                      ]),
+                    ),
+                  ),
+                ]),
+                const SizedBox(height: 8),
+                Text(
+                  _receiveAddress(_selectedAsset, ethAddress, solAddress, btcAddress),
+                  style: GoogleFonts.robotoMono(color: p.textSecondary, fontSize: 11),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Network Cards
+          ...networks.map((n) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _buildNetworkAddressCard(n, p),
+          )),
+          const SizedBox(height: 12),
+
+          // Warning
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: p.primary.withValues(alpha: 0.06),
+              color: const Color(0xFFFFAA00).withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: p.primary.withValues(alpha: 0.25)),
+              border: Border.all(color: const Color(0xFFFFAA00).withValues(alpha: 0.3)),
             ),
             child: Row(children: [
-              Icon(Icons.info_outline, color: p.primary, size: 16),
+              const Icon(Icons.warning_amber, color: Color(0xFFFFAA00), size: 16),
               const SizedBox(width: 8),
-              Expanded(child: Text('Senden Sie nur kompatible Assets an die jeweilige Adresse. Falsche Netzwerke führen zu Verlust.',
-                  style: TextStyle(color: p.textSecondary, fontSize: 11, height: 1.4))),
+              Expanded(child: Text(
+                'Nur kompatible Assets an jeweilige Adresse senden. Falsche Netzwerke führen zu unwiderruflichem Verlust!',
+                style: GoogleFonts.rajdhani(color: const Color(0xFFFFAA00), fontSize: 11, height: 1.4),
+              )),
             ]),
           ),
         ],
       ),
+    );
+  }
+
+  String _receiveAddress(String sym, String eth, String sol, String btc) {
+    if (sym == 'BTC') return btc;
+    if (sym == 'QEMMA' || sym == 'SOL') return sol;
+    return eth;
+  }
+
+  Widget _buildNetworkAddressCard(_NetworkAddress n, dynamic p) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: n.color.withValues(alpha: 0.2)),
+      ),
+      child: Row(children: [
+        Container(
+          width: 36, height: 36,
+          decoration: BoxDecoration(color: n.color.withValues(alpha: 0.15), shape: BoxShape.circle),
+          child: Icon(n.icon, color: n.color, size: 18),
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(n.network, style: GoogleFonts.rajdhani(color: p.text, fontSize: 13, fontWeight: FontWeight.w700)),
+          Text(n.type, style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 10)),
+          Text(
+            '${n.address.substring(0, 12)}...${n.address.substring(n.address.length - 6)}',
+            style: GoogleFonts.robotoMono(color: p.textSecondary, fontSize: 10),
+          ),
+        ])),
+        GestureDetector(
+          onTap: () => _copyAddress(context, n.address, p),
+          child: Icon(Icons.copy_outlined, color: p.primary, size: 18),
+        ),
+      ]),
     );
   }
 
@@ -1267,7 +1562,36 @@ class _WalletScreenState extends State<WalletScreen>
   }
 }
 
+// ── Wallet Action Button (Senden/Empfangen/Swap) ──────
+class _WalletActionBtn extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  const _WalletActionBtn({required this.icon, required this.label, required this.color, required this.onTap});
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(height: 2),
+          Text(label, style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.bold)),
+        ]),
+      ),
+    );
+  }
+}
+
 // ── Helper Widgets ─────────────────────────────────
+// ignore: unused_element
 class _QuickBtn extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -1419,9 +1743,11 @@ class _AddressCard extends StatelessWidget {
 // ── Data Classes ───────────────────────────────────
 class _WalletAsset {
   final String symbol, name, network;
-  final double amount, price;
-  _WalletAsset(this.symbol, this.name, this.amount, this.price, this.network);
-  double get value => amount * price;
+  final double balance, price;
+  // Legacy compat
+  double get amount => balance;
+  _WalletAsset(this.symbol, this.name, this.balance, this.price, this.network);
+  double get value => balance * price;
 }
 
 class _TxHistory {
@@ -1501,4 +1827,12 @@ class _BridgeInfoRow extends StatelessWidget {
       ],
     );
   }
+}
+
+// ── Network Address Data ───────────────────────────
+class _NetworkAddress {
+  final String network, type, address;
+  final IconData icon;
+  final Color color;
+  const _NetworkAddress(this.network, this.type, this.address, this.icon, this.color);
 }

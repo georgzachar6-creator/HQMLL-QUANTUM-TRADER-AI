@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/theme_provider.dart';
+import '../widgets/tradingview_widget.dart';
 
 class TradingScreen extends StatefulWidget {
   const TradingScreen({super.key});
@@ -32,6 +33,7 @@ class _TradingScreenState extends State<TradingScreen>
   double _takeProfitPct = 0.0;
   double _stopLossPct = 0.0;
   bool _showAdvanced = false;
+  bool _showTradingView = false; // TradingView vs lokaler Chart
   final TextEditingController _qtyCtrl = TextEditingController();
   final TextEditingController _limitCtrl = TextEditingController();
   final TextEditingController _stopCtrl = TextEditingController();
@@ -397,6 +399,24 @@ class _TradingScreenState extends State<TradingScreen>
                 ),
               ),
               const Spacer(),
+              // TradingView Toggle
+              GestureDetector(
+                onTap: () => setState(() => _showTradingView = !_showTradingView),
+                child: Container(
+                  margin: const EdgeInsets.only(right: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _showTradingView ? p.primary.withValues(alpha: 0.25) : p.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: p.primary.withValues(alpha: _showTradingView ? 0.6 : 0.3)),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.tv, color: p.primary, size: 11),
+                    const SizedBox(width: 3),
+                    Text('TV', style: GoogleFonts.rajdhani(color: p.primary, fontSize: 9, fontWeight: FontWeight.w800)),
+                  ]),
+                ),
+              ),
               // Kerzen / Linie Toggle
               GestureDetector(
                 onTap: () => setState(() => _showCandles = !_showCandles),
@@ -448,7 +468,16 @@ class _TradingScreenState extends State<TradingScreen>
             ],
           ),
           const SizedBox(height: 12),
-          SizedBox(
+          // TradingView vs Local Chart Toggle
+          if (_showTradingView)
+            TradingViewWidget(
+              symbol: _pairs[_selectedPair].symbol,
+              palette: p,
+              height: 280,
+              interval: _timeframe == '15M' ? '15' : _timeframe == '1H' ? '60' : _timeframe == '4H' ? '240' : _timeframe == '1D' ? 'D' : 'W',
+            )
+          else
+            SizedBox(
             height: 190,
             child: _showCandles
                 ? _buildCandleChart(p)
