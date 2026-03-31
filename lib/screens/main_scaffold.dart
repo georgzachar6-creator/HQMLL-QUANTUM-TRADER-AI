@@ -19,6 +19,7 @@ import 'ai_forge_screen.dart';
 import 'god_mode_screen.dart';
 import 'dashboard_screen.dart';
 import 'download_screen.dart';
+import 'enterprise_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -44,6 +45,7 @@ class _MainScaffoldState extends State<MainScaffold>
     _NavItem(icon: Icons.notifications_outlined, activeIcon: Icons.notifications, label: 'ALARMS'),
     _NavItem(icon: Icons.settings_outlined, activeIcon: Icons.settings, label: 'SETTINGS'),
     _NavItem(icon: Icons.download_rounded, activeIcon: Icons.download, label: 'DOWNLOAD'),
+    _NavItem(icon: Icons.verified_outlined, activeIcon: Icons.verified, label: 'ENTERPRISE'),
   ];
 
   @override
@@ -78,6 +80,7 @@ class _MainScaffoldState extends State<MainScaffold>
       const AlarmScreen(),
       const SettingsScreen(),
       const DownloadScreen(),
+      const EnterpriseScreen(),
     ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -294,7 +297,9 @@ class _MainScaffoldState extends State<MainScaffold>
                 onTap: () {
                   HapticFeedback.mediumImpact();
                   // Navigate to Download screen (index = screens.length - 1 = 10)
-                  setState(() => _selectedIndex = 10);
+                  setState(() => _selectedIndex = 10); // Download
+                // Long press → Enterprise
+
                 },
                 child: const Icon(Icons.download_rounded, color: Colors.white, size: 26),
               ),

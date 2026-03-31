@@ -1,7 +1,7 @@
 name: quantum_trader
-description: HQMLL Quantum Emma AI Trading Platform by Grigori Saks
+description: Quantum Trader AI System - Enterprise Edition by Grigori Saks · HQMLL
 publish_to: 'none'
-version: 1.0.0+1
+version: 10.0.0+100
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

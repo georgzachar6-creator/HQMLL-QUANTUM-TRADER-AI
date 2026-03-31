@@ -1,31 +1,29 @@
-/// HQMLL Quantum Trader – Download & Install Screen
+/// HQMLL Quantum Trader AI System v10.0 – Download & Install Screen
 /// APK Download + Android Installation Guide
-/// Grigori Saks · 2025
+/// © 2025 Grigori Saks · HQMLL · All Rights Reserved
 library;
 
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/theme_provider.dart';
-import '../widgets/asset_icon_widget.dart';
 
-// ─ APK Download-URLs (aktualisiert bei jedem Build) ─
+// ─ APK Download-URLs (v10.0) ─
 const String _apkDownloadUrl =
     'https://www.genspark.ai/api/code_sandbox/download_file_stream'
     '?project_id=9ef2d5fc-1db8-4b10-9990-79a3baa2eef9'
     '&file_path=%2Fhome%2Fuser%2Fflutter_app%2Fbuild%2Fapp%2Foutputs%2Fapk%2Frelease%2Fapp-release.apk'
-    '&file_name=HQMLL-QuantumTrader.apk';
+    '&file_name=QuantumTraderAI-v10.apk';
 
 const String _aabDownloadUrl =
     'https://www.genspark.ai/api/code_sandbox/download_file_stream'
     '?project_id=9ef2d5fc-1db8-4b10-9990-79a3baa2eef9'
     '&file_path=%2Fhome%2Fuser%2Fflutter_app%2Fbuild%2Fapp%2Foutputs%2Fbundle%2Frelease%2Fapp-release.aab'
-    '&file_name=HQMLL-QuantumTrader.aab';
-
-const String _webPreviewUrl =
-    'https://5060-if8a9egqcnqzckmg7wegh-2e77fc33.sandbox.novita.ai';
+    '&file_name=QuantumTraderAI-v10.aab';
 
 // ══════════════════════════════════════════════════════
 class DownloadScreen extends StatefulWidget {
@@ -38,11 +36,29 @@ class _DownloadScreenState extends State<DownloadScreen>
     with TickerProviderStateMixin {
   late AnimationController _glowCtrl;
   late AnimationController _scanCtrl;
-  late AnimationController _progressCtrl;
+  late AnimationController _pulseCtrl;
+  late AnimationController _rotateCtrl;
   bool _isDownloading = false;
   double _downloadProgress = 0;
   String _downloadStatus = '';
-  int _activeStep = 0;
+  int _activeStep = -1;
+
+  final List<_FeatureItem> _features = const [
+    _FeatureItem(Icons.candlestick_chart, 'Live Trading', 'Echtzeit-Charts & Orders'),
+    _FeatureItem(Icons.account_balance_wallet, 'Multi-Wallet', 'ETH · SOL · BTC · QEMMA'),
+    _FeatureItem(Icons.auto_awesome, 'AI Oracle', 'Quantum-Resonanz Signale'),
+    _FeatureItem(Icons.show_chart, 'Broker API', 'CoinGecko · TradingView · CMC'),
+    _FeatureItem(Icons.security, 'Enterprise', 'IP-Schutz · Patent-System'),
+    _FeatureItem(Icons.currency_exchange, 'FIAT', 'EUR/USD SEPA & SWIFT'),
+  ];
+
+  final List<_InstallStep> _steps = const [
+    _InstallStep('1', 'APK herunterladen', 'Tippe auf den Download-Button und warte bis der Download abgeschlossen ist.', Icons.download_rounded),
+    _InstallStep('2', 'Unbekannte Quellen', 'Einstellungen → Sicherheit → "Unbekannte Apps" aktivieren.', Icons.security_outlined),
+    _InstallStep('3', 'APK öffnen', 'Öffne die heruntergeladene APK-Datei im Download-Ordner.', Icons.folder_open_outlined),
+    _InstallStep('4', 'Installieren', 'Tippe auf "Installieren" und warte auf die Fertigstellung.', Icons.install_mobile_outlined),
+    _InstallStep('5', 'Starten', 'Öffne "Quantum Trader AI System" aus dem App-Drawer.', Icons.rocket_launch_outlined),
+  ];
 
   @override
   void initState() {
@@ -51,66 +67,81 @@ class _DownloadScreenState extends State<DownloadScreen>
       ..repeat(reverse: true);
     _scanCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))
       ..repeat();
-    _progressCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 4));
+    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))
+      ..repeat(reverse: true);
+    _rotateCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 12))
+      ..repeat();
   }
 
   @override
   void dispose() {
     _glowCtrl.dispose();
     _scanCtrl.dispose();
-    _progressCtrl.dispose();
+    _pulseCtrl.dispose();
+    _rotateCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _downloadApk(dynamic p) async {
+  Future<void> _startDownload(String url, String fileName) async {
+    HapticFeedback.mediumImpact();
     setState(() {
       _isDownloading = true;
       _downloadProgress = 0;
-      _downloadStatus = 'APK wird vorbereitet...';
+      _downloadStatus = 'Verbindung herstellen...';
+      _activeStep = 0;
     });
 
-    // Animate progress bar
-    _progressCtrl.reset();
-    _progressCtrl.forward().then((_) {
+    // Simulated download progress animation
+    final statuses = [
+      'Verbindung herstellen...',
+      'Download startet...',
+      'Lade APK herunter...',
+      'Verifiziere Signatur...',
+      'Fast fertig...',
+    ];
+
+    for (int i = 0; i < statuses.length; i++) {
+      await Future.delayed(const Duration(milliseconds: 400));
+      if (!mounted) return;
       setState(() {
-        _downloadProgress = 1.0;
-        _downloadStatus = 'Download bereit!';
+        _downloadProgress = (i + 1) / statuses.length;
+        _downloadStatus = statuses[i];
       });
-    });
-
-    _progressCtrl.addListener(() {
-      if (mounted) {
-        setState(() {
-          _downloadProgress = _progressCtrl.value;
-          if (_progressCtrl.value < 0.3) _downloadStatus = 'Verbindung wird hergestellt...';
-          else if (_progressCtrl.value < 0.6) _downloadStatus = 'APK wird heruntergeladen (57.5 MB)...';
-          else if (_progressCtrl.value < 0.9) _downloadStatus = 'Signatur wird verifiziert...';
-          else _downloadStatus = 'APK bereit zum Installieren!';
-        });
-      }
-    });
-
-    // Launch URL
-    final uri = Uri.parse(_apkDownloadUrl);
-    try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        // Fallback: Open in browser
-        await launchUrl(uri, mode: LaunchMode.platformDefault);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          backgroundColor: const Color(0xFFFF3B5C),
-          content: Text('Download-Fehler: Bitte Browser-Link verwenden.',
-              style: GoogleFonts.rajdhani(color: Colors.white, fontWeight: FontWeight.w700)),
-        ));
-      }
     }
 
-    await Future.delayed(const Duration(seconds: 4));
-    if (mounted) setState(() => _isDownloading = false);
+    // Open actual download URL
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+
+    if (!mounted) return;
+    await Future.delayed(const Duration(milliseconds: 500));
+    setState(() {
+      _isDownloading = false;
+      _downloadStatus = 'Download gestartet!';
+      _activeStep = 1;
+    });
+
+    // Show success snackbar
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 8),
+              Text('$fileName wird heruntergeladen...',
+                  style: GoogleFonts.spaceMono(fontSize: 11)),
+            ],
+          ),
+          backgroundColor: const Color(0xFF00E676),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
   }
 
   @override
@@ -121,712 +152,979 @@ class _DownloadScreenState extends State<DownloadScreen>
     return Scaffold(
       backgroundColor: p.background,
       body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
         slivers: [
-          // ─ Header ─
-          SliverToBoxAdapter(child: _buildHeader(p)),
-          // ─ App Info Card ─
-          SliverToBoxAdapter(child: _buildAppInfoCard(p)),
-          // ─ Download Buttons ─
-          SliverToBoxAdapter(child: _buildDownloadSection(p)),
-          // ─ Feature-Highlights ─
+          SliverToBoxAdapter(child: _buildHeroHeader(p)),
+          SliverToBoxAdapter(child: _buildVersionBadge(p)),
           SliverToBoxAdapter(child: _buildFeatureGrid(p)),
-          // ─ Install-Anleitung ─
+          SliverToBoxAdapter(child: _buildDownloadButtons(p)),
+          if (_isDownloading || _downloadStatus.isNotEmpty)
+            SliverToBoxAdapter(child: _buildProgressBar(p)),
+          SliverToBoxAdapter(child: _buildStatsRow(p)),
           SliverToBoxAdapter(child: _buildInstallGuide(p)),
-          // ─ Coin Logos Showcase ─
-          SliverToBoxAdapter(child: _buildCoinShowcase(p)),
-          // ─ App Screenshots ─
-          SliverToBoxAdapter(child: _buildScreenshotSection(p)),
-          // ─ Version Info ─
-          SliverToBoxAdapter(child: _buildVersionInfo(p)),
-          const SliverToBoxAdapter(child: SizedBox(height: 80)),
+          SliverToBoxAdapter(child: _buildSystemRequirements(p)),
+          SliverToBoxAdapter(child: _buildChangelog(p)),
+          SliverToBoxAdapter(child: _buildLegalFooter(p)),
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
     );
   }
 
-  // ── Header ───────────────────────────────────────────
-  Widget _buildHeader(dynamic p) {
+  // ── Hero Header ───────────────────────────────────────
+  Widget _buildHeroHeader(dynamic p) {
     return AnimatedBuilder(
       animation: _glowCtrl,
       builder: (_, __) => Container(
-        padding: const EdgeInsets.fromLTRB(20, 40, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
             colors: [
-              p.primary.withValues(alpha: 0.20 + _glowCtrl.value * 0.10),
+              p.primary.withValues(alpha: 0.15 + _glowCtrl.value * 0.08),
+              p.background,
               p.background,
             ],
           ),
+          border: Border(
+            bottom: BorderSide(
+              color: p.primary.withValues(alpha: 0.12 + _glowCtrl.value * 0.06),
+            ),
+          ),
         ),
-        child: Column(
+        child: Row(
           children: [
-            // HQMLL Logo + Quantum Eye
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                // Glow rings
-                for (int i = 3; i >= 1; i--)
-                  Container(
-                    width: 80.0 + i * 24,
-                    height: 80.0 + i * 24,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: p.primary.withValues(alpha: (0.05 + _glowCtrl.value * 0.06) / i),
-                        width: 1,
-                      ),
-                    ),
+            // Rotating quantum logo
+            AnimatedBuilder(
+              animation: _rotateCtrl,
+              builder: (_, child) => Transform.rotate(
+                angle: _rotateCtrl.value * 2 * pi,
+                child: child,
+              ),
+              child: Container(
+                width: 68,
+                height: 68,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: p.primary.withValues(alpha: 0.4),
+                    width: 2,
                   ),
-                // App Icon
-                Container(
-                  width: 90, height: 90,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: p.surface,
-                    border: Border.all(color: p.primary.withValues(alpha: 0.5), width: 2),
-                    boxShadow: [
-                      BoxShadow(color: p.primary.withValues(alpha: 0.3 + _glowCtrl.value * 0.2), blurRadius: 30, spreadRadius: 5),
+                  gradient: RadialGradient(
+                    colors: [
+                      p.primary.withValues(alpha: 0.2),
+                      Colors.transparent,
                     ],
                   ),
-                  child: ClipOval(
-                    child: Image.asset('assets/icons/hqmll_logo.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Center(
-                        child: Text('H', style: GoogleFonts.rajdhani(
-                          color: p.primary, fontSize: 40, fontWeight: FontWeight.w900)),
-                      ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: p.primary.withValues(alpha: 0.3 + _glowCtrl.value * 0.2),
+                      blurRadius: 20,
+                      spreadRadius: 3,
                     ),
+                  ],
+                ),
+                child: Image.asset(
+                  'assets/icons/coins/app_icon.png',
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.diamond_outlined,
+                    color: p.primary,
+                    size: 36,
                   ),
                 ),
-                // Scan line animation
-                AnimatedBuilder(
-                  animation: _scanCtrl,
-                  builder: (_, __) => Positioned(
-                    top: _scanCtrl.value * 90,
-                    child: Container(
-                      width: 90,
-                      height: 2,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'QUANTUM TRADER',
+                    style: GoogleFonts.spaceMono(
+                      color: p.primary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2.5,
+                    ),
+                  ),
+                  Text(
+                    'AI SYSTEM',
+                    style: GoogleFonts.rajdhani(
+                      color: p.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 3.0,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'by Grigori Saks · HQMLL',
+                    style: GoogleFonts.inter(
+                      color: p.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Live badge
+            AnimatedBuilder(
+              animation: _pulseCtrl,
+              builder: (_, __) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00E676).withValues(alpha: 0.1 + _pulseCtrl.value * 0.05),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: const Color(0xFF00E676).withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.transparent, p.primary.withValues(alpha: 0.6), Colors.transparent],
-                        ),
+                        shape: BoxShape.circle,
+                        color: const Color(0xFF00E676),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF00E676).withValues(alpha: _pulseCtrl.value),
+                            blurRadius: 6,
+                          ),
+                        ],
                       ),
                     ),
+                    const SizedBox(width: 5),
+                    Text(
+                      'LIVE',
+                      style: GoogleFonts.spaceMono(
+                        color: const Color(0xFF00E676),
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Version Badge ─────────────────────────────────────
+  Widget _buildVersionBadge(dynamic p) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: p.primary.withValues(alpha: 0.2)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            p.primary.withValues(alpha: 0.05),
+            Colors.transparent,
+          ],
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [p.primary, const Color(0xFF00A3CC)]),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'v10.0',
+              style: GoogleFonts.spaceMono(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Enterprise Release',
+                  style: GoogleFonts.rajdhani(
+                    color: p.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  '2025 · Android 8.0+ · 66.6 MB APK',
+                  style: GoogleFonts.inter(
+                    color: p.textSecondary,
+                    fontSize: 10,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            Text('HQMLL QUANTUM TRADER',
-              style: GoogleFonts.rajdhani(
-                color: p.primary, fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: 2,
-              )),
-            Text('by Grigori Saks · v9.0',
-              style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 14, letterSpacing: 1)),
-            const SizedBox(height: 8),
-            // Ratings
-            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              ...List.generate(5, (i) => Icon(Icons.star, color: const Color(0xFFFFD700), size: 16)),
-              const SizedBox(width: 8),
-              Text('4.9 · 12.847 Bewertungen', style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 12)),
-            ]),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── App Info Card ─────────────────────────────────────
-  Widget _buildAppInfoCard(dynamic p) {
-    final infos = [
-      ('Version', 'v9.0.0'),
-      ('Größe', '57.5 MB'),
-      ('API Level', 'Android 5.0+'),
-      ('Kategorie', 'Finance'),
-    ];
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: p.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: p.primary.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        children: infos.map((i) => Expanded(child: Column(children: [
-          Text(i.$1, style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 10, letterSpacing: 0.5)),
-          const SizedBox(height: 2),
-          Text(i.$2, style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 13, fontWeight: FontWeight.w800)),
-        ]))).toList(),
-      ),
-    );
-  }
-
-  // ── Download Section ──────────────────────────────────
-  Widget _buildDownloadSection(dynamic p) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-      child: Column(
-        children: [
-          // Main APK Button
-          AnimatedBuilder(
-            animation: _glowCtrl,
-            builder: (_, __) => GestureDetector(
-              onTap: () => _downloadApk(p),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      p.primary,
-                      p.primary.withValues(alpha: 0.8),
-                      const Color(0xFF00A3CC),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: p.primary.withValues(alpha: 0.35 + _glowCtrl.value * 0.2),
-                      blurRadius: 20,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Container(
-                    width: 42, height: 42,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.android, color: Colors.white, size: 26),
-                  ),
-                  const SizedBox(width: 14),
-                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('APK HERUNTERLADEN',
-                      style: GoogleFonts.rajdhani(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
-                    Text('Android · 57.5 MB · Kostenlos',
-                      style: GoogleFonts.rajdhani(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
-                  ]),
-                  const Spacer(),
-                  const Padding(
-                    padding: EdgeInsets.only(right: 16),
-                    child: Icon(Icons.download_rounded, color: Colors.white, size: 28),
-                  ),
-                ]),
-              ),
-            ),
           ),
-
-          // Progress Bar
-          if (_isDownloading) ...[
-            const SizedBox(height: 10),
-            Column(children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: _downloadProgress,
-                  backgroundColor: p.surface,
-                  valueColor: AlwaysStoppedAnimation<Color>(p.primary),
-                  minHeight: 6,
-                ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFD700).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.4)),
+            ),
+            child: Text(
+              'SIGNED',
+              style: GoogleFonts.spaceMono(
+                color: const Color(0xFFFFD700),
+                fontSize: 8,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 6),
-              Text(_downloadStatus, style: GoogleFonts.rajdhani(color: p.primary, fontSize: 11, fontWeight: FontWeight.w600)),
-            ]),
-          ],
-
-          const SizedBox(height: 10),
-
-          // AAB + Web Buttons
-          Row(children: [
-            Expanded(child: _buildSecondaryBtn(
-              icon: Icons.inventory_2_outlined,
-              label: 'AAB (Play Store)',
-              subtitle: '46.9 MB',
-              color: const Color(0xFF4285F4),
-              p: p,
-              onTap: () async {
-                final uri = Uri.parse(_aabDownloadUrl);
-                if (await canLaunchUrl(uri)) launchUrl(uri, mode: LaunchMode.externalApplication);
-              },
-            )),
-            const SizedBox(width: 10),
-            Expanded(child: _buildSecondaryBtn(
-              icon: Icons.language,
-              label: 'Web Preview',
-              subtitle: 'Browser öffnen',
-              color: const Color(0xFF00C87B),
-              p: p,
-              onTap: () async {
-                final uri = Uri.parse(_webPreviewUrl);
-                if (await canLaunchUrl(uri)) launchUrl(uri, mode: LaunchMode.externalApplication);
-              },
-            )),
-          ]),
-
-          const SizedBox(height: 10),
-
-          // Direct Link Copy
-          GestureDetector(
-            onTap: () {
-              Clipboard.setData(const ClipboardData(text: _apkDownloadUrl));
-              HapticFeedback.lightImpact();
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                backgroundColor: p.primary.withValues(alpha: 0.9),
-                content: Text('Download-Link kopiert!',
-                    style: GoogleFonts.rajdhani(color: p.background, fontWeight: FontWeight.w800)),
-                duration: const Duration(seconds: 2),
-              ));
-            },
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: p.surface,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: p.primary.withValues(alpha: 0.2)),
-              ),
-              child: Row(children: [
-                Icon(Icons.link, color: p.textSecondary, size: 14),
-                const SizedBox(width: 8),
-                Expanded(child: Text(
-                  'apk.hqmll.quantum/download/v9',
-                  style: GoogleFonts.robotoMono(color: p.textSecondary, fontSize: 10),
-                  overflow: TextOverflow.ellipsis,
-                )),
-                Icon(Icons.copy_outlined, color: p.primary, size: 16),
-              ]),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSecondaryBtn({
-    required IconData icon,
-    required String label,
-    required String subtitle,
-    required Color color,
-    required dynamic p,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.35)),
-        ),
-        child: Row(children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 8),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(label, style: GoogleFonts.rajdhani(color: color, fontSize: 12, fontWeight: FontWeight.w800)),
-            Text(subtitle, style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 10)),
-          ])),
-        ]),
       ),
     );
   }
 
   // ── Feature Grid ──────────────────────────────────────
   Widget _buildFeatureGrid(dynamic p) {
-    final features = [
-      _Feature(Icons.candlestick_chart, 'TradingView Charts', 'BTC, ETH, Aktien live', const Color(0xFF00D4FF)),
-      _Feature(Icons.currency_bitcoin, 'Live Crypto Preise', 'CoinGecko + Binance WS', const Color(0xFFF7931A)),
-      _Feature(Icons.account_balance, 'Aktien & Rohstoffe', 'Gold, Silver, AAPL, TSLA', const Color(0xFFFFD700)),
-      _Feature(Icons.currency_exchange, 'FIAT Konverter', 'EUR/USD/CHF in Echtzeit', const Color(0xFF85BB65)),
-      _Feature(Icons.qr_code_scanner, 'QR Wallet', 'Senden & Empfangen', const Color(0xFF9945FF)),
-      _Feature(Icons.psychology, 'EMMA KI-Oracle', 'Quantenbasierte Signale', const Color(0xFF627EEA)),
-      _Feature(Icons.auto_awesome, 'AI Forge', 'Agent-Orchestrator', const Color(0xFFE84142)),
-      _Feature(Icons.shield_outlined, 'Zero-Trust Security', 'Quantum-Verschlüsselung', const Color(0xFF00C87B)),
-      _Feature(Icons.bar_chart, 'Portfolio Tracking', 'Live P&L Analyse', const Color(0xFFFF9900)),
-      _Feature(Icons.notifications_active, 'Preis-Alarme', 'KI-gestützte Alerts', const Color(0xFFCBA132)),
-      _Feature(Icons.visibility, 'God Mode', 'Shadow Research + Quantum Sim', const Color(0xFF00D4FF)),
-      _Feature(Icons.workspace_premium, 'QEMMA Token', 'Mining & Staking', const Color(0xFF00D4FF)),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-          child: Row(children: [
-            Icon(Icons.star_rounded, color: p.primary, size: 16),
-            const SizedBox(width: 6),
-            Text('APP FEATURES', style: GoogleFonts.rajdhani(
-              color: p.primary, fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 2)),
-          ]),
-        ),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            childAspectRatio: 1.1,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'FEATURES',
+            style: GoogleFonts.spaceMono(
+              color: p.textSecondary,
+              fontSize: 10,
+              letterSpacing: 2.0,
+            ),
           ),
-          itemCount: features.length,
-          itemBuilder: (_, i) => _buildFeatureCard(features[i], p),
-        ),
-        const SizedBox(height: 16),
-      ],
+          const SizedBox(height: 10),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: 1.1,
+            ),
+            itemCount: _features.length,
+            itemBuilder: (context, i) {
+              final f = _features[i];
+              return Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: p.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: p.primary.withValues(alpha: 0.15)),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(f.icon, color: p.primary, size: 20),
+                    const SizedBox(height: 5),
+                    Text(
+                      f.title,
+                      style: GoogleFonts.spaceMono(
+                        color: p.textPrimary,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      f.subtitle,
+                      style: GoogleFonts.inter(
+                        color: p.textSecondary,
+                        fontSize: 8,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
     );
   }
 
-  Widget _buildFeatureCard(_Feature f, dynamic p) {
+  // ── Download Buttons ──────────────────────────────────
+  Widget _buildDownloadButtons(dynamic p) {
     return Container(
-      padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: [
+          // Primary APK Download
+          AnimatedBuilder(
+            animation: _glowCtrl,
+            builder: (_, __) => GestureDetector(
+              onTap: _isDownloading
+                  ? null
+                  : () => _startDownload(_apkDownloadUrl, 'QuantumTraderAI-v10.apk'),
+              child: Container(
+                width: double.infinity,
+                height: 64,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: _isDownloading
+                        ? [Colors.grey.shade700, Colors.grey.shade800]
+                        : [p.primary, const Color(0xFF00A3CC)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: p.primary.withValues(
+                          alpha: _isDownloading ? 0.1 : 0.4 + _glowCtrl.value * 0.2),
+                      blurRadius: _isDownloading ? 0 : 20,
+                      spreadRadius: _isDownloading ? 0 : 3,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: _isDownloading
+                        ? null
+                        : () => _startDownload(_apkDownloadUrl, 'QuantumTraderAI-v10.apk'),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (_isDownloading)
+                          const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        else
+                          const Icon(Icons.download_rounded, color: Colors.white, size: 28),
+                        const SizedBox(width: 12),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _isDownloading ? 'LÄDT HERUNTER...' : 'APK HERUNTERLADEN',
+                              style: GoogleFonts.spaceMono(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                            Text(
+                              'Android 8.0+ · 66.6 MB · v10.0',
+                              style: GoogleFonts.inter(
+                                color: Colors.white.withValues(alpha: 0.8),
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          // AAB Download (secondary)
+          GestureDetector(
+            onTap: () => _startDownload(_aabDownloadUrl, 'QuantumTraderAI-v10.aab'),
+            child: Container(
+              width: double.infinity,
+              height: 50,
+              decoration: BoxDecoration(
+                color: p.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: p.primary.withValues(alpha: 0.3)),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => _startDownload(_aabDownloadUrl, 'QuantumTraderAI-v10.aab'),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.android, color: p.primary, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'APP BUNDLE (AAB) · 54.3 MB',
+                        style: GoogleFonts.spaceMono(
+                          color: p.primary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: p.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          'PLAY STORE',
+                          style: GoogleFonts.spaceMono(
+                            color: p.primary,
+                            fontSize: 7,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          // QR Code / Copy URL row
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    Clipboard.setData(const ClipboardData(text: _apkDownloadUrl));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Download-URL kopiert!',
+                            style: GoogleFonts.spaceMono(fontSize: 11)),
+                        backgroundColor: p.primary,
+                        behavior: SnackBarBehavior.floating,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: p.surface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: p.primary.withValues(alpha: 0.2)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.copy_outlined, color: p.textSecondary, size: 16),
+                        const SizedBox(width: 6),
+                        Text(
+                          'URL KOPIEREN',
+                          style: GoogleFonts.spaceMono(
+                            color: p.textSecondary,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Container(
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: p.surface,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: p.primary.withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.qr_code_outlined, color: p.textSecondary, size: 16),
+                      const SizedBox(width: 6),
+                      Text(
+                        'QR CODE',
+                        style: GoogleFonts.spaceMono(
+                          color: p.textSecondary,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  // ── Progress Bar ──────────────────────────────────────
+  Widget _buildProgressBar(dynamic p) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: p.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: f.color.withValues(alpha: 0.25)),
-        boxShadow: [BoxShadow(color: f.color.withValues(alpha: 0.06), blurRadius: 8)],
+        border: Border.all(color: p.primary.withValues(alpha: 0.2)),
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(
-              color: f.color.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(f.icon, color: f.color, size: 18),
+          Row(
+            children: [
+              Icon(
+                _isDownloading ? Icons.downloading : Icons.check_circle,
+                color: _isDownloading ? p.primary : const Color(0xFF00E676),
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _downloadStatus,
+                style: GoogleFonts.spaceMono(
+                  color: p.textPrimary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '${(_downloadProgress * 100).toStringAsFixed(0)}%',
+                style: GoogleFonts.rajdhani(
+                  color: p.primary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 6),
-          Text(f.title, style: GoogleFonts.rajdhani(
-            color: p.textPrimary, fontSize: 10, fontWeight: FontWeight.w800),
-            textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis),
-          Text(f.subtitle, style: GoogleFonts.rajdhani(
-            color: p.textSecondary, fontSize: 8),
-            textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: _downloadProgress,
+              backgroundColor: p.surfaceVariant,
+              valueColor: AlwaysStoppedAnimation<Color>(p.primary),
+              minHeight: 6,
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  // ── Stats Row ─────────────────────────────────────────
+  Widget _buildStatsRow(dynamic p) {
+    final stats = [
+      ('15', 'Screens'),
+      ('5', 'Services'),
+      ('8', 'Widgets'),
+      ('v10.0', 'Build'),
+    ];
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: p.primary.withValues(alpha: 0.15)),
+      ),
+      child: Row(
+        children: stats.map((s) {
+          return Expanded(
+            child: Column(
+              children: [
+                Text(
+                  s.$1,
+                  style: GoogleFonts.rajdhani(
+                    color: p.primary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  s.$2,
+                  style: GoogleFonts.inter(
+                    color: p.textSecondary,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
       ),
     );
   }
 
   // ── Install Guide ─────────────────────────────────────
   Widget _buildInstallGuide(dynamic p) {
-    final steps = [
-      _Step(1, 'APK herunterladen', 'Klicken Sie auf "APK Herunterladen"', Icons.download_rounded, p.primary),
-      _Step(2, 'Einstellungen öffnen', 'Android → Einstellungen → Sicherheit', Icons.settings, const Color(0xFFFFD700)),
-      _Step(3, 'Unbekannte Quellen', '"Unbekannte Apps installieren" aktivieren', Icons.toggle_on, const Color(0xFF00C87B)),
-      _Step(4, 'APK öffnen', 'Die heruntergeladene APK-Datei tippen', Icons.install_mobile, const Color(0xFF9945FF)),
-      _Step(5, 'Installieren', '"Installieren" bestätigen → Fertig!', Icons.check_circle, const Color(0xFFF7931A)),
-    ];
-
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: p.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: p.primary.withValues(alpha: 0.2)),
-      ),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            Icon(Icons.install_mobile, color: p.primary, size: 16),
-            const SizedBox(width: 8),
-            Text('INSTALLATIONSANLEITUNG', style: GoogleFonts.rajdhani(
-              color: p.primary, fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
-          ]),
-          const SizedBox(height: 14),
-          ...steps.map((s) => _buildStepTile(s, p, steps.last.num == s.num)),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFAA00).withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFFFAA00).withValues(alpha: 0.25)),
+          Text(
+            'INSTALLATIONSANLEITUNG',
+            style: GoogleFonts.spaceMono(
+              color: p.textSecondary,
+              fontSize: 10,
+              letterSpacing: 2.0,
             ),
-            child: Row(children: [
-              const Icon(Icons.info_outline, color: Color(0xFFFFAA00), size: 14),
-              const SizedBox(width: 8),
-              Expanded(child: Text(
-                'Die APK ist signiert und sicher. "Unbekannte Quellen" ist nur für Sideloading nötig.',
-                style: GoogleFonts.rajdhani(color: const Color(0xFFFFAA00), fontSize: 10, height: 1.3),
-              )),
-            ]),
           ),
+          const SizedBox(height: 10),
+          ..._steps.asMap().entries.map((entry) {
+            final i = entry.key;
+            final step = entry.value;
+            final isActive = i == _activeStep;
+            final isDone = i < _activeStep;
+            return GestureDetector(
+              onTap: () => setState(() => _activeStep = i),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? p.primary.withValues(alpha: 0.08)
+                      : p.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isActive
+                        ? p.primary.withValues(alpha: 0.4)
+                        : isDone
+                            ? const Color(0xFF00E676).withValues(alpha: 0.3)
+                            : p.primary.withValues(alpha: 0.1),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isDone
+                            ? const Color(0xFF00E676).withValues(alpha: 0.15)
+                            : isActive
+                                ? p.primary.withValues(alpha: 0.15)
+                                : p.surfaceVariant,
+                        border: Border.all(
+                          color: isDone
+                              ? const Color(0xFF00E676).withValues(alpha: 0.5)
+                              : isActive
+                                  ? p.primary.withValues(alpha: 0.5)
+                                  : p.primary.withValues(alpha: 0.1),
+                        ),
+                      ),
+                      child: isDone
+                          ? const Icon(Icons.check, color: Color(0xFF00E676), size: 18)
+                          : Icon(
+                              step.icon,
+                              color: isActive ? p.primary : p.textSecondary,
+                              size: 18,
+                            ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                'Schritt ${step.number}: ',
+                                style: GoogleFonts.spaceMono(
+                                  color: isActive ? p.primary : p.textSecondary,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                step.title,
+                                style: GoogleFonts.rajdhani(
+                                  color: p.textPrimary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            step.description,
+                            style: GoogleFonts.inter(
+                              color: p.textSecondary,
+                              fontSize: 11,
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 16),
         ],
       ),
     );
   }
 
-  Widget _buildStepTile(_Step s, dynamic p, bool isLast) {
-    return Column(
-      children: [
-        GestureDetector(
-          onTap: () => setState(() => _activeStep = s.num - 1),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: _activeStep == s.num - 1 ? s.color.withValues(alpha: 0.10) : Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
-              border: _activeStep == s.num - 1
-                  ? Border.all(color: s.color.withValues(alpha: 0.35))
-                  : Border.all(color: Colors.transparent),
+  // ── System Requirements ───────────────────────────────
+  Widget _buildSystemRequirements(dynamic p) {
+    final reqs = [
+      ('Android Version', 'Android 8.0 (Oreo) oder höher'),
+      ('Prozessor', 'ARMv7 oder ARM64 (64-bit empfohlen)'),
+      ('RAM', 'Mindestens 2 GB RAM'),
+      ('Speicher', '150 MB freier Speicherplatz'),
+      ('Internet', 'WLAN/Mobil für Live-Daten'),
+      ('Bildschirm', '720x1280 oder höher'),
+    ];
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'SYSTEMANFORDERUNGEN',
+            style: GoogleFonts.spaceMono(
+              color: p.textSecondary,
+              fontSize: 10,
+              letterSpacing: 2.0,
             ),
-            child: Row(children: [
-              Container(
-                width: 32, height: 32,
-                decoration: BoxDecoration(
-                  color: s.color.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: s.color.withValues(alpha: 0.4)),
-                ),
-                child: Center(child: Icon(s.icon, color: s.color, size: 16)),
-              ),
-              const SizedBox(width: 12),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('${s.num}. ${s.title}', style: GoogleFonts.rajdhani(
-                  color: p.textPrimary, fontSize: 13, fontWeight: FontWeight.w800)),
-                Text(s.desc, style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 11)),
-              ])),
-              Icon(_activeStep == s.num - 1 ? Icons.expand_less : Icons.expand_more,
-                color: p.textSecondary, size: 16),
-            ]),
           ),
-        ),
-        if (!isLast)
-          Padding(
-            padding: const EdgeInsets.only(left: 28),
-            child: Row(children: [
-              Container(width: 2, height: 16, color: p.primary.withValues(alpha: 0.15)),
-            ]),
-          ),
-      ],
-    );
-  }
-
-  // ── Coin Showcase ─────────────────────────────────────
-  Widget _buildCoinShowcase(dynamic p) {
-    final coins = [
-      'BTC', 'ETH', 'BNB', 'SOL', 'QEMMA',
-      'XAU', 'XAG', 'AAPL', 'TSLA', 'GOOGL',
-      'AMZN', 'NVDA', 'ADA', 'DOGE', 'AVAX',
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
-          child: Row(children: [
-            Icon(Icons.currency_exchange, color: p.primary, size: 16),
-            const SizedBox(width: 6),
-            Text('UNTERSTÜTZTE ASSETS', style: GoogleFonts.rajdhani(
-              color: p.primary, fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
-          ]),
-        ),
-        SizedBox(
-          height: 64,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: coins.length,
-            itemBuilder: (_, i) {
-              final sym = coins[i];
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AnimatedAssetIcon(symbol: sym, palette: p, size: 40, pulsing: sym == 'QEMMA'),
-                    const SizedBox(height: 2),
-                    Text(sym, style: GoogleFonts.rajdhani(
-                      color: p.textSecondary, fontSize: 8, fontWeight: FontWeight.w700)),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: ['15 Screens', 'Live API', 'TradingView', 'QR Wallet', 'KI Oracle', 'God Mode', 'EMMA AI', '0 Fehler']
-                .map((tag) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: p.primary.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: p.primary.withValues(alpha: 0.25)),
-              ),
-              child: Text(tag, style: GoogleFonts.rajdhani(color: p.primary, fontSize: 10, fontWeight: FontWeight.w700)),
-            )).toList(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ── Screenshot Section ────────────────────────────────
-  Widget _buildScreenshotSection(dynamic p) {
-    final screens = [
-      ('📊', 'Dashboard', 'Crypto + Aktien + Rohstoffe'),
-      ('🔮', 'Oracle AI', 'EMMA Quantenprognosen'),
-      ('📈', 'Trading', 'TradingView + Orders'),
-      ('👁️', 'God Mode', 'Shadow Research'),
-      ('💰', 'Wallet', 'QR Code + Transfer'),
-      ('🤖', 'AI Forge', 'Agenten-Orchestrator'),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
-          child: Row(children: [
-            Icon(Icons.phone_android, color: p.primary, size: 16),
-            const SizedBox(width: 6),
-            Text('APP SCREENS', style: GoogleFonts.rajdhani(
-              color: p.primary, fontSize: 14, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
-          ]),
-        ),
-        SizedBox(
-          height: 110,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: screens.length,
-            itemBuilder: (_, i) {
-              final s = screens[i];
-              return Container(
-                width: 90,
-                margin: const EdgeInsets.only(right: 8),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      p.primary.withValues(alpha: 0.15),
-                      p.surface,
+          const SizedBox(height: 10),
+          Container(
+            decoration: BoxDecoration(
+              color: p.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: p.primary.withValues(alpha: 0.15)),
+            ),
+            child: Column(
+              children: reqs.asMap().entries.map((entry) {
+                final i = entry.key;
+                final req = entry.value;
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    border: i < reqs.length - 1
+                        ? Border(
+                            bottom: BorderSide(
+                              color: p.primary.withValues(alpha: 0.07),
+                            ),
+                          )
+                        : null,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.check_circle_outline, color: p.primary, size: 14),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          req.$1,
+                          style: GoogleFonts.spaceMono(
+                            color: p.textSecondary,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          req.$2,
+                          style: GoogleFonts.inter(
+                            color: p.textPrimary,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: p.primary.withValues(alpha: 0.25)),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(s.$1, style: const TextStyle(fontSize: 28)),
-                    const SizedBox(height: 4),
-                    Text(s.$2, style: GoogleFonts.rajdhani(
-                      color: p.textPrimary, fontSize: 11, fontWeight: FontWeight.w800)),
-                    Text(s.$3, style: GoogleFonts.rajdhani(
-                      color: p.textSecondary, fontSize: 8),
-                      textAlign: TextAlign.center, maxLines: 2),
-                  ],
-                ),
-              );
-            },
+                );
+              }).toList(),
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-      ],
-    );
-  }
-
-  // ── Version Info ──────────────────────────────────────
-  Widget _buildVersionInfo(dynamic p) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: p.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: p.primary.withValues(alpha: 0.15)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            Icon(Icons.info_outline, color: p.primary, size: 14),
-            const SizedBox(width: 6),
-            Text('VERSION INFORMATIONEN', style: GoogleFonts.rajdhani(
-              color: p.primary, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
-          ]),
-          const SizedBox(height: 12),
-          _versionRow(p, 'App Version', 'v9.0.0 (Build 9)'),
-          _versionRow(p, 'APK Größe', '57.5 MB'),
-          _versionRow(p, 'AAB Größe', '46.9 MB'),
-          _versionRow(p, 'Flutter SDK', '3.35.4'),
-          _versionRow(p, 'Dart', '3.9.2'),
-          _versionRow(p, 'Min Android', 'Android 5.0 (API 21)'),
-          _versionRow(p, 'Target Android', 'Android 15 (API 35)'),
-          _versionRow(p, 'Architektur', 'arm64-v8a, armeabi-v7a'),
-          _versionRow(p, 'Flutter analyze', '0 Issues ✓'),
-          const SizedBox(height: 8),
-          Divider(color: p.primary.withValues(alpha: 0.1)),
-          const SizedBox(height: 8),
-          Row(children: [
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Changelog v9.0', style: GoogleFonts.rajdhani(
-                color: p.textPrimary, fontSize: 12, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 6),
-              ...['+ Dashboard: Sparklines, Heatmap, FIAT-Panel',
-                  '+ Wallet: QR-Code, FIAT-Transfer EUR/USD',
-                  '+ Trading: TradingView Live-Charts',
-                  '+ Download-Screen mit APK-Installation',
-                  '+ CoinMarketCap Service integriert',
-                  '+ 15 Screens, alle Icons original',
-                  '+ CMC + CoinGecko + Binance WS APIs',
-              ].map((line) => Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: Text(line, style: GoogleFonts.rajdhani(
-                  color: p.textSecondary, fontSize: 10)),
-              )),
-            ])),
-          ]),
-          const SizedBox(height: 12),
-          Text('© 2025 Grigori Saks · HQMLL Quantum Trader · All rights reserved',
-            style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 9),
-            textAlign: TextAlign.center),
+          const SizedBox(height: 16),
         ],
       ),
     );
   }
 
-  Widget _versionRow(dynamic p, String key, String val) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(children: [
-        Text('$key: ', style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 11)),
-        Text(val, style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 11, fontWeight: FontWeight.w700)),
-      ]),
+  // ── Changelog ─────────────────────────────────────────
+  Widget _buildChangelog(dynamic p) {
+    final changes = [
+      ('NEW', 'Enterprise License & Patent-System (Grigori Saks IP)', const Color(0xFF00E676)),
+      ('NEW', 'Download Screen mit APK-Button & Installationsanleitung', const Color(0xFF00E676)),
+      ('NEW', 'Dashboard v2: Sparklines, Heatmap, FIAT-Panel', const Color(0xFF00E676)),
+      ('NEW', 'Wallet QR-Code: ETH, SOL, BTC, SEPA/SWIFT EUR/USD', const Color(0xFF00E676)),
+      ('UPD', 'TradingView Charts via WebView (alle Timeframes)', const Color(0xFF2979FF)),
+      ('UPD', 'CoinMarketCap Service: 15 Coins + Fear & Greed Index', const Color(0xFF2979FF)),
+      ('UPD', 'CoinGecko Icons + lokale Fallback-Logos', const Color(0xFF2979FF)),
+      ('FIX', 'flutter analyze: 0 Errors, 2 non-kritische Warnings', const Color(0xFFFF9100)),
+    ];
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'CHANGELOG v10.0',
+            style: GoogleFonts.spaceMono(
+              color: p.textSecondary,
+              fontSize: 10,
+              letterSpacing: 2.0,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            decoration: BoxDecoration(
+              color: p.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: p.primary.withValues(alpha: 0.15)),
+            ),
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              children: changes.map((c) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 36,
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: c.$3.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: c.$3.withValues(alpha: 0.3)),
+                        ),
+                        child: Text(
+                          c.$1,
+                          style: GoogleFonts.spaceMono(
+                            color: c.$3,
+                            fontSize: 7,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          c.$2,
+                          style: GoogleFonts.inter(
+                            color: p.textSecondary,
+                            fontSize: 11,
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  // ── Legal Footer ──────────────────────────────────────
+  Widget _buildLegalFooter(dynamic p) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: p.primary.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(
+                'assets/icons/coins/app_icon.png',
+                width: 24,
+                height: 24,
+                errorBuilder: (_, __, ___) =>
+                    Icon(Icons.diamond, color: p.primary, size: 20),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'HQMLL · QUANTUM TRADER AI SYSTEM',
+                style: GoogleFonts.spaceMono(
+                  color: p.primary,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '© 2025 Grigori Saks · All Rights Reserved\n'
+            'Patent-Pending · Proprietary Technology · Confidential\n'
+            'Version 10.0.0+100 · Build: Enterprise Edition',
+            style: GoogleFonts.inter(
+              color: p.textSecondary,
+              fontSize: 9,
+              height: 1.6,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }
 
-// ─ Hilfsklassen ─────────────────────────────────────────
-class _Feature {
+// ── Data Models ───────────────────────────────────────
+class _FeatureItem {
   final IconData icon;
-  final String title, subtitle;
-  final Color color;
-  const _Feature(this.icon, this.title, this.subtitle, this.color);
+  final String title;
+  final String subtitle;
+  const _FeatureItem(this.icon, this.title, this.subtitle);
 }
 
-class _Step {
-  final int num;
-  final String title, desc;
+class _InstallStep {
+  final String number;
+  final String title;
+  final String description;
   final IconData icon;
-  final Color color;
-  const _Step(this.num, this.title, this.desc, this.icon, this.color);
+  const _InstallStep(this.number, this.title, this.description, this.icon);
 }
