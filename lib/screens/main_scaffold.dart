@@ -20,6 +20,11 @@ import 'god_mode_screen.dart';
 import 'dashboard_screen.dart';
 import 'download_screen.dart';
 import 'enterprise_screen.dart';
+import 'secure_vault_screen.dart';
+import 'ai_genius_screen.dart';
+import 'mining_screen.dart';
+import 'deploy_hub_screen.dart';
+import 'command_center_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -46,6 +51,11 @@ class _MainScaffoldState extends State<MainScaffold>
     _NavItem(icon: Icons.settings_outlined, activeIcon: Icons.settings, label: 'SETTINGS'),
     _NavItem(icon: Icons.download_rounded, activeIcon: Icons.download, label: 'DOWNLOAD'),
     _NavItem(icon: Icons.verified_outlined, activeIcon: Icons.verified, label: 'ENTERPRISE'),
+    _NavItem(icon: Icons.enhanced_encryption, activeIcon: Icons.enhanced_encryption, label: 'VAULT'),
+    _NavItem(icon: Icons.psychology_outlined, activeIcon: Icons.psychology, label: 'AI GENIUS'),
+    _NavItem(icon: Icons.hardware_outlined, activeIcon: Icons.hardware, label: 'MINING'),
+    _NavItem(icon: Icons.rocket_launch_outlined, activeIcon: Icons.rocket_launch, label: 'DEPLOY'),
+    _NavItem(icon: Icons.terminal_outlined, activeIcon: Icons.terminal, label: 'CMD'),
   ];
 
   @override
@@ -81,6 +91,11 @@ class _MainScaffoldState extends State<MainScaffold>
       const SettingsScreen(),
       const DownloadScreen(),
       const EnterpriseScreen(),
+      const SecureVaultScreen(),
+      const AIGeniusScreen(),
+      const MiningScreen(),
+      const DeployHubScreen(),
+      const CommandCenterScreen(),
     ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
 import 'services/live_market_service.dart';
 import 'services/coinmarketcap_service.dart';
+import 'services/secure_vault_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/lock_screen.dart';
 
@@ -19,6 +20,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => LiveMarketService()),
         ChangeNotifierProvider(create: (_) => CoinMarketCapService()),
+        ChangeNotifierProvider(create: (_) => SecureVaultService()),
       ],
       child: const HQMLLApp(),
     ),
