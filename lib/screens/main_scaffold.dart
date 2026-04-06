@@ -25,6 +25,7 @@ import 'ai_genius_screen.dart';
 import 'mining_screen.dart';
 import 'deploy_hub_screen.dart';
 import 'command_center_screen.dart';
+import 'fiat_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -56,6 +57,7 @@ class _MainScaffoldState extends State<MainScaffold>
     _NavItem(icon: Icons.hardware_outlined, activeIcon: Icons.hardware, label: 'MINING'),
     _NavItem(icon: Icons.rocket_launch_outlined, activeIcon: Icons.rocket_launch, label: 'DEPLOY'),
     _NavItem(icon: Icons.terminal_outlined, activeIcon: Icons.terminal, label: 'CMD'),
+    _NavItem(icon: Icons.euro_outlined, activeIcon: Icons.euro, label: 'FIAT'),
   ];
 
   @override
@@ -96,6 +98,7 @@ class _MainScaffoldState extends State<MainScaffold>
       const MiningScreen(),
       const DeployHubScreen(),
       const CommandCenterScreen(),
+      const FiatScreen(),
     ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(

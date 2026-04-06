@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="My App"
+        android:label="Quantum Trader AI System"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -43,6 +43,7 @@
         </intent>
     </queries>
 </manifest>
+
 
 
 

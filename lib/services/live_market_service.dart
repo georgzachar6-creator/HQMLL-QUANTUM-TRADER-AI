@@ -100,6 +100,13 @@ class LiveMarketService extends ChangeNotifier {
     'SOL': 'solana', 'ADA': 'cardano', 'DOGE': 'dogecoin',
     'AVAX': 'avalanche-2', 'DOT': 'polkadot', 'MATIC': 'matic-network',
     'LINK': 'chainlink', 'XRP': 'ripple', 'LTC': 'litecoin',
+    'KAS': 'kaspa', 'XMR': 'monero', 'ATOM': 'cosmos',
+    'UNI': 'uniswap', 'ALGO': 'algorand', 'VET': 'vechain',
+    'NEAR': 'near', 'ICP': 'internet-computer', 'FIL': 'filecoin',
+    'HBAR': 'hedera-hashgraph', 'EGLD': 'elrond-erd-2',
+    'AAVE': 'aave', 'GRT': 'the-graph', 'SAND': 'the-sandbox',
+    'MANA': 'decentraland', 'FTM': 'fantom', 'CRO': 'crypto-com-chain',
+    'USDT': 'tether', 'USDC': 'usd-coin',
   };
 
   // ── CoinGecko Icon URLs ────────────────────────────
@@ -116,10 +123,25 @@ class LiveMarketService extends ChangeNotifier {
     'LINK': 'https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png',
     'XRP':  'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png',
     'LTC':  'https://assets.coingecko.com/coins/images/2/small/litecoin.png',
+    'KAS':  'https://assets.coingecko.com/coins/images/25751/small/kaspa-icon-exchanges.png',
+    'XMR':  'https://assets.coingecko.com/coins/images/69/small/monero_logo.png',
+    'ATOM': 'https://assets.coingecko.com/coins/images/1481/small/cosmos_hub.png',
+    'UNI':  'https://assets.coingecko.com/coins/images/12504/small/uniswap-uni.png',
+    'ALGO': 'https://assets.coingecko.com/coins/images/4380/small/download.png',
+    'VET':  'https://assets.coingecko.com/coins/images/1167/small/VET_Token_Icon.png',
+    'NEAR': 'https://assets.coingecko.com/coins/images/10365/small/near_icon.png',
+    'ICP':  'https://assets.coingecko.com/coins/images/14495/small/Internet_Computer_logo.png',
+    'FIL':  'https://assets.coingecko.com/coins/images/12817/small/filecoin.png',
+    'HBAR': 'https://assets.coingecko.com/coins/images/3688/small/hbar.png',
+    'AAVE': 'https://assets.coingecko.com/coins/images/12645/small/AAVE.png',
+    'GRT':  'https://assets.coingecko.com/coins/images/13397/small/Graph_Token.png',
+    'USDT': 'https://assets.coingecko.com/coins/images/325/small/Tether.png',
+    'USDC': 'https://assets.coingecko.com/coins/images/6319/small/USD_Coin_icon.png',
     'QEMMA':'', // Local asset
     // Stocks use local assets
     'AAPL': '', 'TSLA': '', 'GOOGL': '', 'AMZN': '', 'MSFT': '',
-    'XAU':  '', 'XAG':  '', 'OIL':   '',
+    'NVDA': '', 'META': '', 'NFLX': '', 'AMD': '', 'INTC': '',
+    'XAU':  '', 'XAG':  '', 'OIL':   '', 'GAS': '', 'COPPER': '',
   };
 
   // ── State ──────────────────────────────────────────
@@ -166,6 +188,18 @@ class LiveMarketService extends ChangeNotifier {
       _seed('LINK',  'Chainlink',        'crypto',       14.32,  3.45,  420e6,   8.2e9,  14.78,  13.85),
       _seed('XRP',   'Ripple XRP',       'crypto',        0.524,  0.78,  1.1e9,  28.4e9,  0.534,  0.512),
       _seed('LTC',   'Litecoin',         'crypto',       82.40,  1.22,  380e6,   6.1e9,   83.8,   81.0),
+      _seed('KAS',   'Kaspa',            'crypto',        0.134,  8.21,  280e6,   3.2e9,  0.142,  0.122),
+      _seed('XMR',   'Monero',           'crypto',      158.40, -0.44,  180e6,   2.9e9,  161.2,  155.8),
+      _seed('ATOM',  'Cosmos',           'crypto',        9.84,  2.34,  240e6,   3.8e9,  10.12,   9.54),
+      _seed('UNI',   'Uniswap',          'crypto',       10.42,  1.88,  180e6,   6.2e9,  10.78,  10.12),
+      _seed('ALGO',  'Algorand',         'crypto',        0.182, -0.92,  120e6,   1.5e9,  0.188,  0.175),
+      _seed('VET',   'VeChain',          'crypto',        0.0382, 3.12,  98e6,   2.8e9,  0.0395, 0.0368),
+      _seed('NEAR',  'NEAR Protocol',    'crypto',        7.84,  4.21,  380e6,   8.2e9,   8.12,   7.48),
+      _seed('ICP',   'Internet Computer','crypto',       12.84,  1.45,  120e6,   6.0e9,  13.24,  12.42),
+      _seed('AAVE',  'Aave',             'crypto',      142.30,  2.88,  180e6,   2.1e9,  146.8,  138.4),
+      _seed('GRT',   'The Graph',        'crypto',        0.254,  5.12,  280e6,   2.4e9,  0.264,  0.241),
+      _seed('USDT',  'Tether USD',       'crypto',        1.000,  0.01,  52.1e9, 113e9,  1.001,  0.999),
+      _seed('USDC',  'USD Coin',         'crypto',        1.000,  0.00,  8.4e9,  36.8e9, 1.000,  1.000),
       // ─ Stocks ─
       _seed('AAPL',  'Apple Inc.',       'stock',       189.30, -0.42,  4.8e9,  2930e9,  191.2,  187.8),
       _seed('TSLA',  'Tesla Inc.',       'stock',       245.80,  2.18,  6.2e9,   783e9,  249.4,  241.2),
@@ -174,10 +208,15 @@ class LiveMarketService extends ChangeNotifier {
       _seed('MSFT',  'Microsoft Corp.',  'stock',       415.20,  0.56,  2.8e9,  3090e9,  417.8,  413.1),
       _seed('NVDA',  'NVIDIA Corp.',     'stock',       875.40,  3.21,  8.9e9,  2160e9,  884.2,  856.7),
       _seed('META',  'Meta Platforms',   'stock',       478.90,  1.78,  1.9e9,  1220e9,  482.4,  472.1),
+      _seed('NFLX',  'Netflix Inc.',     'stock',       628.40,  1.12,  1.2e9,   274e9,  635.8,  621.3),
+      _seed('AMD',   'Advanced Micro',   'stock',       162.30, -0.65,  3.1e9,   263e9,  164.8,  159.7),
+      _seed('INTC',  'Intel Corp.',      'stock',        31.20, -1.22,  2.4e9,   132e9,   32.1,   30.5),
       // ─ Commodities ─
       _seed('XAU',   'Gold (XAU/USD)',   'commodity',  2320.50,  0.34,  42e9,     0,    2338.4, 2305.2),
       _seed('XAG',   'Silver (XAG/USD)', 'commodity',    27.84,  0.71,   8e9,     0,    28.12,  27.51),
       _seed('OIL',   'Crude Oil WTI',    'commodity',    82.45, -0.89,  18e9,     0,    83.20,  81.60),
+      _seed('GAS',   'Natural Gas',      'commodity',     2.14, -1.45,   4e9,     0,     2.21,   2.08),
+      _seed('COPPER','Copper',           'commodity',     4.52,  0.42,   6e9,     0,     4.58,   4.47),
     ];
 
     for (final a in seedAssets) {

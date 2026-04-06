@@ -4,7 +4,6 @@
 library;
 
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -29,7 +28,6 @@ class _SecureVaultScreenState extends State<SecureVaultScreen>
   final _dataCtrl     = TextEditingController();
   bool _obscurePassword = true;
   int _tab = 0; // 0=vault, 1=encrypt, 2=keygen, 3=logs
-  String? _decryptedText;
   String? _generatedKey;
   String? _generatedToken;
   bool _isProcessing = false;
@@ -468,7 +466,7 @@ class _SecureVaultScreenState extends State<SecureVaultScreen>
   void _decryptEntry(VaultEntry entry, SecureVaultService vault, dynamic p) {
     final result = vault.decryptEntry(entry);
     if (result.success) {
-      setState(() => _decryptedText = result.plaintext);
+      
       _showDecryptDialog(result.plaintext!, p);
     } else {
       _showSnack(context, result.error ?? 'Fehler', p, error: true);
