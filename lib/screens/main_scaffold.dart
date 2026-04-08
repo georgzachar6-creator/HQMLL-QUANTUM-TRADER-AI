@@ -26,6 +26,8 @@ import 'mining_screen.dart';
 import 'deploy_hub_screen.dart';
 import 'command_center_screen.dart';
 import 'fiat_screen.dart';
+import 'trading_bot_screen.dart';
+import 'social_trading_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -58,6 +60,8 @@ class _MainScaffoldState extends State<MainScaffold>
     _NavItem(icon: Icons.rocket_launch_outlined, activeIcon: Icons.rocket_launch, label: 'DEPLOY'),
     _NavItem(icon: Icons.terminal_outlined, activeIcon: Icons.terminal, label: 'CMD'),
     _NavItem(icon: Icons.euro_outlined, activeIcon: Icons.euro, label: 'FIAT'),
+    _NavItem(icon: Icons.smart_toy_outlined, activeIcon: Icons.smart_toy, label: 'BOT'),
+    _NavItem(icon: Icons.groups_outlined, activeIcon: Icons.groups, label: 'SOCIAL'),
   ];
 
   @override
@@ -99,6 +103,8 @@ class _MainScaffoldState extends State<MainScaffold>
       const DeployHubScreen(),
       const CommandCenterScreen(),
       const FiatScreen(),
+      const TradingBotScreen(),
+      const SocialTradingScreen(),
     ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
