@@ -28,6 +28,10 @@ import 'command_center_screen.dart';
 import 'fiat_screen.dart';
 import 'trading_bot_screen.dart';
 import 'social_trading_screen.dart';
+import 'analytics_screen.dart';
+import 'defi_screen.dart';
+import 'intelligence_screen.dart';
+import 'news_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -62,6 +66,10 @@ class _MainScaffoldState extends State<MainScaffold>
     _NavItem(icon: Icons.euro_outlined, activeIcon: Icons.euro, label: 'FIAT'),
     _NavItem(icon: Icons.smart_toy_outlined, activeIcon: Icons.smart_toy, label: 'BOT'),
     _NavItem(icon: Icons.groups_outlined, activeIcon: Icons.groups, label: 'SOCIAL'),
+    _NavItem(icon: Icons.analytics_outlined, activeIcon: Icons.analytics, label: 'ANALYTICS'),
+    _NavItem(icon: Icons.account_balance_outlined, activeIcon: Icons.account_balance, label: 'DeFi'),
+    _NavItem(icon: Icons.shield_outlined, activeIcon: Icons.shield, label: 'INTEL'),
+    _NavItem(icon: Icons.newspaper_outlined, activeIcon: Icons.newspaper, label: 'NEWS'),
   ];
 
   @override
@@ -105,6 +113,10 @@ class _MainScaffoldState extends State<MainScaffold>
       const FiatScreen(),
       const TradingBotScreen(),
       const SocialTradingScreen(),
+      const AnalyticsScreen(),
+      const DeFiScreen(),
+      const IntelligenceScreen(),
+      const NewsScreen(),
     ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
