@@ -32,6 +32,7 @@ import 'analytics_screen.dart';
 import 'defi_screen.dart';
 import 'intelligence_screen.dart';
 import 'news_screen.dart';
+import 'writer_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -70,6 +71,7 @@ class _MainScaffoldState extends State<MainScaffold>
     _NavItem(icon: Icons.account_balance_outlined, activeIcon: Icons.account_balance, label: 'DeFi'),
     _NavItem(icon: Icons.shield_outlined, activeIcon: Icons.shield, label: 'INTEL'),
     _NavItem(icon: Icons.newspaper_outlined, activeIcon: Icons.newspaper, label: 'NEWS'),
+    _NavItem(icon: Icons.edit_note_rounded, activeIcon: Icons.edit_note, label: 'WRITER'),
   ];
 
   @override
@@ -117,6 +119,7 @@ class _MainScaffoldState extends State<MainScaffold>
       const DeFiScreen(),
       const IntelligenceScreen(),
       const NewsScreen(),
+      const WriterScreen(),
     ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
