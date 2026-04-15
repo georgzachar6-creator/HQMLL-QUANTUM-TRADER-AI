@@ -33,6 +33,7 @@ import 'defi_screen.dart';
 import 'intelligence_screen.dart';
 import 'news_screen.dart';
 import 'writer_screen.dart';
+import 'tr2_preview_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -72,6 +73,7 @@ class _MainScaffoldState extends State<MainScaffold>
     _NavItem(icon: Icons.shield_outlined, activeIcon: Icons.shield, label: 'INTEL'),
     _NavItem(icon: Icons.newspaper_outlined, activeIcon: Icons.newspaper, label: 'NEWS'),
     _NavItem(icon: Icons.edit_note_rounded, activeIcon: Icons.edit_note, label: 'WRITER'),
+    _NavItem(icon: Icons.hub_outlined, activeIcon: Icons.hub, label: 'TR2'),
   ];
 
   @override
@@ -120,6 +122,7 @@ class _MainScaffoldState extends State<MainScaffold>
       const IntelligenceScreen(),
       const NewsScreen(),
       const WriterScreen(),
+      const TR2PreviewScreen(),
     ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
