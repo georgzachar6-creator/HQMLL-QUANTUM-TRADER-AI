@@ -34,6 +34,7 @@ import 'intelligence_screen.dart';
 import 'news_screen.dart';
 import 'writer_screen.dart';
 import 'tr2_preview_screen.dart';
+import 'ai_chat_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -74,6 +75,7 @@ class _MainScaffoldState extends State<MainScaffold>
     _NavItem(icon: Icons.newspaper_outlined, activeIcon: Icons.newspaper, label: 'NEWS'),
     _NavItem(icon: Icons.edit_note_rounded, activeIcon: Icons.edit_note, label: 'WRITER'),
     _NavItem(icon: Icons.hub_outlined, activeIcon: Icons.hub, label: 'TR2'),
+    _NavItem(icon: Icons.smart_toy_rounded, activeIcon: Icons.smart_toy_rounded, label: 'AI CHAT'),
   ];
 
   @override
@@ -123,6 +125,7 @@ class _MainScaffoldState extends State<MainScaffold>
       const NewsScreen(),
       const WriterScreen(),
       const TR2PreviewScreen(),
+      const AIChatScreen(),
     ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -146,8 +149,6 @@ class _MainScaffoldState extends State<MainScaffold>
             ),
           ],
         ),
-        floatingActionButton: _buildFAB(p),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         bottomNavigationBar: _buildNavBar(p),
       ),
     );
@@ -303,75 +304,6 @@ class _MainScaffoldState extends State<MainScaffold>
           );
         },
       ),
-    );
-  }
-
-  Widget _buildFAB(dynamic p) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Download FAB (primär)
-        AnimatedBuilder(
-          animation: _glowCtrl,
-          builder: (_, __) => Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [p.primary, const Color(0xFF00A3CC)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: p.primary.withValues(alpha: 0.35 + _glowCtrl.value * 0.2),
-                  blurRadius: 14,
-                  spreadRadius: 2,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(14),
-                onTap: () {
-                  HapticFeedback.mediumImpact();
-                  // Navigate to Download screen (index = screens.length - 1 = 10)
-                  setState(() => _selectedIndex = 10); // Download
-                // Long press → Enterprise
-
-                },
-                child: const Icon(Icons.download_rounded, color: Colors.white, size: 26),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        // Monitor FAB (sekundär)
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: p.surface,
-            borderRadius: BorderRadius.circular(9),
-            border: Border.all(color: p.primary.withValues(alpha: 0.35)),
-            boxShadow: [BoxShadow(color: p.primary.withValues(alpha: 0.1), blurRadius: 8)],
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(9),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const QuantumMonitorScreen()),
-              ),
-              child: Icon(Icons.monitor_heart_outlined, color: p.primary, size: 18),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
