@@ -1,14 +1,14 @@
-/// HQMLL – Coin Mining System Screen
-/// All Coins · Hashrate · Earnings · Pool Stats
-/// © 2025 Grigori Saks · HQMLL · Patent-Pending
-library;
+// ============================================================
+// MINING SCREEN v2 – HQMLL Quantum Miner Dashboard
+// Live Hashrate, GPU Pool, Rewards, Calculator, Pool Stats
+// ============================================================
 
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 
 class MiningScreen extends StatefulWidget {
@@ -19,477 +19,882 @@ class MiningScreen extends StatefulWidget {
 
 class _MiningScreenState extends State<MiningScreen>
     with TickerProviderStateMixin {
+  late TabController _tab;
   late AnimationController _glowCtrl;
-  late AnimationController _pulseCtrl;
-  final Random _rng = Random();
-  Timer? _mineTimer;
+  late AnimationController _hashCtrl;
+  Timer? _liveTimer;
+  final _rand = Random();
 
-  bool _miningActive = true;
-  int _tab = 0;
+  // Mining State
+  bool _miningActive = false;
+  double _hashrate = 0;
+  double _targetHashrate = 142.6;
+  double _poolHashrate = 4821.3;
+  double _dailyReward = 0.00284;
+  double _totalMined = 1.04872;
+  double _pendingPayout = 0.00284;
+  double _efficiency = 94.7;
+  double _temperature = 68.4;
+  double _powerDraw = 285.0;
+  int _shareCount = 1847;
+  int _rejectedShares = 12;
+  double _profitUSD = 193.42;
+  double _btcPrice = 67842.0;
 
-  // All minable coins
-  late List<MinableCoin> _coins;
-  double _totalHashrate = 0;
-  double _dailyEarnings = 0;
-  double _totalMined = 0;
+  // GPU Workers
+  final List<Map<String, dynamic>> _gpus = [
+    {'name': 'RTX 4090', 'hashrate': 123.4, 'temp': 71, 'power': 320, 'fan': 62, 'mem': 'GDDR6X 24GB', 'active': true},
+    {'name': 'RTX 3080 Ti', 'hashrate': 89.2, 'temp': 68, 'power': 280, 'fan': 58, 'mem': 'GDDR6X 12GB', 'active': true},
+    {'name': 'RTX 3070', 'hashrate': 61.8, 'temp': 64, 'power': 220, 'fan': 52, 'mem': 'GDDR6 8GB', 'active': false},
+    {'name': 'RX 6800 XT', 'hashrate': 63.0, 'temp': 72, 'power': 250, 'fan': 65, 'mem': 'GDDR6 16GB', 'active': true},
+  ];
+
+  // Pool Options
+  final List<Map<String, dynamic>> _pools = [
+    {'name': 'HQMLL-POOL', 'url': 'pool.hqmll.io:3333', 'fee': '0.9%', 'miners': 3421, 'hashrate': '4.82 PH/s', 'selected': true, 'color': const Color(0xFF00FF88)},
+    {'name': 'F2Pool', 'url': 'btc.f2pool.com:3333', 'fee': '2.5%', 'miners': 84200, 'hashrate': '28.4 EH/s', 'selected': false, 'color': const Color(0xFF00AAFF)},
+    {'name': 'Antpool', 'url': 'stratum.antpool.com:3333', 'fee': '1.0%', 'miners': 120400, 'hashrate': '38.1 EH/s', 'selected': false, 'color': const Color(0xFFFF6B35)},
+    {'name': 'Slushpool', 'url': 'btc.slushpool.com:3333', 'fee': '2.0%', 'miners': 15800, 'hashrate': '9.2 EH/s', 'selected': false, 'color': const Color(0xFFAA44FF)},
+  ];
+
+  // Hashrate history
+  final List<double> _hashrateHistory = [];
+
+  // Calculator
+  final _calcHashCtrl = TextEditingController(text: '142.6');
+  final _calcPowerCtrl = TextEditingController(text: '285');
+  final _calcElecCtrl = TextEditingController(text: '0.12');
+  double _calcProfit = 0;
+  double _calcRevenue = 0;
+  double _calcCost = 0;
 
   @override
   void initState() {
     super.initState();
-    _glowCtrl  = AnimationController(vsync: this, duration: const Duration(seconds: 3))..repeat(reverse: true);
-    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat(reverse: true);
-    _initCoins();
-    _startMining();
+    _tab = TabController(length: 4, vsync: this);
+    _glowCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2500))
+      ..repeat(reverse: true);
+    _hashCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
+
+    // Init history
+    for (int i = 0; i < 60; i++) {
+      _hashrateHistory.add(130 + _rand.nextDouble() * 30);
+    }
+
+    _startLiveFeed();
+    _calculate();
+  }
+
+  void _startLiveFeed() {
+    _liveTimer = Timer.periodic(const Duration(milliseconds: 1200), (_) {
+      if (!mounted) return;
+      setState(() {
+        if (_miningActive) {
+          _hashrate = _targetHashrate + (_rand.nextDouble() - 0.5) * 8;
+          _temperature = 68 + _rand.nextDouble() * 6;
+          _efficiency = 93 + _rand.nextDouble() * 4;
+          _shareCount += _rand.nextInt(3);
+          _dailyReward = _hashrate * 0.0000199;
+          _profitUSD = _dailyReward * _btcPrice;
+          _hashrateHistory.add(_hashrate);
+          if (_hashrateHistory.length > 60) _hashrateHistory.removeAt(0);
+          // Update GPUs slightly
+          for (var gpu in _gpus) {
+            if (gpu['active'] == true) {
+              gpu['hashrate'] = (gpu['hashrate'] as double) + (_rand.nextDouble() - 0.5) * 2;
+              gpu['temp'] = ((gpu['temp'] as int) + (_rand.nextBool() ? 1 : -1)).clamp(55, 85);
+            }
+          }
+        }
+      });
+    });
+  }
+
+  void _calculate() {
+    final h = double.tryParse(_calcHashCtrl.text) ?? 142.6;
+    final p = double.tryParse(_calcPowerCtrl.text) ?? 285.0;
+    final e = double.tryParse(_calcElecCtrl.text) ?? 0.12;
+    _calcRevenue = h * 0.0000199 * _btcPrice;
+    _calcCost = (p / 1000) * 24 * e;
+    _calcProfit = _calcRevenue - _calcCost;
+  }
+
+  void _toggleMining() {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _miningActive = !_miningActive;
+      if (_miningActive) {
+        _hashrate = _targetHashrate;
+        _hashCtrl.forward(from: 0);
+      } else {
+        _hashrate = 0;
+      }
+    });
   }
 
   @override
   void dispose() {
+    _tab.dispose();
     _glowCtrl.dispose();
-    _pulseCtrl.dispose();
-    _mineTimer?.cancel();
+    _hashCtrl.dispose();
+    _liveTimer?.cancel();
+    _calcHashCtrl.dispose();
+    _calcPowerCtrl.dispose();
+    _calcElecCtrl.dispose();
     super.dispose();
-  }
-
-  void _initCoins() {
-    _coins = [
-      MinableCoin('QEMMA','HQMLL Token',  0.0847,  '12.45',  'SHA-3 Quantum',  true,  42.5,  1250.0),
-      MinableCoin('BTC',  'Bitcoin',       67842.5, '1.23',   'SHA-256',         false, 180.2, 0.00012),
-      MinableCoin('ETH',  'Ethereum',      3548.2,  '2.11',   'Ethash PoS',      true,  95.4,  0.0085),
-      MinableCoin('LTC',  'Litecoin',      82.4,    '-0.5',   'Scrypt',          true,  22.1,  0.42),
-      MinableCoin('RVN',  'Ravencoin',     0.021,   '5.3',    'KawPoW',          true,  310.5, 52.3),
-      MinableCoin('XMR',  'Monero',        167.8,   '0.8',    'RandomX',         true,  4.8,   0.18),
-      MinableCoin('ETC',  'Ethereum Classic', 26.4, '1.9',    'Etchash',         true,  88.6,  0.95),
-      MinableCoin('FLUX', 'Flux',          0.82,    '3.1',    'ZelHash',         true,  44.2,  8.4),
-      MinableCoin('ERG',  'Ergo',          1.24,    '2.8',    'Autolykos',       true,  67.3,  5.2),
-      MinableCoin('KAS',  'Kaspa',         0.112,   '8.4',    'kHeavyHash',      true,  2840.0,480.0),
-      MinableCoin('ZEC',  'Zcash',         28.6,    '-1.2',   'Equihash',        false, 12.4,  0.22),
-      MinableCoin('DOGE', 'Dogecoin',      0.148,   '4.2',    'Scrypt',          true,  880.0, 120.0),
-      MinableCoin('BCH',  'Bitcoin Cash',  456.3,   '0.6',    'SHA-256',         false, 28.3,  0.035),
-      MinableCoin('XNA',  'Neurai',        0.0014,  '11.2',   'KawPoW',          true,  1200.0,4800.0),
-      MinableCoin('ALPH', 'Alephium',      0.86,    '6.3',    'Blake3',          true,  3.2,   1.8),
-    ];
-    _computeTotals();
-  }
-
-  void _computeTotals() {
-    final active = _coins.where((c) => c.isActive);
-    _totalHashrate = active.fold(0.0, (s, c) => s + c.hashrate);
-    _dailyEarnings = active.fold(0.0, (s, c) => s + c.minedToday * c.price);
-    _totalMined    = active.fold(0.0, (s, c) => s + c.totalMined);
-  }
-
-  void _startMining() {
-    _mineTimer = Timer.periodic(const Duration(seconds: 2), (_) {
-      if (!mounted || !_miningActive) return;
-      setState(() {
-        for (final coin in _coins.where((c) => c.isActive)) {
-          coin.hashrate   *= (1 + (_rng.nextDouble() - 0.5) * 0.04);
-          coin.minedToday += coin.hashrate * 0.000001 * _rng.nextDouble();
-          coin.totalMined += coin.minedToday * 0.001;
-          coin.temperature = 62 + _rng.nextInt(20);
-          coin.shares++;
-        }
-        _computeTotals();
-      });
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
-    final mineColor = const Color(0xFFFF9100);
-
     return Scaffold(
       backgroundColor: p.background,
       body: Column(
         children: [
-          _buildHeader(p, mineColor),
-          _buildSummaryBar(p, mineColor),
-          _buildTabBar(p, mineColor),
-          Expanded(child: _buildContent(p, mineColor)),
+          _buildHeader(p),
+          _buildTabBar(p),
+          Expanded(
+            child: TabBarView(
+              controller: _tab,
+              children: [
+                _buildDashboard(p),
+                _buildWorkers(p),
+                _buildPools(p),
+                _buildCalculator(p),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(dynamic p, Color c) {
+  Widget _buildHeader(dynamic p) {
     return AnimatedBuilder(
       animation: _glowCtrl,
       builder: (_, __) => Container(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [c.withValues(alpha: 0.12 + _glowCtrl.value * 0.06), p.background],
-          ),
-          border: Border(bottom: BorderSide(color: c.withValues(alpha: 0.2))),
+          color: p.surface,
+          border: Border(bottom: BorderSide(color: const Color(0xFF00FF88).withValues(alpha: 0.15 + _glowCtrl.value * 0.1))),
         ),
-        child: Row(children: [
-          AnimatedBuilder(
-            animation: _pulseCtrl,
-            builder: (_, __) => Container(
-              width: 48, height: 48,
+        child: Row(
+          children: [
+            Container(
+              width: 44, height: 44,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: c.withValues(alpha: 0.6), width: 2),
-                boxShadow: [BoxShadow(
-                  color: c.withValues(alpha: _miningActive ? 0.4 + _pulseCtrl.value * 0.2 : 0.1),
-                  blurRadius: 16,
-                )],
+                gradient: LinearGradient(colors: [const Color(0xFF00FF88).withValues(alpha: 0.25), const Color(0xFF00FF88).withValues(alpha: 0.05)]),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF00FF88).withValues(alpha: 0.4 + _glowCtrl.value * 0.3)),
+                boxShadow: [BoxShadow(color: const Color(0xFF00FF88).withValues(alpha: 0.2 + _glowCtrl.value * 0.15), blurRadius: 12)],
               ),
-              child: Icon(Icons.hardware, color: c, size: 24),
+              child: const Icon(Icons.hardware_rounded, color: Color(0xFF00FF88), size: 22),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('MINING SYSTEM',
-              style: GoogleFonts.spaceMono(color: c, fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 2)),
-            Text('${_coins.where((c) => c.isActive).length} Coins aktiv · HQMLL Pool',
-              style: GoogleFonts.inter(color: p.textSecondary, fontSize: 9)),
-          ])),
-          // Toggle Mining
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.heavyImpact();
-              setState(() => _miningActive = !_miningActive);
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: _miningActive
-                    ? const Color(0xFF00E676).withValues(alpha: 0.15)
-                    : p.surfaceVariant,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: _miningActive
-                      ? const Color(0xFF00E676).withValues(alpha: 0.6)
-                      : p.primary.withValues(alpha: 0.2),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Text('QUANTUM MINER', style: GoogleFonts.spaceMono(color: const Color(0xFF00FF88), fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2)),
+                    const SizedBox(width: 8),
+                    _statusBadge(_miningActive ? 'AKTIV' : 'OFFLINE', _miningActive ? const Color(0xFF00FF88) : const Color(0xFFFF3358)),
+                  ]),
+                  Text('v2.0 · Algorithmus: SHA-256 · Pool: HQMLL', style: GoogleFonts.inter(color: p.textSecondary, fontSize: 10)),
+                ],
+              ),
+            ),
+            GestureDetector(
+              onTap: _toggleMining,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                width: 56, height: 30,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: _miningActive
+                        ? [const Color(0xFF00FF88), const Color(0xFF00AA55)]
+                        : [p.surfaceVariant, p.surfaceVariant],
+                  ),
+                  borderRadius: BorderRadius.circular(15),
+                  boxShadow: _miningActive ? [BoxShadow(color: const Color(0xFF00FF88).withValues(alpha: 0.4 + _glowCtrl.value * 0.2), blurRadius: 10)] : [],
+                ),
+                child: AnimatedAlign(
+                  duration: const Duration(milliseconds: 300),
+                  alignment: _miningActive ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    width: 26, height: 26,
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(13)),
+                    child: Icon(_miningActive ? Icons.pause_rounded : Icons.play_arrow_rounded, color: _miningActive ? const Color(0xFF00AA55) : p.textSecondary, size: 16),
+                  ),
                 ),
               ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                if (_miningActive) Container(
-                  width: 6, height: 6,
-                  margin: const EdgeInsets.only(right: 6),
-                  decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF00E676)),
-                ),
-                Text(_miningActive ? 'MINING' : 'GESTOPPT',
-                  style: GoogleFonts.spaceMono(
-                    color: _miningActive ? const Color(0xFF00E676) : p.textSecondary,
-                    fontSize: 9, fontWeight: FontWeight.bold,
-                  )),
-              ]),
             ),
-          ),
-        ]),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSummaryBar(dynamic p, Color c) {
+  Widget _statusBadge(String label, Color color) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(4), border: Border.all(color: color.withValues(alpha: 0.35))),
+      child: Text(label, style: GoogleFonts.spaceMono(color: color, fontSize: 8, letterSpacing: 1)),
+    );
+  }
+
+  Widget _buildTabBar(dynamic p) {
+    return Container(
+      color: p.surface,
+      child: TabBar(
+        controller: _tab,
+        labelColor: const Color(0xFF00FF88),
+        unselectedLabelColor: p.textSecondary,
+        indicatorColor: const Color(0xFF00FF88),
+        indicatorWeight: 2,
+        labelStyle: GoogleFonts.spaceMono(fontSize: 10, letterSpacing: 1),
+        unselectedLabelStyle: GoogleFonts.spaceMono(fontSize: 10),
+        tabs: const [
+          Tab(icon: Icon(Icons.dashboard_outlined, size: 15), text: 'DASHBOARD'),
+          Tab(icon: Icon(Icons.memory_outlined, size: 15), text: 'WORKERS'),
+          Tab(icon: Icon(Icons.pool_outlined, size: 15), text: 'POOLS'),
+          Tab(icon: Icon(Icons.calculate_outlined, size: 15), text: 'RECHNER'),
+        ],
+      ),
+    );
+  }
+
+  // ─── DASHBOARD ───
+  Widget _buildDashboard(dynamic p) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        children: [
+          // Live Hashrate Card
+          _buildHashrateCard(p),
+          const SizedBox(height: 10),
+          // Stats Row
+          Row(children: [
+            Expanded(child: _statCard('HASHRATE', '${_hashrate.toStringAsFixed(1)} TH/s', Icons.speed_rounded, const Color(0xFF00FF88), p)),
+            const SizedBox(width: 8),
+            Expanded(child: _statCard('TEMPERATUR', '${_temperature.toStringAsFixed(1)}°C', Icons.thermostat_rounded, const Color(0xFFFF6B35), p)),
+          ]),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(child: _statCard('EFFIZIENZ', '${_efficiency.toStringAsFixed(1)}%', Icons.bolt_rounded, const Color(0xFFFFD700), p)),
+            const SizedBox(width: 8),
+            Expanded(child: _statCard('POWER', '${_powerDraw.toStringAsFixed(0)} W', Icons.power_rounded, const Color(0xFFAA44FF), p)),
+          ]),
+          const SizedBox(height: 10),
+          // Rewards Card
+          _buildRewardsCard(p),
+          const SizedBox(height: 10),
+          // Pool Stats Card
+          _buildPoolStatsCard(p),
+          const SizedBox(height: 10),
+          // Shares
+          _buildSharesCard(p),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHashrateCard(dynamic p) {
+    final maxH = _hashrateHistory.isEmpty ? 180.0 : _hashrateHistory.reduce(max) + 10;
+    final minH = _hashrateHistory.isEmpty ? 100.0 : _hashrateHistory.reduce(min) - 10;
+    return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: p.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: c.withValues(alpha: 0.2)),
+        border: Border.all(color: const Color(0xFF00FF88).withValues(alpha: 0.15)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _statCol('HASHRATE', '${_totalHashrate.toStringAsFixed(1)} MH/s', c, p),
-          Container(width: 1, height: 32, color: p.surfaceVariant),
-          _statCol('HEUTE', '\$${_dailyEarnings.toStringAsFixed(2)}', const Color(0xFF00E676), p),
-          Container(width: 1, height: 32, color: p.surfaceVariant),
-          _statCol('GESAMT', '${_totalMined.toStringAsFixed(2)}', const Color(0xFF7B00D4), p),
-          Container(width: 1, height: 32, color: p.surfaceVariant),
-          _statCol('POOL', 'HQMLL', const Color(0xFF00E5FF), p),
+          Row(children: [
+            Text('LIVE HASHRATE', style: GoogleFonts.spaceMono(color: const Color(0xFF00FF88), fontSize: 11, letterSpacing: 1.5)),
+            const Spacer(),
+            AnimatedBuilder(
+              animation: _glowCtrl,
+              builder: (_, __) => Container(
+                width: 8, height: 8,
+                decoration: BoxDecoration(
+                  color: _miningActive ? const Color(0xFF00FF88) : const Color(0xFFFF3358),
+                  shape: BoxShape.circle,
+                  boxShadow: _miningActive ? [BoxShadow(color: const Color(0xFF00FF88).withValues(alpha: 0.5 + _glowCtrl.value * 0.4), blurRadius: 6)] : [],
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(_miningActive ? 'LIVE' : 'OFFLINE', style: GoogleFonts.spaceMono(color: _miningActive ? const Color(0xFF00FF88) : const Color(0xFFFF3358), fontSize: 9)),
+          ]),
+          const SizedBox(height: 12),
+          // Hashrate display
+          Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            Text(
+              _hashrate.toStringAsFixed(2),
+              style: GoogleFonts.spaceMono(color: const Color(0xFF00FF88), fontSize: 36, fontWeight: FontWeight.bold),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6, left: 6),
+              child: Text('TH/s', style: GoogleFonts.spaceMono(color: const Color(0xFF00FF88).withValues(alpha: 0.6), fontSize: 14)),
+            ),
+          ]),
+          const SizedBox(height: 10),
+          // Sparkline chart
+          SizedBox(
+            height: 60,
+            child: CustomPaint(
+              size: const Size(double.infinity, 60),
+              painter: _HashrateSparklinePainter(_hashrateHistory, minH, maxH, const Color(0xFF00FF88)),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(children: [
+            Text('Pool HR: ${_poolHashrate.toStringAsFixed(1)} PH/s', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
+            const Spacer(),
+            Text('Target: ${_targetHashrate} TH/s', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
+          ]),
         ],
       ),
     );
   }
 
-  Widget _statCol(String l, String v, Color c, dynamic p) => Column(children: [
-    Text(v, style: GoogleFonts.rajdhani(color: c, fontSize: 14, fontWeight: FontWeight.bold)),
-    Text(l, style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 7)),
-  ]);
-
-  Widget _buildTabBar(dynamic p, Color c) {
-    final tabs = ['ALLE COINS', 'AKTIV', 'STATS', 'POOLS'];
+  Widget _statCard(String label, String value, IconData icon, Color color, dynamic p) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      height: 34,
-      decoration: BoxDecoration(
-        color: p.surface, borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: c.withValues(alpha: 0.15)),
-      ),
-      child: Row(
-        children: tabs.asMap().entries.map((e) {
-          final sel = _tab == e.key;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _tab = e.key),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  color: sel ? c : Colors.transparent,
-                  borderRadius: BorderRadius.circular(7),
-                ),
-                child: Center(child: Text(e.value,
-                  style: GoogleFonts.spaceMono(
-                    color: sel ? Colors.black : p.textSecondary,
-                    fontSize: 7, fontWeight: FontWeight.bold,
-                  ))),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildContent(dynamic p, Color c) {
-    final coins = _tab == 1
-        ? _coins.where((c) => c.isActive).toList()
-        : _coins;
-    if (_tab == 2) return _buildStatsTab(p, c);
-    if (_tab == 3) return _buildPoolsTab(p, c);
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      itemCount: coins.length,
-      itemBuilder: (_, i) => _buildCoinCard(coins[i], p, c),
-    );
-  }
-
-  Widget _buildCoinCard(MinableCoin coin, dynamic p, Color accent) {
-    final isPos = coin.change.startsWith('+') || !coin.change.startsWith('-');
-    final changeColor = isPos ? const Color(0xFF00E676) : const Color(0xFFFF1744);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: p.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: coin.isActive
-              ? const Color(0xFF00E676).withValues(alpha: 0.2)
-              : p.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.15)),
+      ),
+      child: Row(children: [
+        Container(
+          width: 34, height: 34,
+          decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+          child: Icon(icon, color: color, size: 18),
         ),
-      ),
-      child: Column(
-        children: [
-          Row(children: [
-            // Coin icon
-            Container(
-              width: 36, height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: coin.isActive
-                    ? const Color(0xFF00E676).withValues(alpha: 0.1)
-                    : p.surfaceVariant,
-                border: Border.all(
-                  color: coin.isActive
-                      ? const Color(0xFF00E676).withValues(alpha: 0.4)
-                      : p.primary.withValues(alpha: 0.1),
-                ),
-              ),
-              child: Center(
-                child: Text(
-                  coin.symbol.substring(0, min(2, coin.symbol.length)),
-                  style: GoogleFonts.spaceMono(
-                    color: coin.isActive ? const Color(0xFF00E676) : p.textSecondary,
-                    fontSize: 10, fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(coin.symbol,
-                style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 11, fontWeight: FontWeight.bold)),
-              Text(coin.name,
-                style: GoogleFonts.inter(color: p.textSecondary, fontSize: 9)),
-            ])),
-            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-              Text('\$${coin.price >= 1000 ? coin.price.toStringAsFixed(0) : coin.price >= 1 ? coin.price.toStringAsFixed(2) : coin.price.toStringAsFixed(4)}',
-                style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 13, fontWeight: FontWeight.bold)),
-              Text('${isPos ? '+' : ''}${coin.change}%',
-                style: GoogleFonts.spaceMono(color: changeColor, fontSize: 9)),
-            ]),
-            const SizedBox(width: 8),
-            // Toggle
-            GestureDetector(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                setState(() {
-                  coin.isActive = !coin.isActive;
-                  _computeTotals();
-                });
-              },
-              child: Container(
-                width: 40, height: 22,
-                decoration: BoxDecoration(
-                  color: coin.isActive
-                      ? const Color(0xFF00E676).withValues(alpha: 0.2)
-                      : p.surfaceVariant,
-                  borderRadius: BorderRadius.circular(11),
-                  border: Border.all(
-                    color: coin.isActive
-                        ? const Color(0xFF00E676).withValues(alpha: 0.5)
-                        : p.primary.withValues(alpha: 0.2),
-                  ),
-                ),
-                child: Align(
-                  alignment: coin.isActive ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    width: 16, height: 16, margin: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: coin.isActive ? const Color(0xFF00E676) : p.textSecondary,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ]),
-          if (coin.isActive) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                _mineChip('${coin.hashrate.toStringAsFixed(1)} MH/s', Icons.speed, accent, p),
-                const SizedBox(width: 6),
-                _mineChip(coin.algorithm, Icons.code, const Color(0xFF7B00D4), p),
-                const SizedBox(width: 6),
-                _mineChip('${coin.temperature}°C', Icons.thermostat, const Color(0xFFFF9100), p),
-                const SizedBox(width: 6),
-                _mineChip('${coin.shares} shares', Icons.check_circle_outline, const Color(0xFF00E676), p),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Heute: ${coin.minedToday.toStringAsFixed(4)} ${coin.symbol}',
-                  style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
-                Text('≈ \$${(coin.minedToday * coin.price).toStringAsFixed(2)}',
-                  style: GoogleFonts.rajdhani(color: const Color(0xFF00E676), fontSize: 11, fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _mineChip(String text, IconData icon, Color color, dynamic p) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(5),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, color: color, size: 9),
-        const SizedBox(width: 3),
-        Text(text, style: GoogleFonts.spaceMono(color: color, fontSize: 7)),
+        const SizedBox(width: 8),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label, style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8, letterSpacing: 0.8)),
+          Text(value, style: GoogleFonts.spaceMono(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+        ]),
       ]),
     );
   }
 
-  Widget _buildStatsTab(dynamic p, Color c) {
+  Widget _buildRewardsCard(dynamic p) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [const Color(0xFFFFD700).withValues(alpha: 0.08), const Color(0xFFFFD700).withValues(alpha: 0.02)],
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.2)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.monetization_on_rounded, color: const Color(0xFFFFD700), size: 16),
+          const SizedBox(width: 8),
+          Text('MINING REWARDS', style: GoogleFonts.spaceMono(color: const Color(0xFFFFD700), fontSize: 11, letterSpacing: 1.5)),
+        ]),
+        const SizedBox(height: 14),
+        Row(children: [
+          Expanded(child: _rewardItem('GESAMT MINED', '${_totalMined.toStringAsFixed(5)} BTC', '≈ \$${(_totalMined * _btcPrice).toStringAsFixed(0)}', p)),
+          Container(width: 1, height: 40, color: const Color(0xFFFFD700).withValues(alpha: 0.2)),
+          Expanded(child: _rewardItem('24H REWARD', '${_dailyReward.toStringAsFixed(6)} BTC', '≈ \$${_profitUSD.toStringAsFixed(2)}', p)),
+          Container(width: 1, height: 40, color: const Color(0xFFFFD700).withValues(alpha: 0.2)),
+          Expanded(child: _rewardItem('AUSSTEHEND', '${_pendingPayout.toStringAsFixed(6)} BTC', 'Min: 0.005 BTC', p)),
+        ]),
+        const SizedBox(height: 12),
+        // Payout progress
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Text('Auszahlung', style: GoogleFonts.inter(color: p.textSecondary, fontSize: 10)),
+            const Spacer(),
+            Text('${((_pendingPayout / 0.005) * 100).toStringAsFixed(1)}%', style: GoogleFonts.spaceMono(color: const Color(0xFFFFD700), fontSize: 10)),
+          ]),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: (_pendingPayout / 0.005).clamp(0.0, 1.0),
+              backgroundColor: const Color(0xFFFFD700).withValues(alpha: 0.1),
+              valueColor: const AlwaysStoppedAnimation(Color(0xFFFFD700)),
+              minHeight: 6,
+            ),
+          ),
+        ]),
+      ]),
+    );
+  }
+
+  Widget _rewardItem(String label, String value, String sub, dynamic p) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+        Text(label, style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8, letterSpacing: 0.5), textAlign: TextAlign.center),
+        const SizedBox(height: 4),
+        Text(value, style: GoogleFonts.spaceMono(color: const Color(0xFFFFD700), fontSize: 10, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+        Text(sub, style: GoogleFonts.inter(color: p.textSecondary.withValues(alpha: 0.6), fontSize: 9), textAlign: TextAlign.center),
+      ]),
+    );
+  }
+
+  Widget _buildPoolStatsCard(dynamic p) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: p.primary.withValues(alpha: 0.12)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.hub_outlined, color: p.primary, size: 16),
+          const SizedBox(width: 8),
+          Text('POOL STATISTIKEN', style: GoogleFonts.spaceMono(color: p.primary, fontSize: 11, letterSpacing: 1.5)),
+          const Spacer(),
+          _statusBadge('HQMLL-POOL', const Color(0xFF00FF88)),
+        ]),
+        const SizedBox(height: 12),
+        Row(children: [
+          Expanded(child: _poolStat('POOL HR', '4.82 PH/s', p)),
+          Expanded(child: _poolStat('MINER', '3,421', p)),
+          Expanded(child: _poolStat('LUCK', '98.4%', p)),
+          Expanded(child: _poolStat('BLÖCKE/TAG', '6.2', p)),
+        ]),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: p.surfaceVariant,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(children: [
+            Icon(Icons.access_time_rounded, color: p.textSecondary, size: 12),
+            const SizedBox(width: 6),
+            Text('Letzter Block: vor 8 min · Block #841,203 · Reward: 3.125 BTC', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  Widget _poolStat(String label, String value, dynamic p) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+      Text(label, style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
+      const SizedBox(height: 3),
+      Text(value, style: GoogleFonts.spaceMono(color: p.primary, fontSize: 11, fontWeight: FontWeight.bold)),
+    ]);
+  }
+
+  Widget _buildSharesCard(dynamic p) {
+    final acceptRate = _shareCount > 0 ? ((_shareCount - _rejectedShares) / _shareCount * 100) : 100;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF00AAFF).withValues(alpha: 0.15)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.check_circle_outline_rounded, color: const Color(0xFF00AAFF), size: 16),
+          const SizedBox(width: 8),
+          Text('SHARES', style: GoogleFonts.spaceMono(color: const Color(0xFF00AAFF), fontSize: 11, letterSpacing: 1.5)),
+        ]),
+        const SizedBox(height: 10),
+        Row(children: [
+          Expanded(child: _shareStatItem('AKZEPTIERT', '$_shareCount', const Color(0xFF00FF88), p)),
+          Expanded(child: _shareStatItem('ABGELEHNT', '$_rejectedShares', const Color(0xFFFF3358), p)),
+          Expanded(child: _shareStatItem('AKZEPTRATE', '${acceptRate.toStringAsFixed(1)}%', const Color(0xFF00AAFF), p)),
+          Expanded(child: _shareStatItem('DIFFICULTY', '93.7T', const Color(0xFFFFD700), p)),
+        ]),
+      ]),
+    );
+  }
+
+  Widget _shareStatItem(String label, String value, Color color, dynamic p) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+      Text(value, style: GoogleFonts.spaceMono(color: color, fontSize: 14, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 2),
+      Text(label, style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
+    ]);
+  }
+
+  // ─── WORKERS ───
+  Widget _buildWorkers(dynamic p) {
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.all(12),
       children: [
-        _buildStatCard('Mining Effizienz', '94.3%', Icons.bolt, const Color(0xFF00E676), p),
-        _buildStatCard('Power Verbrauch', '420W', Icons.power, const Color(0xFFFF9100), p),
-        _buildStatCard('Pool-Gebühr', '1.0%', Icons.percent, const Color(0xFF7B00D4), p),
-        _buildStatCard('Uptime', '99.7%', Icons.timer, const Color(0xFF00E5FF), p),
-        _buildStatCard('Rejected Shares', '0.3%', Icons.cancel_outlined, const Color(0xFFFF1744), p),
-        _buildStatCard('Gesamt Coins', '${_coins.length}', Icons.list, c, p),
+        Container(
+          padding: const EdgeInsets.all(12),
+          margin: const EdgeInsets.only(bottom: 10),
+          decoration: BoxDecoration(
+            color: p.surface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: p.primary.withValues(alpha: 0.1)),
+          ),
+          child: Row(children: [
+            Expanded(child: _workerSummaryItem('WORKERS', '${_gpus.where((g) => g['active'] == true).length}/${_gpus.length}', const Color(0xFF00FF88), p)),
+            Expanded(child: _workerSummaryItem('GESAMT HR', '${_gpus.where((g) => g['active'] == true).fold(0.0, (s, g) => s + (g['hashrate'] as double)).toStringAsFixed(1)} TH/s', const Color(0xFF00AAFF), p)),
+            Expanded(child: _workerSummaryItem('GESAMT POWER', '${_gpus.where((g) => g['active'] == true).fold(0, (s, g) => s + (g['power'] as int))} W', const Color(0xFFFF6B35), p)),
+          ]),
+        ),
+        ..._gpus.asMap().entries.map((e) => _buildGPUCard(e.value, e.key, p)),
       ],
     );
   }
 
-  Widget _buildStatCard(String l, String v, IconData icon, Color color, dynamic p) {
+  Widget _workerSummaryItem(String label, String value, Color color, dynamic p) {
+    return Column(children: [
+      Text(value, style: GoogleFonts.spaceMono(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+      Text(label, style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
+    ]);
+  }
+
+  Widget _buildGPUCard(Map<String, dynamic> gpu, int idx, dynamic p) {
+    final isActive = gpu['active'] as bool;
+    final color = isActive ? const Color(0xFF00FF88) : p.textSecondary;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: p.surface, borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.15)),
+        color: p.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: (isActive ? const Color(0xFF00FF88) : p.textSecondary).withValues(alpha: 0.2)),
       ),
-      child: Row(children: [
-        Icon(icon, color: color, size: 18),
-        const SizedBox(width: 12),
-        Expanded(child: Text(l, style: GoogleFonts.inter(color: p.textSecondary, fontSize: 12))),
-        Text(v, style: GoogleFonts.rajdhani(color: color, fontSize: 16, fontWeight: FontWeight.bold)),
+      child: Column(children: [
+        Row(children: [
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: color.withValues(alpha: 0.25)),
+            ),
+            child: Icon(Icons.memory_rounded, color: color, size: 20),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(gpu['name'] as String, style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 12, fontWeight: FontWeight.bold)),
+            Text(gpu['mem'] as String, style: GoogleFonts.inter(color: p.textSecondary, fontSize: 10)),
+          ])),
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() => _gpus[idx]['active'] = !isActive);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: (isActive ? const Color(0xFF00FF88) : const Color(0xFFFF3358)).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: (isActive ? const Color(0xFF00FF88) : const Color(0xFFFF3358)).withValues(alpha: 0.3)),
+              ),
+              child: Text(isActive ? 'AKTIV' : 'GESTOPPT', style: GoogleFonts.spaceMono(color: isActive ? const Color(0xFF00FF88) : const Color(0xFFFF3358), fontSize: 9)),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 12),
+        Row(children: [
+          _gpuMetric('HASHRATE', '${(gpu['hashrate'] as double).toStringAsFixed(1)} TH/s', color, p),
+          _gpuMetric('TEMP', '${gpu['temp']}°C', const Color(0xFFFF6B35), p),
+          _gpuMetric('POWER', '${gpu['power']} W', const Color(0xFFAA44FF), p),
+          _gpuMetric('FAN', '${gpu['fan']}%', const Color(0xFF00AAFF), p),
+        ]),
+        if (isActive) ...[
+          const SizedBox(height: 10),
+          // Temperature bar
+          Row(children: [
+            Text('Temp', style: GoogleFonts.inter(color: p.textSecondary, fontSize: 9)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: LinearProgressIndicator(
+                  value: ((gpu['temp'] as int) / 100).clamp(0.0, 1.0),
+                  backgroundColor: p.surfaceVariant,
+                  valueColor: AlwaysStoppedAnimation(_tempColor(gpu['temp'] as int)),
+                  minHeight: 5,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text('${gpu['temp']}°C', style: GoogleFonts.spaceMono(color: _tempColor(gpu['temp'] as int), fontSize: 9)),
+          ]),
+        ],
       ]),
     );
   }
 
-  Widget _buildPoolsTab(dynamic p, Color c) {
-    final pools = [
-      ('HQMLL Pool', 'Eigentümer · 0% Gebühr · Beste Rate', const Color(0xFF00E5FF), true),
-      ('Ethermine', 'Ethereum · 1% · Global', const Color(0xFF627EEA), false),
-      ('F2Pool', 'Multi-Coin · 2.5% · China', const Color(0xFFFF6B35), false),
-      ('NiceHash', 'Auto-Switching · 2% · Global', const Color(0xFF00E676), false),
-      ('2Miners', 'GPU Mining · 1% · EU', const Color(0xFF7B00D4), false),
-      ('Unmineable', 'Alt-Coins · 1% · Global', const Color(0xFFFF9100), false),
-    ];
+  Color _tempColor(int temp) {
+    if (temp < 65) return const Color(0xFF00FF88);
+    if (temp < 75) return const Color(0xFFFFD700);
+    return const Color(0xFFFF3358);
+  }
+
+  Widget _gpuMetric(String label, String value, Color color, dynamic p) {
+    return Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+      Text(value, style: GoogleFonts.spaceMono(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+      Text(label, style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
+    ]));
+  }
+
+  // ─── POOLS ───
+  Widget _buildPools(dynamic p) {
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      children: pools.map((pool) => Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: p.surface, borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: pool.$4 ? pool.$3.withValues(alpha: 0.5) : pool.$3.withValues(alpha: 0.15)),
-        ),
-        child: Row(children: [
-          Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: pool.$3.withValues(alpha: 0.1),
-              border: Border.all(color: pool.$3.withValues(alpha: 0.4)),
-            ),
-            child: Icon(Icons.pool, color: pool.$3, size: 16),
+      padding: const EdgeInsets.all(12),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: p.surface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: p.primary.withValues(alpha: 0.1)),
           ),
-          const SizedBox(width: 10),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(pool.$1, style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 11, fontWeight: FontWeight.bold)),
-            Text(pool.$2, style: GoogleFonts.inter(color: p.textSecondary, fontSize: 9)),
-          ])),
-          if (pool.$4)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('POOL AUSWAHL', style: GoogleFonts.spaceMono(color: p.primary, fontSize: 11, letterSpacing: 2)),
+            const SizedBox(height: 6),
+            Text('Wähle einen Mining-Pool. HQMLL-POOL bietet die niedrigsten Fees und höchste Stabilität.', style: GoogleFonts.inter(color: p.textSecondary, fontSize: 11, height: 1.5)),
+          ]),
+        ),
+        ..._pools.asMap().entries.map((e) {
+          final pool = e.value;
+          final isSelected = pool['selected'] as bool;
+          final color = pool['color'] as Color;
+          return GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() {
+                for (var pl in _pools) pl['selected'] = false;
+                _pools[e.key]['selected'] = true;
+              });
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFF00E676).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: const Color(0xFF00E676).withValues(alpha: 0.4)),
+                gradient: isSelected ? LinearGradient(colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.03)]) : null,
+                color: isSelected ? null : p.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: isSelected ? color.withValues(alpha: 0.4) : p.primary.withValues(alpha: 0.1), width: isSelected ? 1.5 : 1),
               ),
-              child: Text('AKTIV',
-                style: GoogleFonts.spaceMono(color: const Color(0xFF00E676), fontSize: 8, fontWeight: FontWeight.bold)),
+              child: Column(children: [
+                Row(children: [
+                  Container(
+                    width: 40, height: 40,
+                    decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10), border: Border.all(color: color.withValues(alpha: 0.3))),
+                    child: Center(child: Text((pool['name'] as String)[0], style: GoogleFonts.spaceMono(color: color, fontSize: 16, fontWeight: FontWeight.bold))),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(pool['name'] as String, style: GoogleFonts.spaceMono(color: isSelected ? color : p.textPrimary, fontSize: 12, fontWeight: FontWeight.bold)),
+                    Text(pool['url'] as String, style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
+                  ])),
+                  if (isSelected)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
+                      child: Text('VERBUNDEN', style: GoogleFonts.spaceMono(color: color, fontSize: 8)),
+                    ),
+                ]),
+                const SizedBox(height: 10),
+                Row(children: [
+                  _poolInfoItem('FEE', pool['fee'] as String, color, p),
+                  _poolInfoItem('MINER', '${pool['miners']}', color, p),
+                  _poolInfoItem('HASHRATE', pool['hashrate'] as String, color, p),
+                ]),
+              ]),
             ),
-        ]),
-      )).toList(),
+          );
+        }),
+      ],
     );
+  }
+
+  Widget _poolInfoItem(String label, String value, Color color, dynamic p) {
+    return Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+      Text(value, style: GoogleFonts.spaceMono(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+      Text(label, style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
+    ]));
+  }
+
+  // ─── CALCULATOR ───
+  Widget _buildCalculator(dynamic p) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(14),
+      child: Column(children: [
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: p.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: p.primary.withValues(alpha: 0.12)),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('MINING RECHNER', style: GoogleFonts.spaceMono(color: p.primary, fontSize: 12, letterSpacing: 2)),
+            const SizedBox(height: 4),
+            Text('Berechne deinen täglichen Profit', style: GoogleFonts.inter(color: p.textSecondary, fontSize: 11)),
+            const SizedBox(height: 16),
+            _calcInput('Hashrate (TH/s)', _calcHashCtrl, Icons.speed_rounded, const Color(0xFF00FF88), p),
+            const SizedBox(height: 10),
+            _calcInput('Stromverbrauch (W)', _calcPowerCtrl, Icons.power_rounded, const Color(0xFFAA44FF), p),
+            const SizedBox(height: 10),
+            _calcInput('Stromkosten (\$/kWh)', _calcElecCtrl, Icons.electric_bolt_rounded, const Color(0xFFFFD700), p),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: () { setState(_calculate); HapticFeedback.mediumImpact(); },
+              child: Container(
+                width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: [p.primary, p.primary.withValues(alpha: 0.7)]),
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [BoxShadow(color: p.primary.withValues(alpha: 0.3), blurRadius: 12)],
+                ),
+                child: Center(child: Text('BERECHNEN', style: GoogleFonts.spaceMono(color: Colors.white, fontSize: 12, letterSpacing: 2, fontWeight: FontWeight.bold))),
+              ),
+            ),
+          ]),
+        ),
+        const SizedBox(height: 12),
+        // Results
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                (_calcProfit > 0 ? const Color(0xFF00FF88) : const Color(0xFFFF3358)).withValues(alpha: 0.08),
+                p.surface,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: (_calcProfit > 0 ? const Color(0xFF00FF88) : const Color(0xFFFF3358)).withValues(alpha: 0.2)),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('ERGEBNIS (PER TAG)', style: GoogleFonts.spaceMono(color: p.primary, fontSize: 11, letterSpacing: 1.5)),
+            const SizedBox(height: 14),
+            Row(children: [
+              Expanded(child: _resultItem('EINNAHMEN', '\$${_calcRevenue.toStringAsFixed(2)}', const Color(0xFF00FF88), p)),
+              Container(width: 1, height: 50, color: p.primary.withValues(alpha: 0.1)),
+              Expanded(child: _resultItem('STROMKOSTEN', '-\$${_calcCost.toStringAsFixed(2)}', const Color(0xFFFF3358), p)),
+              Container(width: 1, height: 50, color: p.primary.withValues(alpha: 0.1)),
+              Expanded(child: _resultItem('PROFIT', '\$${_calcProfit.toStringAsFixed(2)}', _calcProfit > 0 ? const Color(0xFF00FF88) : const Color(0xFFFF3358), p)),
+            ]),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: p.surfaceVariant, borderRadius: BorderRadius.circular(8)),
+              child: Row(children: [
+                Icon(Icons.info_outline_rounded, color: p.textSecondary, size: 14),
+                const SizedBox(width: 8),
+                Expanded(child: Text('Monatlich: \$${(_calcProfit * 30).toStringAsFixed(0)} · Jährlich: \$${(_calcProfit * 365).toStringAsFixed(0)}', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9))),
+              ]),
+            ),
+          ]),
+        ),
+        const SizedBox(height: 12),
+        // BTC Price
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(10), border: Border.all(color: p.primary.withValues(alpha: 0.1))),
+          child: Row(children: [
+            Icon(Icons.currency_bitcoin_rounded, color: const Color(0xFFFFD700), size: 20),
+            const SizedBox(width: 8),
+            Text('BTC Preis: \$${_btcPrice.toStringAsFixed(0)}', style: GoogleFonts.spaceMono(color: const Color(0xFFFFD700), fontSize: 11)),
+            const Spacer(),
+            Text('Netzwerk HR: 623.4 EH/s', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  Widget _calcInput(String label, TextEditingController ctrl, IconData icon, Color color, dynamic p) {
+    return TextField(
+      controller: ctrl,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 13),
+      onChanged: (_) => setState(_calculate),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: GoogleFonts.inter(color: p.textSecondary, fontSize: 11),
+        prefixIcon: Icon(icon, color: color, size: 18),
+        filled: true,
+        fillColor: p.background,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: p.primary.withValues(alpha: 0.2))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: p.primary.withValues(alpha: 0.15))),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: color.withValues(alpha: 0.5))),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      ),
+    );
+  }
+
+  Widget _resultItem(String label, String value, Color color, dynamic p) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+      Text(value, style: GoogleFonts.spaceMono(color: color, fontSize: 14, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 4),
+      Text(label, style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
+    ]);
   }
 }
 
-class MinableCoin {
-  final String symbol, name, change, algorithm;
-  double price, hashrate, minedToday, totalMined;
-  bool isActive;
-  int temperature, shares;
+// ─── Sparkline Painter ───
+class _HashrateSparklinePainter extends CustomPainter {
+  final List<double> data;
+  final double minVal;
+  final double maxVal;
+  final Color color;
 
-  MinableCoin(this.symbol, this.name, this.price, this.change, this.algorithm,
-      this.isActive, this.hashrate, this.minedToday)
-      : totalMined = minedToday * 100,
-        temperature = 72,
-        shares = 0;
+  _HashrateSparklinePainter(this.data, this.minVal, this.maxVal, this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (data.isEmpty) return;
+    final range = maxVal - minVal;
+    if (range == 0) return;
+
+    final gradientPaint = Paint()
+      ..shader = LinearGradient(
+        colors: [color.withAlpha(80), color.withAlpha(0)],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+
+    final linePaint = Paint()
+      ..color = color
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path();
+    final fillPath = Path();
+    for (int i = 0; i < data.length; i++) {
+      final x = (i / (data.length - 1)) * size.width;
+      final y = size.height - ((data[i] - minVal) / range) * size.height;
+      if (i == 0) {
+        path.moveTo(x, y);
+        fillPath.moveTo(x, size.height);
+        fillPath.lineTo(x, y);
+      } else {
+        path.lineTo(x, y);
+        fillPath.lineTo(x, y);
+      }
+    }
+    fillPath.lineTo(size.width, size.height);
+    fillPath.close();
+
+    canvas.drawPath(fillPath, gradientPaint);
+    canvas.drawPath(path, linePaint);
+  }
+
+  @override
+  bool shouldRepaint(_HashrateSparklinePainter old) => old.data != data;
 }
