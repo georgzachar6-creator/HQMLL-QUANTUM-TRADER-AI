@@ -1,17 +1,15 @@
-/// HQMLL Quantum Trader – Professional Dashboard v2
-/// Live Crypto + Stocks + Commodities + FIAT · Original Icons
-/// Grigori Saks · 2025
-library;
-
-
+// ============================================================
+// DASHBOARD v3 – HQMLL Quantum Trader
+// Live Portfolio, P&L Timeline, AI Signals, News, Watchlist
+// ============================================================
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:fl_chart/fl_chart.dart';
+import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
-import '../services/live_market_service.dart';
-import '../widgets/asset_icon_widget.dart';
+import '../theme/app_themes.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -21,945 +19,688 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen>
     with TickerProviderStateMixin {
+  late AnimationController _glowCtrl;
   late AnimationController _pulseCtrl;
   late AnimationController _slideCtrl;
-  late AnimationController _tickerCtrl;
-  int _categoryTab = 0; // 0=Alle 1=Crypto 2=Aktien 3=Rohstoffe 4=FIAT
-  bool _showHeatmap = false;
+  Timer? _liveTimer;
+  Timer? _newsTimer;
+  final _rand = Random();
+
+  // Portfolio
+  double _totalValue = 75847.32;
+  double _pnlDay = 2184.50;
+  double _pnlDayPct = 2.96;
+  double _pnlAllTime = 18432.80;
+  double _pnlAllTimePct = 32.1;
+  int _newsIdx = 0;
+
+  // Donut chart data
+  final List<Map<String, dynamic>> _allocation = [
+    {'label': 'Bitcoin', 'symbol': 'BTC', 'pct': 38.2, 'value': 28973.88, 'color': const Color(0xFFF7931A), 'change': 2.34},
+    {'label': 'Ethereum', 'symbol': 'ETH', 'pct': 22.4, 'value': 16989.80, 'change': 1.82, 'color': const Color(0xFF627EEA)},
+    {'label': 'Solana', 'symbol': 'SOL', 'pct': 14.8, 'value': 11225.40, 'change': 4.21, 'color': const Color(0xFF9945FF)},
+    {'label': 'QEMMA', 'symbol': 'QMM', 'pct': 10.2, 'value': 7736.43, 'change': 8.44, 'color': const Color(0xFF00FF88)},
+    {'label': 'BNB', 'symbol': 'BNB', 'pct': 7.4, 'value': 5612.70, 'change': -0.88, 'color': const Color(0xFFF0B90B)},
+    {'label': 'Andere', 'symbol': '...', 'pct': 7.0, 'value': 5309.31, 'change': 1.10, 'color': const Color(0xFF445566)},
+  ];
+
+  // P&L history (30 days)
+  final List<double> _pnlHistory = [];
+
+  // Watchlist
+  final List<Map<String, dynamic>> _watchlist = [
+    {'sym': 'BTC', 'name': 'Bitcoin', 'price': 67842.50, 'change': 2.34, 'color': const Color(0xFFF7931A), 'hist': <double>[]},
+    {'sym': 'ETH', 'name': 'Ethereum', 'price': 3548.20, 'change': 1.82, 'color': const Color(0xFF627EEA), 'hist': <double>[]},
+    {'sym': 'SOL', 'name': 'Solana', 'price': 182.40, 'change': 4.21, 'color': const Color(0xFF9945FF), 'hist': <double>[]},
+    {'sym': 'BNB', 'name': 'BNB', 'price': 598.30, 'change': -0.88, 'color': const Color(0xFFF0B90B), 'hist': <double>[]},
+    {'sym': 'ADA', 'name': 'Cardano', 'price': 0.452, 'change': -1.24, 'color': const Color(0xFF0033AD), 'hist': <double>[]},
+    {'sym': 'AVAX', 'name': 'Avalanche', 'price': 36.84, 'change': 3.15, 'color': const Color(0xFFE84142), 'hist': <double>[]},
+    {'sym': 'DOT', 'name': 'Polkadot', 'price': 7.24, 'change': 0.74, 'color': const Color(0xFFE6007A), 'hist': <double>[]},
+    {'sym': 'LINK', 'name': 'Chainlink', 'price': 14.82, 'change': 2.88, 'color': const Color(0xFF2A5ADA), 'hist': <double>[]},
+  ];
+
+  // AI Signals
+  final List<Map<String, dynamic>> _signals = [
+    {'pair': 'BTC/USDT', 'action': 'KAUFEN', 'conf': 87, 'reason': 'RSI Divergenz + Volume Spike', 'color': const Color(0xFF00FF88), 'tf': '4H'},
+    {'pair': 'ETH/USDT', 'action': 'KAUFEN', 'conf': 79, 'reason': 'Golden Cross 50/200 MA', 'color': const Color(0xFF00FF88), 'tf': '1D'},
+    {'pair': 'SOL/USDT', 'action': 'STARK KAUFEN', 'conf': 93, 'reason': 'Breakout + Whale Akkumulation', 'color': const Color(0xFF00AAFF), 'tf': '1H'},
+    {'pair': 'BNB/USDT', 'action': 'HALTEN', 'conf': 62, 'reason': 'Seitwärtsbewegung erwartet', 'color': const Color(0xFFFFD700), 'tf': '4H'},
+    {'pair': 'ADA/USDT', 'action': 'VERKAUFEN', 'conf': 71, 'reason': 'RSI Überkauft + Resistance', 'color': const Color(0xFFFF3358), 'tf': '1D'},
+  ];
+
+  // News
+  final List<Map<String, dynamic>> _news = [
+    {'title': 'Bitcoin erreicht \$68K – Institutionelle Zuflüsse treiben den Markt', 'time': 'vor 8min', 'tag': 'BTC', 'sentiment': 'bullisch'},
+    {'title': 'Ethereum Dencun Upgrade: Gas-Gebühren auf Rekordtief', 'time': 'vor 22min', 'tag': 'ETH', 'sentiment': 'bullisch'},
+    {'title': 'Fed hält Zinsen stabil – Krypto-Märkte reagieren positiv', 'time': 'vor 1h', 'tag': 'MAKRO', 'sentiment': 'neutral'},
+    {'title': 'Solana übertrifft Erwartungen: 65.000 TPS in neuem Stresstest', 'time': 'vor 2h', 'tag': 'SOL', 'sentiment': 'bullisch'},
+    {'title': 'SEC genehmigt weiteren Spot-ETF Antrag – Markt erwartet Kapitalzuflüsse', 'time': 'vor 3h', 'tag': 'REGULIERUNG', 'sentiment': 'bullisch'},
+    {'title': 'QEMMA Token: Mining-Reward Upgrade live – Hash-Power +28%', 'time': 'vor 4h', 'tag': 'QEMMA', 'sentiment': 'bullisch'},
+  ];
+
+  // Recent Transactions
+  final List<Map<String, dynamic>> _recentTx = [
+    {'type': 'KAUF', 'sym': 'BTC', 'amount': '0.0124 BTC', 'value': '\$841.64', 'time': 'vor 14min', 'color': const Color(0xFF00FF88)},
+    {'type': 'VERKAUF', 'sym': 'ETH', 'amount': '0.42 ETH', 'value': '\$1,490.24', 'time': 'vor 2h', 'color': const Color(0xFFFF3358)},
+    {'type': 'KAUF', 'sym': 'SOL', 'amount': '18.5 SOL', 'value': '\$3,374.40', 'time': 'vor 5h', 'color': const Color(0xFF00FF88)},
+    {'type': 'STAKING', 'sym': 'QEMMA', 'amount': '5,000 QMM', 'value': '\$423.00', 'time': 'gestern', 'color': const Color(0xFF00AAFF)},
+  ];
 
   @override
   void initState() {
     super.initState();
-    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))
-      ..repeat(reverse: true);
-    _slideCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 700))
-      ..forward();
-    _tickerCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 20))
-      ..repeat();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final svc = context.read<LiveMarketService>();
-      svc.startAutoRefresh();
-      svc.connectBinanceWebSocket();
+    _glowCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2800))..repeat(reverse: true);
+    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat(reverse: true);
+    _slideCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 400))..forward();
+
+    // Init P&L history
+    double v = 55000;
+    for (int i = 0; i < 30; i++) {
+      v += (_rand.nextDouble() - 0.42) * 2000;
+      _pnlHistory.add(v.clamp(40000, 100000));
+    }
+    _pnlHistory.last = _totalValue;
+
+    // Init watchlist sparklines
+    for (var w in _watchlist) {
+      final hist = w['hist'] as List<double>;
+      double p = w['price'] as double;
+      for (int i = 0; i < 20; i++) {
+        p += ((_rand.nextDouble() - 0.5) * p * 0.015);
+        hist.add(p);
+      }
+    }
+
+    _startLive();
+  }
+
+  void _startLive() {
+    _liveTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
+      if (!mounted) return;
+      setState(() {
+        // Animate portfolio value
+        _totalValue += (_rand.nextDouble() - 0.48) * 120;
+        _pnlDay = _totalValue - 73662.82;
+        _pnlDayPct = (_pnlDay / 73662.82) * 100;
+
+        // Animate prices
+        for (var w in _watchlist) {
+          final p = w['price'] as double;
+          final np = p * (1 + (_rand.nextDouble() - 0.5) * 0.004);
+          w['price'] = np;
+          w['change'] = (w['change'] as double) + (_rand.nextDouble() - 0.5) * 0.05;
+          (w['hist'] as List<double>).add(np);
+          if ((w['hist'] as List<double>).length > 20) (w['hist'] as List<double>).removeAt(0);
+        }
+
+        // Rotate news
+        _newsIdx = (_newsIdx + 1) % _news.length;
+      });
     });
   }
 
   @override
   void dispose() {
-    _pulseCtrl.dispose();
-    _slideCtrl.dispose();
-    _tickerCtrl.dispose();
+    _glowCtrl.dispose(); _pulseCtrl.dispose(); _slideCtrl.dispose();
+    _liveTimer?.cancel();
     super.dispose();
-  }
-
-  List<AssetQuote> _filteredAssets(LiveMarketService svc) {
-    switch (_categoryTab) {
-      case 1: return svc.cryptoAssets;
-      case 2: return svc.stockAssets;
-      case 3: return svc.commodityAssets;
-      case 4: return []; // FIAT handled separately
-      default:
-        final all = svc.quotes.values.toList();
-        all.sort((a, b) => b.marketCap.compareTo(a.marketCap));
-        return all;
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final tp = context.watch<ThemeProvider>();
-    final p = tp.palette;
-    final svc = context.watch<LiveMarketService>();
-
+    final p = context.watch<ThemeProvider>().palette;
     return Scaffold(
       backgroundColor: p.background,
       body: RefreshIndicator(
-        onRefresh: () => svc.fetchCoinGeckoData(),
         color: p.primary,
         backgroundColor: p.surface,
-        child: CustomScrollView(
-          slivers: [
-            // ─ Portfolio Header ─
-            SliverToBoxAdapter(child: _buildPortfolioHeader(p, svc)),
-            // ─ Live Status ─
-            SliverToBoxAdapter(child: _buildLiveBar(p, svc)),
-            // ─ Schnellzugriff: Top Movers ─
-            SliverToBoxAdapter(child: _buildTopMovers(p, svc)),
-            // ─ Mini Sparklines ─
-            SliverToBoxAdapter(child: _buildSparklineRow(p, svc)),
-            // ─ Kategorie-Tabs ─
-            SliverToBoxAdapter(child: _buildCategoryTabs(p)),
-            // ─ Ansicht-Toggle ─
-            SliverToBoxAdapter(child: _buildViewToggle(p)),
-            // ─ FIAT-Kurs-Banner ─
-            if (_categoryTab == 4)
-              SliverToBoxAdapter(child: _buildFiatPanel(p, svc))
-            // ─ Heatmap ─
-            else if (_showHeatmap)
-              SliverToBoxAdapter(child: _buildHeatmap(p, svc))
-            // ─ Asset-Liste ─
-            else
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (ctx, i) {
-                    final assets = _filteredAssets(svc);
-                    if (i >= assets.length) return null;
-                    return _buildAssetRow(assets[i], p, i + 1, svc);
-                  },
-                ),
-              ),
-            const SliverToBoxAdapter(child: SizedBox(height: 100)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── Portfolio Header ─────────────────────────────────
-  Widget _buildPortfolioHeader(dynamic p, LiveMarketService svc) {
-    final btcPrice = svc.quote('BTC')?.price ?? 67842.5;
-    final ethPrice = svc.quote('ETH')?.price ?? 3548.2;
-    final portfolio = (0.42 * btcPrice) + (3.85 * ethPrice) + (12 * (svc.quote('SOL')?.price ?? 182.4)) + (1284 * (svc.quote('QEMMA')?.price ?? 0.0847)) + 1480;
-    final portfolioEur = portfolio * 0.923;
-    const change = 2.87;
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            p.primary.withValues(alpha: 0.18),
-            p.secondary.withValues(alpha: 0.10),
-            p.background,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: p.primary.withValues(alpha: 0.25), width: 1),
-        boxShadow: [BoxShadow(color: p.primary.withValues(alpha: 0.08), blurRadius: 20, offset: const Offset(0, 4))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              // HQMLL Logo
-              Image.asset('assets/icons/hqmll_logo.png', width: 32, height: 32, errorBuilder: (_, __, ___) =>
-                  Container(width: 32, height: 32, decoration: BoxDecoration(shape: BoxShape.circle, color: p.primary.withValues(alpha: 0.2)),
-                    child: Center(child: Text('H', style: TextStyle(color: p.primary, fontWeight: FontWeight.w900, fontSize: 14))))),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('PORTFOLIO ÜBERSICHT', style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 11, letterSpacing: 1.5)),
-                  Text('Quantum Trader', style: GoogleFonts.rajdhani(color: p.primary, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
-                ],
-              ),
-              const Spacer(),
-              AnimatedBuilder(
-                animation: _pulseCtrl,
-                builder: (_, __) => Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00C87B).withValues(alpha: 0.12 + _pulseCtrl.value * 0.08),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFF00C87B).withValues(alpha: 0.4)),
-                  ),
-                  child: Row(children: [
-                    Container(width: 6, height: 6, decoration: BoxDecoration(shape: BoxShape.circle, color: const Color(0xFF00C87B).withValues(alpha: 0.6 + _pulseCtrl.value * 0.4))),
-                    const SizedBox(width: 5),
-                    Text('LIVE', style: GoogleFonts.rajdhani(color: const Color(0xFF00C87B), fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1)),
-                  ]),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // ─ Gesamt Wert ─
-          Text(
-            '\$${_fmtNum(portfolio)}',
-            style: GoogleFonts.rajdhani(
-              color: p.textPrimary,
-              fontSize: 36,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-            ),
-          ),
-          Text(
-            '≈ €${_fmtNum(portfolioEur)}',
-            style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 18, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 10),
-          // ─ Change + Balken ─
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF00C87B).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text('+$change%  ↑', style: GoogleFonts.rajdhani(color: const Color(0xFF00C87B), fontSize: 14, fontWeight: FontWeight.w700)),
-              ),
-              const SizedBox(width: 8),
-              Text('24h Performance', style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 12)),
-              const Spacer(),
-              Text('BTC: ${svc.quote('BTC')?.formattedPrice ?? '\$67,842'}',
-                style: GoogleFonts.rajdhani(color: p.primary, fontSize: 12, fontWeight: FontWeight.w700)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          // ─ Mini-Allocation-Bar ─
-          _buildAllocationBar(p, svc),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAllocationBar(dynamic p, LiveMarketService svc) {
-    final allocations = [
-      ('BTC', 0.35, const Color(0xFFF7931A)),
-      ('ETH', 0.22, const Color(0xFF627EEA)),
-      ('SOL', 0.14, const Color(0xFF9945FF)),
-      ('QEMMA', 0.12, const Color(0xFF00D4FF)),
-      ('Sonstige', 0.17, const Color(0xFF444466)),
-    ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: Row(
-            children: allocations.map((a) => Expanded(
-              flex: (a.$2 * 100).round(),
-              child: Container(height: 6, color: a.$3),
-            )).toList(),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 12,
-          children: allocations.map((a) => Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(width: 8, height: 8, decoration: BoxDecoration(color: a.$3, borderRadius: BorderRadius.circular(2))),
-              const SizedBox(width: 4),
-              Text('${a.$1} ${(a.$2 * 100).round()}%', style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 10)),
-            ],
-          )).toList(),
-        ),
-      ],
-    );
-  }
-
-  // ── Live Status Bar ──────────────────────────────────
-  Widget _buildLiveBar(dynamic p, LiveMarketService svc) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: p.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: p.primary.withValues(alpha: 0.15)),
-      ),
-      child: Row(
-        children: [
-          _liveBarItem(p, 'GESAMT', '${svc.quotes.length}', Icons.list, p.primary),
-          _liveBarDivider(p),
-          _liveBarItem(p, 'LIVE', svc.isLive ? 'CoinGecko' : 'Simulated', Icons.wifi, svc.isLive ? const Color(0xFF00C87B) : const Color(0xFFFF9900)),
-          _liveBarDivider(p),
-          _liveBarItem(p, 'TOP GAINER', svc.topGainers.isNotEmpty ? svc.topGainers.first.symbol : '-', Icons.trending_up, const Color(0xFF00C87B)),
-          _liveBarDivider(p),
-          _liveBarItem(p, 'TOP LOSER', svc.topLosers.isNotEmpty ? svc.topLosers.first.symbol : '-', Icons.trending_down, const Color(0xFFFF3B5C)),
-        ],
-      ),
-    );
-  }
-
-  Widget _liveBarItem(dynamic p, String label, String val, IconData icon, Color color) {
-    return Expanded(
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 14),
-          const SizedBox(height: 2),
-          Text(val, style: GoogleFonts.rajdhani(color: color, fontSize: 11, fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis),
-          Text(label, style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 9, letterSpacing: 0.5)),
-        ],
-      ),
-    );
-  }
-
-  Widget _liveBarDivider(dynamic p) => Container(width: 1, height: 30, color: p.primary.withValues(alpha: 0.12));
-
-  // ── Top Movers ───────────────────────────────────────
-  Widget _buildTopMovers(dynamic p, LiveMarketService svc) {
-    final gainers = svc.topGainers.take(5).toList();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Row(children: [
-            Icon(Icons.rocket_launch, color: p.primary, size: 16),
-            const SizedBox(width: 6),
-            Text('TOP MOVER · 24H', style: GoogleFonts.rajdhani(color: p.primary, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
+        onRefresh: () async => await Future.delayed(const Duration(milliseconds: 800)),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(children: [
+            _buildHeader(p),
+            _buildPortfolioCard(p),
+            _buildAllocationRow(p),
+            _buildAISignalBanner(p),
+            _buildPnLChart(p),
+            _buildWatchlist(p),
+            _buildRecentTx(p),
+            _buildNewsSection(p),
+            const SizedBox(height: 20),
           ]),
         ),
-        SizedBox(
-          height: 90,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: gainers.length,
-            itemBuilder: (ctx, i) => _buildMoverCard(gainers[i], p),
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildMoverCard(AssetQuote q, dynamic p) {
-    final isPos = q.isPositive;
-    final color = isPos ? const Color(0xFF00C87B) : const Color(0xFFFF3B5C);
-    return GestureDetector(
-      onTap: () => HapticFeedback.lightImpact(),
-      child: Container(
-        width: 110,
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.all(12),
+  // ── HEADER ──
+  Widget _buildHeader(dynamic p) {
+    final now = DateTime.now();
+    final greeting = now.hour < 12 ? 'Guten Morgen' : now.hour < 18 ? 'Guten Tag' : 'Guten Abend';
+    return AnimatedBuilder(
+      animation: _glowCtrl,
+      builder: (_, __) => Container(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
         decoration: BoxDecoration(
           color: p.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
-          boxShadow: [BoxShadow(color: color.withValues(alpha: 0.08), blurRadius: 8)],
+          border: Border(bottom: BorderSide(color: p.primary.withValues(alpha: 0.1 + _glowCtrl.value * 0.06))),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(children: [
-              AssetIconWidget(symbol: q.symbol, palette: p, size: 28, showBorder: false),
-              const Spacer(),
+        child: Row(children: [
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(greeting, style: GoogleFonts.inter(color: p.textSecondary, fontSize: 12)),
+            Text('QUANTUM TRADER', style: GoogleFonts.spaceMono(color: p.primary, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 2)),
+          ])),
+          // Live indicator
+          AnimatedBuilder(
+            animation: _pulseCtrl,
+            builder: (_, __) => Row(children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(5)),
-                child: Text(q.formattedChange, style: GoogleFonts.rajdhani(color: color, fontSize: 9, fontWeight: FontWeight.w700)),
+                width: 8, height: 8,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00FF88),
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(color: const Color(0xFF00FF88).withValues(alpha: 0.4 + _pulseCtrl.value * 0.4), blurRadius: 8)],
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text('LIVE', style: GoogleFonts.spaceMono(color: const Color(0xFF00FF88), fontSize: 10, letterSpacing: 1)),
+            ]),
+          ),
+          const SizedBox(width: 12),
+          // Fear & Greed
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: const Color(0xFF00FF88).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFF00FF88).withValues(alpha: 0.25)),
+            ),
+            child: Column(children: [
+              Text('GIER', style: GoogleFonts.spaceMono(color: const Color(0xFF00FF88), fontSize: 8, letterSpacing: 1)),
+              Text('74', style: GoogleFonts.spaceMono(color: const Color(0xFF00FF88), fontSize: 13, fontWeight: FontWeight.bold)),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  // ── PORTFOLIO CARD ──
+  Widget _buildPortfolioCard(dynamic p) {
+    final isPnlPositive = _pnlDay >= 0;
+    final pnlColor = isPnlPositive ? const Color(0xFF00FF88) : const Color(0xFFFF3358);
+    return AnimatedBuilder(
+      animation: _glowCtrl,
+      builder: (_, __) => Container(
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [p.primary.withValues(alpha: 0.15), p.primary.withValues(alpha: 0.05), p.surface],
+            begin: Alignment.topLeft, end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: p.primary.withValues(alpha: 0.25 + _glowCtrl.value * 0.1)),
+          boxShadow: [BoxShadow(color: p.primary.withValues(alpha: 0.08 + _glowCtrl.value * 0.06), blurRadius: 20, spreadRadius: 2)],
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Text('GESAMTPORTFOLIO', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 10, letterSpacing: 1.5)),
+            const Spacer(),
+            Text('18 Assets', style: GoogleFonts.inter(color: p.textSecondary, fontSize: 10)),
+          ]),
+          const SizedBox(height: 8),
+          Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            Text(
+              '\$${_formatLarge(_totalValue)}',
+              style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 32, fontWeight: FontWeight.bold),
+            ),
+            const Spacer(),
+            // Donut mini
+            SizedBox(
+              width: 60, height: 60,
+              child: CustomPaint(painter: _DonutPainter(_allocation)),
+            ),
+          ]),
+          const SizedBox(height: 10),
+          Row(children: [
+            // Day P&L
+            _pnlChip('HEUTE', _pnlDay, _pnlDayPct, pnlColor, p),
+            const SizedBox(width: 10),
+            // All time P&L
+            _pnlChip('GESAMT', _pnlAllTime, _pnlAllTimePct, const Color(0xFF00FF88), p),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  Widget _pnlChip(String label, double val, double pct, Color color, dynamic p) {
+    final sign = val >= 0 ? '+' : '';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Row(children: [
+        Icon(val >= 0 ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded, color: color, size: 12),
+        const SizedBox(width: 4),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label, style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 7, letterSpacing: 0.5)),
+          Text('$sign\$${_formatLarge(val.abs())} ($sign${pct.toStringAsFixed(2)}%)', style: GoogleFonts.spaceMono(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+        ]),
+      ]),
+    );
+  }
+
+  // ── ALLOCATION ROW ──
+  Widget _buildAllocationRow(dynamic p) {
+    return Container(
+      height: 90,
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _allocation.length,
+        itemBuilder: (_, i) {
+          final a = _allocation[i];
+          final color = a['color'] as Color;
+          final chg = a['change'] as double;
+          return Container(
+            width: 88,
+            margin: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: p.surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: color.withValues(alpha: 0.2)),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                const Spacer(),
+                Text('${a['pct']}%', style: GoogleFonts.spaceMono(color: color, fontSize: 9, fontWeight: FontWeight.bold)),
+              ]),
+              const SizedBox(height: 4),
+              Text(a['symbol'] as String, style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 11, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              Text(
+                '${chg >= 0 ? '+' : ''}${chg.toStringAsFixed(2)}%',
+                style: GoogleFonts.spaceMono(color: chg >= 0 ? const Color(0xFF00FF88) : const Color(0xFFFF3358), fontSize: 9),
               ),
             ]),
-            Text(q.symbol, style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 14, fontWeight: FontWeight.w800)),
-            Text(q.formattedPrice, style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 11, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── Sparkline Row ────────────────────────────────────
-  Widget _buildSparklineRow(dynamic p, LiveMarketService svc) {
-    final symbols = ['BTC', 'ETH', 'XAU', 'AAPL', 'TSLA', 'QEMMA'];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Text('SPARKLINES · 24H', style: GoogleFonts.rajdhani(color: p.primary, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
-        ),
-        SizedBox(
-          height: 80,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: symbols.length,
-            itemBuilder: (ctx, i) => _buildSparkCard(symbols[i], p, svc),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSparkCard(String sym, dynamic p, LiveMarketService svc) {
-    final q = svc.quote(sym);
-    final candles = svc.candles(sym).take(20).toList();
-    final isPos = q?.isPositive ?? true;
-    final color = isPos ? const Color(0xFF00C87B) : const Color(0xFFFF3B5C);
-
-    return Container(
-      width: 100,
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: p.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: p.primary.withValues(alpha: 0.12)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            AssetIconWidget(symbol: sym, palette: p, size: 18, showBorder: false),
-            const SizedBox(width: 4),
-            Text(sym, style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 11, fontWeight: FontWeight.w800)),
-          ]),
-          Expanded(
-            child: candles.length > 2
-                ? LineChart(
-                    LineChartData(
-                      gridData: const FlGridData(show: false),
-                      titlesData: const FlTitlesData(show: false),
-                      borderData: FlBorderData(show: false),
-                      lineTouchData: const LineTouchData(enabled: false),
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: List.generate(candles.length, (i) => FlSpot(i.toDouble(), candles[i].close)),
-                          isCurved: true,
-                          color: color,
-                          barWidth: 1.5,
-                          dotData: const FlDotData(show: false),
-                          belowBarData: BarAreaData(
-                            show: true,
-                            color: color.withValues(alpha: 0.08),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : Container(),
-          ),
-          Text(q?.formattedChange ?? '0%', style: GoogleFonts.rajdhani(color: color, fontSize: 10, fontWeight: FontWeight.w700)),
-        ],
-      ),
-    );
-  }
-
-  // ── Kategorie Tabs ───────────────────────────────────
-  Widget _buildCategoryTabs(dynamic p) {
-    final tabs = ['ALLE', 'CRYPTO', 'AKTIEN', 'ROHSTOFFE', 'FIAT'];
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-      child: Row(
-        children: List.generate(tabs.length, (i) {
-          final active = i == _categoryTab;
-          return GestureDetector(
-            onTap: () { setState(() => _categoryTab = i); HapticFeedback.selectionClick(); },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.only(right: 6),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-              decoration: BoxDecoration(
-                color: active ? p.primary : p.surface,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: active ? p.primary : p.primary.withValues(alpha: 0.2)),
-              ),
-              child: Text(
-                tabs[i],
-                style: GoogleFonts.rajdhani(
-                  color: active ? p.background : p.textSecondary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8,
-                ),
-              ),
-            ),
-          );
-        }),
-      ),
-    );
-  }
-
-  // ── View Toggle (Liste / Heatmap) ─────────────────────
-  Widget _buildViewToggle(dynamic p) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
-      child: Row(
-        children: [
-          Text(
-            _categoryTab == 0 ? 'ALLE ASSETS (${context.read<LiveMarketService>().quotes.length})' : _tabLabel(),
-            style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 11, letterSpacing: 1),
-          ),
-          const Spacer(),
-          if (_categoryTab != 4)
-            GestureDetector(
-              onTap: () => setState(() => _showHeatmap = !_showHeatmap),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _showHeatmap ? p.primary.withValues(alpha: 0.2) : p.surface,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: p.primary.withValues(alpha: 0.3)),
-                ),
-                child: Row(children: [
-                  Icon(_showHeatmap ? Icons.grid_view : Icons.list, color: p.primary, size: 14),
-                  const SizedBox(width: 4),
-                  Text(_showHeatmap ? 'HEATMAP' : 'LISTE', style: GoogleFonts.rajdhani(color: p.primary, fontSize: 10, fontWeight: FontWeight.w700)),
-                ]),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  String _tabLabel() {
-    const labels = ['ALLE', 'CRYPTO', 'AKTIEN', 'ROHSTOFFE', 'FIAT'];
-    return labels[_categoryTab];
-  }
-
-  // ── Asset Row ────────────────────────────────────────
-  Widget _buildAssetRow(AssetQuote q, dynamic p, int rank, LiveMarketService svc) {
-    final isPos = q.isPositive;
-    final color = isPos ? const Color(0xFF00C87B) : const Color(0xFFFF3B5C);
-    final candles = svc.candles(q.symbol).take(12).toList();
-
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        _showAssetDetail(q, p, svc);
-      },
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: p.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: p.primary.withValues(alpha: 0.10)),
-        ),
-        child: Row(
-          children: [
-            // Rank
-            SizedBox(
-              width: 22,
-              child: Text('$rank', style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 11)),
-            ),
-            // Icon
-            AssetIconWidget(symbol: q.symbol, palette: p, size: 40),
-            const SizedBox(width: 12),
-            // Name + Symbol
-            Expanded(
-              flex: 3,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(q.symbol, style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 15, fontWeight: FontWeight.w800)),
-                  Text(q.name, style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 11), overflow: TextOverflow.ellipsis),
-                  // Category badge
-                  Container(
-                    margin: const EdgeInsets.only(top: 2),
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: _categoryColor(q.category).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(_categoryLabel(q.category), style: GoogleFonts.rajdhani(color: _categoryColor(q.category), fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
-                  ),
-                ],
-              ),
-            ),
-            // Sparkline
-            if (candles.length > 2)
-              SizedBox(
-                width: 50,
-                height: 30,
-                child: LineChart(
-                  LineChartData(
-                    gridData: const FlGridData(show: false),
-                    titlesData: const FlTitlesData(show: false),
-                    borderData: FlBorderData(show: false),
-                    lineTouchData: const LineTouchData(enabled: false),
-                    lineBarsData: [
-                      LineChartBarData(
-                        spots: List.generate(candles.length, (i) => FlSpot(i.toDouble(), candles[i].close)),
-                        isCurved: true,
-                        color: color,
-                        barWidth: 1.5,
-                        dotData: const FlDotData(show: false),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            const SizedBox(width: 10),
-            // Price + Change
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(q.formattedPrice, style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 14, fontWeight: FontWeight.w800)),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(q.formattedChange, style: GoogleFonts.rajdhani(color: color, fontSize: 11, fontWeight: FontWeight.w700)),
-                ),
-                if (q.marketCap > 0)
-                  Text('MCap: ${_fmtBig(q.marketCap)}', style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 9)),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Color _categoryColor(String cat) {
-    switch (cat) {
-      case 'crypto': return const Color(0xFF00D4FF);
-      case 'stock': return const Color(0xFF4285F4);
-      case 'commodity': return const Color(0xFFFFD700);
-      default: return const Color(0xFF85BB65);
-    }
-  }
-
-  String _categoryLabel(String cat) {
-    switch (cat) {
-      case 'crypto': return 'CRYPTO';
-      case 'stock': return 'AKTIE';
-      case 'commodity': return 'ROHSTOFF';
-      default: return 'FIAT';
-    }
-  }
-
-  // ── Heatmap ──────────────────────────────────────────
-  Widget _buildHeatmap(dynamic p, LiveMarketService svc) {
-    final assets = _filteredAssets(svc);
-    return Container(
-      margin: const EdgeInsets.all(16),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          childAspectRatio: 1.5,
-          mainAxisSpacing: 6,
-          crossAxisSpacing: 6,
-        ),
-        itemCount: assets.length,
-        itemBuilder: (ctx, i) {
-          final q = assets[i];
-          final isPos = q.isPositive;
-          final intensity = (q.change24h.abs() / 10).clamp(0.1, 1.0);
-          final color = isPos
-              ? Color.lerp(const Color(0xFF001A0D), const Color(0xFF00C87B), intensity)!
-              : Color.lerp(const Color(0xFF1A0005), const Color(0xFFFF3B5C), intensity)!;
-          return Container(
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AssetIconWidget(symbol: q.symbol, palette: p, size: 24, showBorder: false),
-                const SizedBox(height: 2),
-                Text(q.symbol, style: GoogleFonts.rajdhani(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
-                Text(q.formattedChange, style: GoogleFonts.rajdhani(color: Colors.white.withValues(alpha: 0.85), fontSize: 10)),
-              ],
-            ),
           );
         },
       ),
     );
   }
 
-  // ── FIAT Panel ───────────────────────────────────────
-  Widget _buildFiatPanel(dynamic p, LiveMarketService svc) {
-    final fiats = [
-      const _FiatItem('EUR', 'Euro', '€', 0.923, 0.12, 'DE · Euro-Zone'),
-      const _FiatItem('USD', 'US-Dollar', '\$', 1.000, 0.0, 'US · Leitwährung'),
-      const _FiatItem('GBP', 'Brit. Pfund', '£', 0.792, -0.08, 'GB · Pfund Sterling'),
-      const _FiatItem('CHF', 'Schweizer Franken', '₣', 0.902, 0.05, 'CH · Franken'),
-      const _FiatItem('JPY', 'Japanischer Yen', '¥', 154.2, -0.34, 'JP · Yen'),
-      const _FiatItem('CNY', 'Chinesischer Yuan', '¥', 7.25, 0.02, 'CN · Renminbi'),
-    ];
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Row(children: [
-            const Icon(Icons.currency_exchange, color: Color(0xFF85BB65), size: 16),
-            const SizedBox(width: 6),
-            Text('FIAT-KURSE vs USD', style: GoogleFonts.rajdhani(color: const Color(0xFF85BB65), fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
-          ]),
+  // ── AI SIGNAL BANNER ──
+  Widget _buildAISignalBanner(dynamic p) {
+    final topSignal = _signals.first;
+    final color = topSignal['color'] as Color;
+    return AnimatedBuilder(
+      animation: _glowCtrl,
+      builder: (_, __) => Container(
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [color.withValues(alpha: 0.12), color.withValues(alpha: 0.04)]),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.3 + _glowCtrl.value * 0.15)),
         ),
-        ...fiats.map((f) => _buildFiatRow(f, p)),
-        const SizedBox(height: 12),
-        // EUR/USD Broker Transfer
-        _buildFiatTransferCard(p, svc),
-      ],
+        child: Row(children: [
+          AnimatedBuilder(
+            animation: _pulseCtrl,
+            builder: (_, __) => Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [BoxShadow(color: color.withValues(alpha: 0.3 + _pulseCtrl.value * 0.25), blurRadius: 10)],
+              ),
+              child: Icon(Icons.psychology_rounded, color: color, size: 20),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Text('TR2 AI SIGNAL', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9, letterSpacing: 1)),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(3)),
+                child: Text(topSignal['tf'] as String, style: GoogleFonts.spaceMono(color: color, fontSize: 8)),
+              ),
+            ]),
+            Text('${topSignal['pair']} — ${topSignal['action']}', style: GoogleFonts.spaceMono(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+            Text(topSignal['reason'] as String, style: GoogleFonts.inter(color: p.textSecondary, fontSize: 10)),
+          ])),
+          Column(children: [
+            Text('${topSignal['conf']}%', style: GoogleFonts.spaceMono(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('CONF', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
+          ]),
+        ]),
+      ),
     );
   }
 
-  Widget _buildFiatRow(_FiatItem f, dynamic p) {
-    final isPos = f.change >= 0;
-    final color = isPos ? const Color(0xFF00C87B) : const Color(0xFFFF3B5C);
+  // ── P&L CHART ──
+  Widget _buildPnLChart(dynamic p) {
+    final minV = _pnlHistory.reduce(min) - 1000;
+    final maxV = _pnlHistory.reduce(max) + 1000;
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 3, 16, 3),
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: p.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: p.primary.withValues(alpha: 0.1)),
       ),
-      child: Row(
-        children: [
-          // Currency Symbol Circle
-          Container(
-            width: 40, height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFF85BB65).withValues(alpha: 0.15),
-              border: Border.all(color: const Color(0xFF85BB65).withValues(alpha: 0.3)),
-            ),
-            child: Center(child: Text(f.symbol, style: GoogleFonts.rajdhani(color: const Color(0xFF85BB65), fontSize: 16, fontWeight: FontWeight.w900))),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(f.code, style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 14, fontWeight: FontWeight.w800)),
-              Text(f.detail, style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 10)),
-            ]),
-          ),
-          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text(f.code == 'JPY' ? '${f.rate.toStringAsFixed(2)} JPY' : f.rate.toStringAsFixed(3),
-              style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 14, fontWeight: FontWeight.w700)),
-            Text('${isPos ? '+' : ''}${f.change.toStringAsFixed(2)}%',
-              style: GoogleFonts.rajdhani(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
-          ]),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFiatTransferCard(dynamic p, LiveMarketService svc) {
-    final btcEur = svc.toEur(svc.quote('BTC')?.price ?? 67842.5);
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [const Color(0xFF003399).withValues(alpha: 0.2), const Color(0xFF006400).withValues(alpha: 0.2)],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF85BB65).withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            const Icon(Icons.swap_horiz, color: Color(0xFF85BB65), size: 18),
-            const SizedBox(width: 6),
-            Text('EUR / USD CONVERTER', style: GoogleFonts.rajdhani(color: const Color(0xFF85BB65), fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 1)),
-          ]),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: _fiatConvertBox('EUR', '€', '1.000,00', p)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Icon(Icons.arrow_forward, color: p.primary, size: 20),
-              ),
-              Expanded(child: _fiatConvertBox('USD', '\$', '1.083,15', p)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Divider(color: p.primary.withValues(alpha: 0.15)),
-          const SizedBox(height: 8),
-          Row(children: [
-            Text('1 BTC = ', style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 12)),
-            Text('€${_fmtNum(btcEur)}', style: GoogleFonts.rajdhani(color: const Color(0xFFF7931A), fontSize: 14, fontWeight: FontWeight.w800)),
-            Text(' / ', style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 12)),
-            Text('\$${_fmtNum(svc.quote('BTC')?.price ?? 67842.5)}', style: GoogleFonts.rajdhani(color: const Color(0xFF85BB65), fontSize: 14, fontWeight: FontWeight.w800)),
-          ]),
-        ],
-      ),
-    );
-  }
-
-  Widget _fiatConvertBox(String code, String sym, String val, dynamic p) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: p.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: p.primary.withValues(alpha: 0.15)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(code, style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 10, letterSpacing: 1)),
-          Text('$sym $val', style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
-        ],
-      ),
-    );
-  }
-
-  // ── Asset Detail Bottom Sheet ─────────────────────────
-  void _showAssetDetail(AssetQuote q, dynamic p, LiveMarketService svc) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: p.background,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      isScrollControlled: true,
-      builder: (ctx) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.6,
-        maxChildSize: 0.9,
-        builder: (_, scroll) => _AssetDetailSheet(q: q, palette: p, svc: svc, scrollCtrl: scroll),
-      ),
-    );
-  }
-
-  // ── Formatierungshelfer ──────────────────────────────
-  String _fmtNum(double v) {
-    if (v >= 1e9) return '${(v / 1e9).toStringAsFixed(2)}B';
-    if (v >= 1e6) return '${(v / 1e6).toStringAsFixed(2)}M';
-    if (v >= 1000) {
-      final s = v.toStringAsFixed(2);
-      return s.replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+\.)'), (m) => '${m[1]},');
-    }
-    return v.toStringAsFixed(2);
-  }
-
-  String _fmtBig(double v) {
-    if (v >= 1e12) return '${(v / 1e12).toStringAsFixed(1)}T';
-    if (v >= 1e9) return '${(v / 1e9).toStringAsFixed(1)}B';
-    if (v >= 1e6) return '${(v / 1e6).toStringAsFixed(0)}M';
-    return v.toStringAsFixed(0);
-  }
-}
-
-// ═══════════════════════════════════════════════════════
-// ASSET DETAIL SHEET
-// ═══════════════════════════════════════════════════════
-class _AssetDetailSheet extends StatelessWidget {
-  final AssetQuote q;
-  final dynamic palette;
-  final LiveMarketService svc;
-  final ScrollController scrollCtrl;
-
-  const _AssetDetailSheet({required this.q, required this.palette, required this.svc, required this.scrollCtrl});
-
-  @override
-  Widget build(BuildContext context) {
-    final p = palette;
-    final isPos = q.isPositive;
-    final color = isPos ? const Color(0xFF00C87B) : const Color(0xFFFF3B5C);
-    final candles = svc.candles(q.symbol).take(50).toList();
-
-    return ListView(
-      controller: scrollCtrl,
-      padding: const EdgeInsets.all(20),
-      children: [
-        // Handle
-        Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: p.textSecondary.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2)))),
-        const SizedBox(height: 16),
-        // Header
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          AnimatedAssetIcon(symbol: q.symbol, palette: p, size: 52, pulsing: true),
-          const SizedBox(width: 14),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(q.name, style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 18, fontWeight: FontWeight.w800)),
-            Text(q.symbol, style: GoogleFonts.rajdhani(color: p.primary, fontSize: 13, letterSpacing: 1)),
-          ])),
-          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text(q.formattedPrice, style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 22, fontWeight: FontWeight.w900)),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
-              child: Text(q.formattedChange, style: GoogleFonts.rajdhani(color: color, fontSize: 13, fontWeight: FontWeight.w700)),
-            ),
-          ]),
+          Icon(Icons.show_chart_rounded, color: p.primary, size: 16),
+          const SizedBox(width: 8),
+          Text('PORTFOLIO VERLAUF (30T)', style: GoogleFonts.spaceMono(color: p.primary, fontSize: 10, letterSpacing: 1.5)),
+          const Spacer(),
+          Text('\$${_formatLarge(_totalValue)}', style: GoogleFonts.spaceMono(color: const Color(0xFF00FF88), fontSize: 11, fontWeight: FontWeight.bold)),
         ]),
-        const SizedBox(height: 20),
-        // Chart
-        if (candles.length > 2)
-          Container(
-            height: 160,
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: p.primary.withValues(alpha: 0.1))),
-            child: LineChart(
-              LineChartData(
-                gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (_) => FlLine(color: p.primary.withValues(alpha: 0.05), strokeWidth: 1)),
-                titlesData: const FlTitlesData(show: false),
-                borderData: FlBorderData(show: false),
-                lineTouchData: const LineTouchData(enabled: false),
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: List.generate(candles.length, (i) => FlSpot(i.toDouble(), candles[i].close)),
-                    isCurved: true,
-                    color: color,
-                    barWidth: 2,
-                    dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(show: true, color: color.withValues(alpha: 0.08)),
-                  ),
-                ],
-              ),
-            ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 100,
+          child: CustomPaint(
+            size: const Size(double.infinity, 100),
+            painter: _PnLChartPainter(_pnlHistory, minV, maxV, p.primary),
           ),
-        const SizedBox(height: 16),
-        // Stats Grid
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          childAspectRatio: 3,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: 8,
-          children: [
-            _statTile(p, '24H HOCH', '\$${q.high24h.toStringAsFixed(2)}', Icons.arrow_upward, const Color(0xFF00C87B)),
-            _statTile(p, '24H TIEF', '\$${q.low24h.toStringAsFixed(2)}', Icons.arrow_downward, const Color(0xFFFF3B5C)),
-            _statTile(p, 'VOLUMEN', _fmtBig(q.volume24h), Icons.bar_chart, p.primary),
-            _statTile(p, 'MARKET CAP', _fmtBig(q.marketCap), Icons.account_balance, const Color(0xFFFFD700)),
-          ],
         ),
-        const SizedBox(height: 16),
-        // Buy/Sell Buttons
-        Row(children: [
-          Expanded(child: ElevatedButton.icon(
-            onPressed: () { HapticFeedback.mediumImpact(); Navigator.pop(context); },
-            icon: const Icon(Icons.add_shopping_cart, size: 16),
-            label: Text('KAUFEN', style: GoogleFonts.rajdhani(fontWeight: FontWeight.w800, fontSize: 14, letterSpacing: 1)),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00C87B), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-          )),
-          const SizedBox(width: 10),
-          Expanded(child: ElevatedButton.icon(
-            onPressed: () { HapticFeedback.mediumImpact(); Navigator.pop(context); },
-            icon: const Icon(Icons.sell, size: 16),
-            label: Text('VERKAUFEN', style: GoogleFonts.rajdhani(fontWeight: FontWeight.w800, fontSize: 14, letterSpacing: 1)),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF3B5C), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-          )),
+        const SizedBox(height: 6),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text('vor 30 Tagen: \$${_formatLarge(_pnlHistory.first)}', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
+          Text('Heute: \$${_formatLarge(_pnlHistory.last)}', style: GoogleFonts.spaceMono(color: const Color(0xFF00FF88), fontSize: 9)),
         ]),
-      ],
-    );
-  }
-
-  Widget _statTile(dynamic p, String label, String val, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(10), border: Border.all(color: p.primary.withValues(alpha: 0.1))),
-      child: Row(children: [
-        Icon(icon, color: color, size: 14),
-        const SizedBox(width: 6),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-          Text(label, style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 8, letterSpacing: 0.5)),
-          Text(val, style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 12, fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis),
-        ])),
       ]),
     );
   }
 
-  String _fmtBig(double v) {
-    if (v >= 1e12) return '${(v / 1e12).toStringAsFixed(1)}T';
-    if (v >= 1e9) return '${(v / 1e9).toStringAsFixed(1)}B';
-    if (v >= 1e6) return '${(v / 1e6).toStringAsFixed(0)}M';
-    return v.toStringAsFixed(0);
+  // ── WATCHLIST ──
+  Widget _buildWatchlist(dynamic p) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: p.primary.withValues(alpha: 0.1)),
+      ),
+      child: Column(children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+          child: Row(children: [
+            Icon(Icons.star_rounded, color: const Color(0xFFFFD700), size: 16),
+            const SizedBox(width: 8),
+            Text('WATCHLIST', style: GoogleFonts.spaceMono(color: const Color(0xFFFFD700), fontSize: 11, letterSpacing: 1.5)),
+            const Spacer(),
+            Text('${_watchlist.length} Assets', style: GoogleFonts.inter(color: p.textSecondary, fontSize: 10)),
+          ]),
+        ),
+        ..._watchlist.asMap().entries.map((entry) {
+          final i = entry.key;
+          final w = entry.value;
+          final color = w['color'] as Color;
+          final price = w['price'] as double;
+          final change = w['change'] as double;
+          final hist = w['hist'] as List<double>;
+          final isPositive = change >= 0;
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              border: Border(top: i > 0 ? BorderSide(color: p.primary.withValues(alpha: 0.06)) : BorderSide.none),
+            ),
+            child: Row(children: [
+              Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10), border: Border.all(color: color.withValues(alpha: 0.25))),
+                child: Center(child: Text(w['sym'] as String, style: GoogleFonts.spaceMono(color: color, fontSize: 9, fontWeight: FontWeight.bold))),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(w['sym'] as String, style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 11, fontWeight: FontWeight.bold)),
+                Text(w['name'] as String, style: GoogleFonts.inter(color: p.textSecondary, fontSize: 9)),
+              ])),
+              // Sparkline
+              SizedBox(
+                width: 50, height: 28,
+                child: hist.length > 1
+                    ? CustomPaint(painter: _SparklinePainter(hist, isPositive ? const Color(0xFF00FF88) : const Color(0xFFFF3358)))
+                    : const SizedBox(),
+              ),
+              const SizedBox(width: 10),
+              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                Text(
+                  price >= 1000 ? '\$${price.toStringAsFixed(0)}' : price >= 1 ? '\$${price.toStringAsFixed(2)}' : '\$${price.toStringAsFixed(4)}',
+                  style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  '${isPositive ? '+' : ''}${change.toStringAsFixed(2)}%',
+                  style: GoogleFonts.spaceMono(color: isPositive ? const Color(0xFF00FF88) : const Color(0xFFFF3358), fontSize: 10),
+                ),
+              ]),
+            ]),
+          );
+        }),
+      ]),
+    );
+  }
+
+  // ── RECENT TX ──
+  Widget _buildRecentTx(dynamic p) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: p.primary.withValues(alpha: 0.1)),
+      ),
+      child: Column(children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+          child: Row(children: [
+            Icon(Icons.receipt_long_rounded, color: p.primary, size: 16),
+            const SizedBox(width: 8),
+            Text('LETZTE TRANSAKTIONEN', style: GoogleFonts.spaceMono(color: p.primary, fontSize: 10, letterSpacing: 1.5)),
+          ]),
+        ),
+        ..._recentTx.asMap().entries.map((entry) {
+          final i = entry.key;
+          final tx = entry.value;
+          final color = tx['color'] as Color;
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(border: Border(top: i > 0 ? BorderSide(color: p.primary.withValues(alpha: 0.06)) : BorderSide.none)),
+            child: Row(children: [
+              Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                child: Icon(
+                  tx['type'] == 'KAUF' ? Icons.add_shopping_cart_rounded : tx['type'] == 'VERKAUF' ? Icons.sell_rounded : Icons.savings_rounded,
+                  color: color, size: 18,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('${tx['type']} ${tx['sym']}', style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 11, fontWeight: FontWeight.bold)),
+                Text(tx['amount'] as String, style: GoogleFonts.inter(color: p.textSecondary, fontSize: 10)),
+              ])),
+              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                Text(tx['value'] as String, style: GoogleFonts.spaceMono(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+                Text(tx['time'] as String, style: GoogleFonts.inter(color: p.textSecondary, fontSize: 9)),
+              ]),
+            ]),
+          );
+        }),
+      ]),
+    );
+  }
+
+  // ── NEWS ──
+  Widget _buildNewsSection(dynamic p) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: p.primary.withValues(alpha: 0.1)),
+      ),
+      child: Column(children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+          child: Row(children: [
+            Icon(Icons.newspaper_rounded, color: p.primary, size: 16),
+            const SizedBox(width: 8),
+            Text('MARKT NEWS', style: GoogleFonts.spaceMono(color: p.primary, fontSize: 10, letterSpacing: 1.5)),
+            const Spacer(),
+            AnimatedBuilder(
+              animation: _pulseCtrl,
+              builder: (_, __) => Container(
+                width: 6, height: 6,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00FF88),
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(color: const Color(0xFF00FF88).withValues(alpha: 0.5 + _pulseCtrl.value * 0.4), blurRadius: 6)],
+                ),
+              ),
+            ),
+          ]),
+        ),
+        ..._news.asMap().entries.map((entry) {
+          final i = entry.key;
+          final n = entry.value;
+          final sentimentColor = n['sentiment'] == 'bullisch' ? const Color(0xFF00FF88) : n['sentiment'] == 'bärisch' ? const Color(0xFFFF3358) : const Color(0xFFFFD700);
+          return GestureDetector(
+            onTap: () => HapticFeedback.selectionClick(),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(border: Border(top: i > 0 ? BorderSide(color: p.primary.withValues(alpha: 0.06)) : BorderSide.none)),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Container(
+                  width: 4, height: 4, margin: const EdgeInsets.only(top: 6, right: 8),
+                  decoration: BoxDecoration(color: sentimentColor, shape: BoxShape.circle),
+                ),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(n['title'] as String, style: GoogleFonts.inter(color: p.textPrimary, fontSize: 11, height: 1.4)),
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(color: p.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(3)),
+                      child: Text(n['tag'] as String, style: GoogleFonts.spaceMono(color: p.primary, fontSize: 8)),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(n['time'] as String, style: GoogleFonts.inter(color: p.textSecondary.withValues(alpha: 0.6), fontSize: 9)),
+                  ]),
+                ])),
+                Icon(Icons.chevron_right_rounded, color: p.textSecondary.withValues(alpha: 0.3), size: 16),
+              ]),
+            ),
+          );
+        }),
+      ]),
+    );
+  }
+
+  String _formatLarge(double v) {
+    if (v >= 1000000) return '${(v / 1000000).toStringAsFixed(2)}M';
+    if (v >= 1000) return '${(v / 1000).toStringAsFixed(2)}K';
+    return v.toStringAsFixed(2);
   }
 }
 
-// ─ Hilfsklassen ─────────────────────────────────────────
-class _FiatItem {
-  final String code, name, symbol, detail;
-  final double rate, change;
-  const _FiatItem(this.code, this.name, this.symbol, this.rate, this.change, this.detail);
+// ── Custom Painters ──
+
+class _DonutPainter extends CustomPainter {
+  final List<Map<String, dynamic>> data;
+  _DonutPainter(this.data);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = min(size.width, size.height) / 2;
+    double startAngle = -pi / 2;
+    for (final d in data) {
+      final sweep = (d['pct'] as double) / 100 * 2 * pi;
+      final paint = Paint()
+        ..color = d['color'] as Color
+        ..strokeWidth = 8
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.butt;
+      canvas.drawArc(Rect.fromCircle(center: center, radius: radius - 4), startAngle, sweep - 0.05, false, paint);
+      startAngle += sweep;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DonutPainter old) => false;
+}
+
+class _PnLChartPainter extends CustomPainter {
+  final List<double> data;
+  final double minV, maxV;
+  final Color color;
+  _PnLChartPainter(this.data, this.minV, this.maxV, this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (data.length < 2) return;
+    final range = maxV - minV;
+    final linePaint = Paint()..color = color..strokeWidth = 2..style = PaintingStyle.stroke..strokeCap = StrokeCap.round..strokeJoin = StrokeJoin.round;
+    final fillPaint = Paint()..shader = LinearGradient(
+      colors: [color.withAlpha(60), color.withAlpha(0)],
+      begin: Alignment.topCenter, end: Alignment.bottomCenter,
+    ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+
+    final path = Path(), fill = Path();
+    for (int i = 0; i < data.length; i++) {
+      final x = (i / (data.length - 1)) * size.width;
+      final y = size.height - ((data[i] - minV) / range) * size.height;
+      if (i == 0) { path.moveTo(x, y); fill.moveTo(x, size.height); fill.lineTo(x, y); }
+      else { path.lineTo(x, y); fill.lineTo(x, y); }
+    }
+    fill.lineTo(size.width, size.height); fill.close();
+    canvas.drawPath(fill, fillPaint);
+    canvas.drawPath(path, linePaint);
+
+    // Current dot
+    final lastX = size.width;
+    final lastY = size.height - ((data.last - minV) / range) * size.height;
+    canvas.drawCircle(Offset(lastX, lastY), 4, Paint()..color = color);
+    canvas.drawCircle(Offset(lastX, lastY), 7, Paint()..color = color.withAlpha(60)..style = PaintingStyle.stroke..strokeWidth = 1.5);
+  }
+
+  @override
+  bool shouldRepaint(_PnLChartPainter old) => old.data.length != data.length || old.data.last != data.last;
+}
+
+class _SparklinePainter extends CustomPainter {
+  final List<double> data;
+  final Color color;
+  _SparklinePainter(this.data, this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (data.length < 2) return;
+    final minV = data.reduce(min);
+    final maxV = data.reduce(max);
+    final range = max(maxV - minV, 0.001);
+    final paint = Paint()..color = color..strokeWidth = 1.5..style = PaintingStyle.stroke..strokeCap = StrokeCap.round;
+    final path = Path();
+    for (int i = 0; i < data.length; i++) {
+      final x = (i / (data.length - 1)) * size.width;
+      final y = size.height - ((data[i] - minV) / range) * size.height;
+      if (i == 0) path.moveTo(x, y); else path.lineTo(x, y);
+    }
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_SparklinePainter old) => old.data.length != data.length;
 }
