@@ -7,6 +7,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/tradingview_widget.dart';
+import '../providers/live_price_provider.dart';
+import '../theme/app_themes.dart';
 
 class TradingScreen extends StatefulWidget {
   const TradingScreen({super.key});
@@ -470,11 +472,10 @@ class _TradingScreenState extends State<TradingScreen>
           const SizedBox(height: 12),
           // TradingView vs Local Chart Toggle
           if (_showTradingView)
-            TradingViewWidget(
+            TradingViewChart(
               symbol: _pairs[_selectedPair].symbol,
-              palette: p,
               height: 280,
-              interval: _timeframe == '15M' ? '15' : _timeframe == '1H' ? '60' : _timeframe == '4H' ? '240' : _timeframe == '1D' ? 'D' : 'W',
+              interval: _timeframe == '15M' ? TvInterval.min15 : _timeframe == '1H' ? TvInterval.hour1 : _timeframe == '4H' ? TvInterval.hour4 : _timeframe == '1D' ? TvInterval.day1 : TvInterval.week1,
             )
           else
             SizedBox(

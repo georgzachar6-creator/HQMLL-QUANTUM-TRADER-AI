@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/live_price_provider.dart';
 import '../theme/app_themes.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -93,6 +94,12 @@ class _DashboardScreenState extends State<DashboardScreen>
     _pulseCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat(reverse: true);
     _slideCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 400))..forward();
 
+    // Initialize live price provider
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final lp = context.read<LivePriceProvider>();
+      await lp.initialize();
+    });
+
     // Init P&L history
     double v = 55000;
     for (int i = 0; i < 30; i++) {
@@ -149,16 +156,35 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
+    final lp = context.watch<LivePriceProvider>();
+
+    // Sync watchlist prices from live provider
+    for (var w in _watchlist) {
+      final sym = w['sym'] as String;
+      final q = lp.getQuote(sym);
+      if (q != null) {
+        final prev = w['price'] as double;
+        w['price'] = q.price;
+        w['change'] = q.change24h;
+        if (prev != q.price) {
+          (w['hist'] as List<double>).add(q.price);
+          if ((w['hist'] as List<double>).length > 20) (w['hist'] as List<double>).removeAt(0);
+        }
+      }
+    }
+
     return Scaffold(
       backgroundColor: p.background,
       body: RefreshIndicator(
         color: p.primary,
         backgroundColor: p.surface,
-        onRefresh: () async => await Future.delayed(const Duration(milliseconds: 800)),
+        onRefresh: () async {
+          await lp.refresh();
+        },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(children: [
-            _buildHeader(p),
+            _buildHeader(p, lp),
             _buildPortfolioCard(p),
             _buildAllocationRow(p),
             _buildAISignalBanner(p),
@@ -174,9 +200,13 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   // ── HEADER ──
-  Widget _buildHeader(dynamic p) {
+  Widget _buildHeader(dynamic p, LivePriceProvider lp) {
     final now = DateTime.now();
     final greeting = now.hour < 12 ? 'Guten Morgen' : now.hour < 18 ? 'Guten Tag' : 'Guten Abend';
+    final isWsConnected = lp.wsConnected;
+    final connCount = lp.connectedExchanges;
+    final tps = lp.ticksPerSecond;
+    final liveColor = isWsConnected ? const Color(0xFF00FF88) : const Color(0xFFFFAA00);
     return AnimatedBuilder(
       animation: _glowCtrl,
       builder: (_, __) => Container(
@@ -189,6 +219,10 @@ class _DashboardScreenState extends State<DashboardScreen>
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(greeting, style: GoogleFonts.inter(color: p.textSecondary, fontSize: 12)),
             Text('QUANTUM TRADER', style: GoogleFonts.spaceMono(color: p.primary, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 2)),
+            if (isWsConnected && connCount > 0)
+              Text('$connCount Börsen · ${tps}t/s', style: GoogleFonts.spaceMono(
+                color: liveColor.withValues(alpha: 0.7), fontSize: 9, letterSpacing: 0.5,
+              )),
           ])),
           // Live indicator
           AnimatedBuilder(
@@ -197,13 +231,13 @@ class _DashboardScreenState extends State<DashboardScreen>
               Container(
                 width: 8, height: 8,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF00FF88),
+                  color: liveColor,
                   shape: BoxShape.circle,
-                  boxShadow: [BoxShadow(color: const Color(0xFF00FF88).withValues(alpha: 0.4 + _pulseCtrl.value * 0.4), blurRadius: 8)],
+                  boxShadow: [BoxShadow(color: liveColor.withValues(alpha: 0.4 + _pulseCtrl.value * 0.4), blurRadius: 8)],
                 ),
               ),
               const SizedBox(width: 6),
-              Text('LIVE', style: GoogleFonts.spaceMono(color: const Color(0xFF00FF88), fontSize: 10, letterSpacing: 1)),
+              Text(isWsConnected ? 'WS LIVE' : 'REST', style: GoogleFonts.spaceMono(color: liveColor, fontSize: 10, letterSpacing: 1)),
             ]),
           ),
           const SizedBox(width: 12),

@@ -1,365 +1,490 @@
-/// HQMLL Quantum Trader – TradingView Chart Widget
-/// Lightweight Charts via WebView
-/// Grigori Saks · 2025
+// ============================================================
+// TRADINGVIEW WIDGET – Quantum Trader v20
+// Full TradingView Chart Embedding via WebView
+// ============================================================
 library;
 
 import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:provider/provider.dart';
+import '../providers/theme_provider.dart';
 import '../theme/app_themes.dart';
 
-// ════════════════════════════════════════════════════
-// TRADINGVIEW WIDGET
-// ════════════════════════════════════════════════════
-class TradingViewWidget extends StatefulWidget {
-  final String symbol;
-  final String interval; // 1, 5, 15, 60, D, W
-  final QuantumPalette palette;
-  final double height;
-  final bool showToolbar;
+// ── Chart Interval Enum ───────────────────────────────────
+enum TvInterval {
+  min1('1', '1m'),
+  min5('5', '5m'),
+  min15('15', '15m'),
+  min30('30', '30m'),
+  hour1('60', '1H'),
+  hour4('240', '4H'),
+  day1('D', '1D'),
+  week1('W', '1W'),
+  month1('M', '1M');
 
-  const TradingViewWidget({
+  final String value;
+  final String label;
+  const TvInterval(this.value, this.label);
+}
+
+// ── Chart Style ───────────────────────────────────────────
+enum TvChartStyle {
+  candles(1, 'Candles'),
+  bars(0, 'Bars'),
+  line(2, 'Line'),
+  area(3, 'Area'),
+  heikinAshi(8, 'Heikin Ashi'),
+  hollowCandles(9, 'Hollow');
+
+  final int value;
+  final String label;
+  const TvChartStyle(this.value, this.label);
+}
+
+// ── TradingView Chart Widget ──────────────────────────────
+class TradingViewChart extends StatefulWidget {
+  final String symbol;
+  final String exchange;
+  final TvInterval interval;
+  final TvChartStyle chartStyle;
+  final bool showToolbar;
+  final bool showVolume;
+  final bool showIndicators;
+  final double height;
+  final List<String> studies;
+
+  const TradingViewChart({
     super.key,
     required this.symbol,
-    required this.palette,
-    this.interval = '60',
-    this.height = 320,
+    this.exchange = 'BINANCE',
+    this.interval = TvInterval.hour1,
+    this.chartStyle = TvChartStyle.candles,
     this.showToolbar = true,
+    this.showVolume = true,
+    this.showIndicators = true,
+    this.height = 420,
+    this.studies = const ['RSI@tv-basicstudies', 'MACD@tv-basicstudies'],
   });
 
   @override
-  State<TradingViewWidget> createState() => _TradingViewWidgetState();
+  State<TradingViewChart> createState() => _TradingViewChartState();
 }
 
-class _TradingViewWidgetState extends State<TradingViewWidget> {
+class _TradingViewChartState extends State<TradingViewChart> {
   late WebViewController _controller;
-  bool _isLoading = true;
-  String _currentInterval = '60';
+  bool _loaded = false;
   String _currentSymbol = '';
-
-  final List<_Interval> _intervals = const [
-    _Interval('1m', '1'),
-    _Interval('5m', '5'),
-    _Interval('15m', '15'),
-    _Interval('1h', '60'),
-    _Interval('4h', '240'),
-    _Interval('1T', 'D'),
-    _Interval('1W', 'W'),
-  ];
+  TvInterval _currentInterval = TvInterval.hour1;
 
   @override
   void initState() {
     super.initState();
+    _currentSymbol = widget.symbol;
     _currentInterval = widget.interval;
-    _currentSymbol = _normalizeSymbol(widget.symbol);
     _initController();
-  }
-
-  @override
-  void didUpdateWidget(TradingViewWidget old) {
-    super.didUpdateWidget(old);
-    if (old.symbol != widget.symbol) {
-      _currentSymbol = _normalizeSymbol(widget.symbol);
-      _loadChart();
-    }
-  }
-
-  String _normalizeSymbol(String sym) {
-    // Map to TradingView symbols
-    const tvMap = {
-      'BTC':   'BINANCE:BTCUSDT',
-      'ETH':   'BINANCE:ETHUSDT',
-      'BNB':   'BINANCE:BNBUSDT',
-      'SOL':   'BINANCE:SOLUSDT',
-      'ADA':   'BINANCE:ADAUSDT',
-      'DOGE':  'BINANCE:DOGEUSDT',
-      'AVAX':  'BINANCE:AVAXUSDT',
-      'MATIC': 'BINANCE:MATICUSDT',
-      'LINK':  'BINANCE:LINKUSDT',
-      'XRP':   'BINANCE:XRPUSDT',
-      'LTC':   'BINANCE:LTCUSDT',
-      'DOT':   'BINANCE:DOTUSDT',
-      'QEMMA': 'BINANCE:SOLUSDT', // QEMMA uses SOL chart as reference
-      // Stocks
-      'AAPL':  'NASDAQ:AAPL',
-      'TSLA':  'NASDAQ:TSLA',
-      'GOOGL': 'NASDAQ:GOOGL',
-      'AMZN':  'NASDAQ:AMZN',
-      'MSFT':  'NASDAQ:MSFT',
-      'NVDA':  'NASDAQ:NVDA',
-      'META':  'NASDAQ:META',
-      // Commodities
-      'XAU':   'TVC:GOLD',
-      'XAG':   'TVC:SILVER',
-      'OIL':   'NYMEX:CL1!',
-    };
-    return tvMap[sym] ?? 'BINANCE:${sym}USDT';
   }
 
   void _initController() {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(const Color(0xFF03060F))
       ..setNavigationDelegate(NavigationDelegate(
-        onPageStarted: (_) => setState(() => _isLoading = true),
-        onPageFinished: (_) => setState(() => _isLoading = false),
-        onWebResourceError: (_) => setState(() => _isLoading = false),
+        onPageFinished: (_) => setState(() => _loaded = true),
+        onWebResourceError: (_) => setState(() => _loaded = true),
       ))
       ..loadHtmlString(_buildHtml());
   }
 
-  void _loadChart() {
-    _controller.loadHtmlString(_buildHtml());
-  }
-
   String _buildHtml() {
-    final p = widget.palette;
-    final bg = _colorToHex(p.background);
-    final surface = _colorToHex(p.surface);
-    final primaryColor = _colorToHex(p.primary);
-    final textColor = _colorToHex(p.textPrimary);
-    final textSecColor = _colorToHex(p.textSecondary);
-    final positiveColor = _colorToHex(p.positive);
-    final negativeColor = _colorToHex(p.negative);
+    final sym = '${widget.exchange}:${widget.symbol}USDT';
+    final studiesJson = widget.studies.map((s) => '"$s"').join(',');
 
     return '''
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: $bg; overflow: hidden; }
-  #tv_chart_container { width: 100%; height: 100vh; }
-  .tradingview-widget-container { height: 100%; }
+  html, body { width: 100%; height: 100%; background: #03060F; overflow: hidden; }
+  #tv_chart_container { width: 100%; height: 100%; }
 </style>
 </head>
 <body>
 <div id="tv_chart_container"></div>
 <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 <script type="text/javascript">
-try {
-  new TradingView.widget({
-    "autosize": true,
-    "symbol": "$_currentSymbol",
-    "interval": "$_currentInterval",
-    "timezone": "Europe/Berlin",
-    "theme": "dark",
-    "style": "1",
-    "locale": "de_DE",
-    "toolbar_bg": "$surface",
-    "enable_publishing": false,
-    "withdateranges": false,
-    "hide_side_toolbar": false,
-    "allow_symbol_change": true,
-    "save_image": false,
-    "container_id": "tv_chart_container",
-    "overrides": {
-      "paneProperties.background": "$bg",
-      "paneProperties.backgroundType": "solid",
-      "paneProperties.vertGridProperties.color": "${surface}55",
-      "paneProperties.horzGridProperties.color": "${surface}55",
-      "scalesProperties.textColor": "$textSecColor",
-      "mainSeriesProperties.candleStyle.upColor": "$positiveColor",
-      "mainSeriesProperties.candleStyle.downColor": "$negativeColor",
-      "mainSeriesProperties.candleStyle.wickUpColor": "$positiveColor",
-      "mainSeriesProperties.candleStyle.wickDownColor": "$negativeColor",
-      "mainSeriesProperties.candleStyle.borderUpColor": "$positiveColor",
-      "mainSeriesProperties.candleStyle.borderDownColor": "$negativeColor"
-    },
-    "loading_screen": {
-      "backgroundColor": "$bg",
-      "foregroundColor": "$primaryColor"
-    }
-  });
-} catch(e) {
-  // Fallback: simple chart
-  document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:$textColor;font-family:monospace;font-size:14px;background:$bg;flex-direction:column;gap:8px;"><span style="color:$primaryColor;font-size:18px">📈</span><span>$_currentSymbol</span><span style="color:$textSecColor;font-size:11px">TradingView lädt...</span></div>';
-}
+new TradingView.widget({
+  "autosize": true,
+  "symbol": "$sym",
+  "interval": "${_currentInterval.value}",
+  "timezone": "Etc/UTC",
+  "theme": "dark",
+  "style": "${widget.chartStyle.value}",
+  "locale": "en",
+  "toolbar_bg": "#0A0F1E",
+  "enable_publishing": false,
+  "hide_top_toolbar": ${!widget.showToolbar},
+  "hide_side_toolbar": false,
+  "allow_symbol_change": true,
+  "container_id": "tv_chart_container",
+  "withdateranges": true,
+  "hide_volume": ${!widget.showVolume},
+  "studies": [$studiesJson],
+  "overrides": {
+    "mainSeriesProperties.candleStyle.upColor": "#00F0C0",
+    "mainSeriesProperties.candleStyle.downColor": "#FF4444",
+    "mainSeriesProperties.candleStyle.borderUpColor": "#00F0C0",
+    "mainSeriesProperties.candleStyle.borderDownColor": "#FF4444",
+    "mainSeriesProperties.candleStyle.wickUpColor": "#00F0C0",
+    "mainSeriesProperties.candleStyle.wickDownColor": "#FF4444",
+    "paneProperties.background": "#03060F",
+    "paneProperties.vertGridProperties.color": "#0A1628",
+    "paneProperties.horzGridProperties.color": "#0A1628",
+    "scalesProperties.textColor": "#8899AA"
+  },
+  "loading_screen": {
+    "backgroundColor": "#03060F",
+    "foregroundColor": "#00C8F5"
+  }
+});
 </script>
 </body>
 </html>
 ''';
   }
 
-  String _colorToHex(Color c) {
-    return '#${c.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
+  void changeSymbol(String symbol) {
+    setState(() {
+      _currentSymbol = symbol;
+      _loaded = false;
+    });
+    _controller.loadHtmlString(_buildHtml());
+  }
+
+  void changeInterval(TvInterval interval) {
+    setState(() {
+      _currentInterval = interval;
+      _loaded = false;
+    });
+    _controller.loadHtmlString(_buildHtml());
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Interval Toolbar
-        if (widget.showToolbar)
-          Container(
-            height: 36,
-            color: widget.palette.surface,
-            child: Row(
-              children: [
-                Expanded(
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    itemCount: _intervals.length,
-                    itemBuilder: (_, i) {
-                      final iv = _intervals[i];
-                      final active = _currentInterval == iv.value;
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() => _currentInterval = iv.value);
-                          _loadChart();
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          margin: const EdgeInsets.only(right: 4),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: active ? widget.palette.primary : Colors.transparent,
-                            borderRadius: BorderRadius.circular(6),
-                            border: active ? null : Border.all(color: widget.palette.primary.withValues(alpha: 0.2)),
-                          ),
-                          child: Text(
-                            iv.label,
-                            style: GoogleFonts.rajdhani(
-                              color: active ? widget.palette.background : widget.palette.textSecondary,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                // Symbol info
-                Padding(
-                  padding: const EdgeInsets.only(right: 10),
-                  child: Text(
-                    widget.symbol,
-                    style: GoogleFonts.rajdhani(color: widget.palette.primary, fontSize: 12, fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ],
-            ),
+    final p = context.watch<ThemeProvider>().palette;
+    return SizedBox(
+      height: widget.height,
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: WebViewWidget(controller: _controller),
           ),
-        // WebView Chart
-        SizedBox(
-          height: widget.height,
-          child: Stack(
-            children: [
-              WebViewWidget(controller: _controller),
-              if (_isLoading)
-                Container(
-                  color: widget.palette.background,
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircularProgressIndicator(color: widget.palette.primary, strokeWidth: 2),
-                        const SizedBox(height: 12),
-                        Text(
-                          'TradingView lädt ${widget.symbol}...',
-                          style: GoogleFonts.rajdhani(color: widget.palette.textSecondary, fontSize: 12),
-                        ),
-                      ],
+          if (!_loaded)
+            Container(
+              decoration: BoxDecoration(
+                color: p.background,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: CircularProgressIndicator(
+                        color: p.primary,
+                        strokeWidth: 2,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 12),
+                    Text('Loading TradingView Chart...',
+                      style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 12)),
+                  ],
                 ),
-            ],
-          ),
-        ),
-      ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
 
-// ── Interval Data ────────────────────────────────────
-class _Interval {
-  final String label, value;
-  const _Interval(this.label, this.value);
-}
-
-// ════════════════════════════════════════════════════
-// TRADINGVIEW MINI CHART (kompakt, kein Toolbar)
-// ════════════════════════════════════════════════════
-class TradingViewMiniChart extends StatefulWidget {
+// ── Full Chart Screen (used in Trading/Market screens) ────
+class TradingViewChartScreen extends StatefulWidget {
   final String symbol;
-  final QuantumPalette palette;
-  final double height;
+  final String name;
 
-  const TradingViewMiniChart({
+  const TradingViewChartScreen({
     super.key,
     required this.symbol,
-    required this.palette,
-    this.height = 160,
+    this.name = '',
   });
 
   @override
-  State<TradingViewMiniChart> createState() => _TradingViewMiniChartState();
+  State<TradingViewChartScreen> createState() => _TradingViewChartScreenState();
 }
 
-class _TradingViewMiniChartState extends State<TradingViewMiniChart> {
-  late WebViewController _controller;
+class _TradingViewChartScreenState extends State<TradingViewChartScreen> {
+  TvInterval _interval = TvInterval.hour1;
+  TvChartStyle _style = TvChartStyle.candles;
+  String _exchange = 'BINANCE';
+  final List<String> _exchanges = ['BINANCE', 'COINBASE', 'KRAKEN', 'BYBIT', 'OKX'];
 
-  @override
-  void initState() {
-    super.initState();
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..loadHtmlString(_buildMiniHtml());
-  }
-
-  String _buildMiniHtml() {
-    final bg = '#${widget.palette.background.toARGB32().toRadixString(16).substring(2)}';
-    return '''
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>*{margin:0;padding:0;}body{background:$bg;}</style>
-</head>
-<body>
-<!-- TradingView Widget BEGIN -->
-<div class="tradingview-widget-container">
-  <div class="tradingview-widget-container__widget"></div>
-  <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-mini-symbol-overview.js" async>
-  {
-    "symbol": "${_sym()}",
-    "width": "100%",
-    "height": "${widget.height}",
-    "locale": "de_DE",
-    "dateRange": "1D",
-    "colorTheme": "dark",
-    "trendLineColor": "rgba(0, 212, 255, 1)",
-    "underLineColor": "rgba(0, 212, 255, 0.15)",
-    "isTransparent": true,
-    "autosize": true,
-    "largeChartUrl": ""
-  }
-  </script>
-</div>
-</body>
-</html>
-''';
-  }
-
-  String _sym() {
-    const map = {
-      'BTC': 'BINANCE:BTCUSDT', 'ETH': 'BINANCE:ETHUSDT',
-      'SOL': 'BINANCE:SOLUSDT', 'BNB': 'BINANCE:BNBUSDT',
-      'XAU': 'TVC:GOLD', 'XAG': 'TVC:SILVER',
-      'AAPL': 'NASDAQ:AAPL', 'TSLA': 'NASDAQ:TSLA',
-      'GOOGL': 'NASDAQ:GOOGL',
-    };
-    return map[widget.symbol] ?? 'BINANCE:${widget.symbol}USDT';
-  }
+  final _chartKey = GlobalKey<_TradingViewChartState>();
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: widget.height,
-      child: WebViewWidget(controller: _controller),
+    final p = context.watch<ThemeProvider>().palette;
+    return Scaffold(
+      backgroundColor: p.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(p),
+            _buildIntervalBar(p),
+            Expanded(
+              child: TradingViewChart(
+                key: _chartKey,
+                symbol: widget.symbol,
+                exchange: _exchange,
+                interval: _interval,
+                chartStyle: _style,
+                showVolume: true,
+                showIndicators: true,
+                height: double.infinity,
+              ),
+            ),
+            _buildBottomBar(p),
+          ],
+        ),
+      ),
     );
   }
+
+  Widget _buildHeader(QuantumPalette p) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+      decoration: BoxDecoration(
+        color: p.surface.withValues(alpha: 0.4),
+        border: Border(bottom: BorderSide(color: p.primary.withValues(alpha: 0.2))),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: Icon(Icons.arrow_back_ios, color: p.primary, size: 18),
+            onPressed: () => Navigator.pop(context),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: p.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(widget.symbol, style: GoogleFonts.orbitron(
+              color: p.primary, fontSize: 14, fontWeight: FontWeight.bold,
+            )),
+          ),
+          const SizedBox(width: 8),
+          if (widget.name.isNotEmpty)
+            Text(widget.name, style: GoogleFonts.rajdhani(
+              color: p.textSecondary, fontSize: 12,
+            )),
+          const Spacer(),
+          // Exchange selector
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: p.surface.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: p.primary.withValues(alpha: 0.3)),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _exchange,
+                dropdownColor: p.surface,
+                style: GoogleFonts.rajdhani(color: p.primary, fontSize: 11),
+                icon: Icon(Icons.expand_more, color: p.primary, size: 14),
+                items: _exchanges.map((e) => DropdownMenuItem(
+                  value: e,
+                  child: Text(e),
+                )).toList(),
+                onChanged: (v) {
+                  if (v != null) setState(() => _exchange = v);
+                },
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: Icon(Icons.fullscreen, color: p.textSecondary, size: 20),
+            onPressed: () {},
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIntervalBar(QuantumPalette p) {
+    return Container(
+      height: 36,
+      color: p.surface.withValues(alpha: 0.3),
+      child: Row(
+        children: [
+          Expanded(
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              children: TvInterval.values.map((iv) {
+                final sel = iv == _interval;
+                return GestureDetector(
+                  onTap: () => setState(() => _interval = iv),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    margin: const EdgeInsets.only(right: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: sel ? p.primary.withValues(alpha: 0.2) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(5),
+                      border: Border.all(color: sel ? p.primary : Colors.transparent),
+                    ),
+                    child: Center(child: Text(iv.label, style: GoogleFonts.orbitron(
+                      color: sel ? p.primary : p.textSecondary,
+                      fontSize: 10, fontWeight: sel ? FontWeight.bold : FontWeight.normal,
+                    ))),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          // Chart style selector
+          PopupMenuButton<TvChartStyle>(
+            icon: Icon(Icons.bar_chart, color: p.textSecondary, size: 18),
+            color: p.surface,
+            itemBuilder: (_) => TvChartStyle.values.map((s) => PopupMenuItem(
+              value: s,
+              child: Text(s.label, style: GoogleFonts.rajdhani(
+                color: s == _style ? p.primary : p.textPrimary, fontSize: 12,
+              )),
+            )).toList(),
+            onSelected: (s) => setState(() => _style = s),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomBar(QuantumPalette p) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      color: p.surface.withValues(alpha: 0.4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildAction(p, Icons.add_chart, 'Indicator', () {}),
+          _buildAction(p, Icons.draw, 'Draw', () {}),
+          _buildAction(p, Icons.compare_arrows, 'Compare', () {}),
+          _buildAction(p, Icons.screenshot, 'Snapshot', () {}),
+          _buildAction(p, Icons.settings_outlined, 'Settings', () {}),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAction(QuantumPalette p, IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(children: [
+        Icon(icon, color: p.textSecondary, size: 20),
+        Text(label, style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 9)),
+      ]),
+    );
+  }
+}
+
+// ── Mini Sparkline Widget (no WebView needed) ─────────────
+class SparklineWidget extends StatelessWidget {
+  final List<double> data;
+  final Color? color;
+  final double width;
+  final double height;
+
+  const SparklineWidget({
+    super.key,
+    required this.data,
+    this.color,
+    this.width = 80,
+    this.height = 32,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final p = context.watch<ThemeProvider>().palette;
+    if (data.length < 2) {
+      return SizedBox(width: width, height: height);
+    }
+    final isPositive = data.last >= data.first;
+    final lineColor = color ?? (isPositive ? p.positive : p.negative);
+
+    return SizedBox(
+      width: width,
+      height: height,
+      child: CustomPaint(
+        painter: _SparklinePainter(data: data, color: lineColor),
+      ),
+    );
+  }
+}
+
+class _SparklinePainter extends CustomPainter {
+  final List<double> data;
+  final Color color;
+  const _SparklinePainter({required this.data, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (data.length < 2) return;
+    final min = data.reduce((a, b) => a < b ? a : b);
+    final max = data.reduce((a, b) => a > b ? a : b);
+    final range = max - min;
+    if (range == 0) return;
+
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path();
+    for (int i = 0; i < data.length; i++) {
+      final x = i / (data.length - 1) * size.width;
+      final y = size.height - (data[i] - min) / range * size.height;
+      if (i == 0) path.moveTo(x, y);
+      else path.lineTo(x, y);
+    }
+    canvas.drawPath(path, paint);
+
+    // Area fill
+    final fillPath = Path()..addPath(path, Offset.zero);
+    fillPath.lineTo(size.width, size.height);
+    fillPath.lineTo(0, size.height);
+    fillPath.close();
+    canvas.drawPath(
+      fillPath,
+      Paint()
+        ..color = color.withValues(alpha: 0.12)
+        ..style = PaintingStyle.fill,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _SparklinePainter old) => old.data != data;
 }

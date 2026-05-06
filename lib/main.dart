@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/live_price_provider.dart';
 import 'services/live_market_service.dart';
 import 'services/coinmarketcap_service.dart';
 import 'services/secure_vault_service.dart';
@@ -18,6 +19,7 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => LivePriceProvider()),
         ChangeNotifierProvider(create: (_) => LiveMarketService()),
         ChangeNotifierProvider(create: (_) => CoinMarketCapService()),
         ChangeNotifierProvider(create: (_) => SecureVaultService()),
