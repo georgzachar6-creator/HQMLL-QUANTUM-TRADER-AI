@@ -36,6 +36,10 @@ import 'writer_screen.dart';
 import 'tr2_preview_screen.dart';
 import 'ai_chat_screen.dart';
 import 'connector_screen.dart';
+import 'nft_screen.dart';
+import 'orderbook_screen.dart';
+import 'tax_screen.dart';
+import 'staking_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -78,6 +82,10 @@ class _MainScaffoldState extends State<MainScaffold>
     _NavItem(icon: Icons.hub_outlined, activeIcon: Icons.hub, label: 'TR2'),
     _NavItem(icon: Icons.smart_toy_rounded, activeIcon: Icons.smart_toy_rounded, label: 'AI CHAT'),
     _NavItem(icon: Icons.hub_rounded, activeIcon: Icons.hub, label: 'CONNECTOR'),
+    _NavItem(icon: Icons.image_outlined, activeIcon: Icons.image, label: 'NFT'),
+    _NavItem(icon: Icons.format_list_numbered, activeIcon: Icons.format_list_numbered, label: 'ORDERBOOK'),
+    _NavItem(icon: Icons.calculate_outlined, activeIcon: Icons.calculate, label: 'STEUER'),
+    _NavItem(icon: Icons.savings_outlined, activeIcon: Icons.savings, label: 'STAKING'),
   ];
 
   @override
@@ -129,6 +137,10 @@ class _MainScaffoldState extends State<MainScaffold>
       const TR2PreviewScreen(),
       const AIChatScreen(),
       const ConnectorScreen(),
+      const NFTScreen(),
+      const OrderbookScreen(),
+      const TaxScreen(),
+      const StakingScreen(),
     ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
