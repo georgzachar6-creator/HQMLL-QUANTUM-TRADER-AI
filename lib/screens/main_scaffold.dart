@@ -11,7 +11,6 @@ import 'trading_screen.dart';
 import 'portfolio_screen.dart';
 import 'token_screen.dart';
 import 'settings_screen.dart';
-import 'quantum_monitor_screen.dart';
 import 'wallet_screen.dart';
 import 'alarm_screen.dart';
 import 'market_screen.dart';
@@ -40,6 +39,8 @@ import 'nft_screen.dart';
 import 'orderbook_screen.dart';
 import 'tax_screen.dart';
 import 'staking_screen.dart';
+import 'rebalancer_screen.dart';
+import 'alerts_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -86,6 +87,8 @@ class _MainScaffoldState extends State<MainScaffold>
     _NavItem(icon: Icons.format_list_numbered, activeIcon: Icons.format_list_numbered, label: 'ORDERBOOK'),
     _NavItem(icon: Icons.calculate_outlined, activeIcon: Icons.calculate, label: 'STEUER'),
     _NavItem(icon: Icons.savings_outlined, activeIcon: Icons.savings, label: 'STAKING'),
+    _NavItem(icon: Icons.auto_awesome, activeIcon: Icons.auto_awesome, label: 'REBALANCER'),
+    _NavItem(icon: Icons.notifications_active_outlined, activeIcon: Icons.notifications_active, label: 'ALARMS'),
   ];
 
   @override
@@ -141,6 +144,8 @@ class _MainScaffoldState extends State<MainScaffold>
       const OrderbookScreen(),
       const TaxScreen(),
       const StakingScreen(),
+      const RebalancerScreen(),
+      const AlertsScreen(),
     ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(

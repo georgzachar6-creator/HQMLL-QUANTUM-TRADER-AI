@@ -236,7 +236,6 @@ class _DeFiScreenState extends State<DeFiScreen> with TickerProviderStateMixin {
   // ── POOLS ──
   Widget _buildPools(dynamic p) {
     final myPools = _pools.where((pl) => (pl['myLiq'] as double) > 0).toList();
-    final allPools = _pools.where((pl) => (pl['myLiq'] as double) == 0).toList();
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [

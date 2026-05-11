@@ -1,7 +1,6 @@
 // ============================================================
 // ENTERPRISE SCREEN v2 – License, Team, API Keys, White-Label
 // ============================================================
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,7 +17,6 @@ class _EnterpriseScreenState extends State<EnterpriseScreen>
     with TickerProviderStateMixin {
   late TabController _tab;
   late AnimationController _glowCtrl;
-  final _rand = Random();
 
   // License
   final String _licenseKey = 'HQMLL-ENT-2025-X9K4-F8M2-QT17';

@@ -3,7 +3,6 @@
 // Live Prices · WebSocket · CMC · CoinGecko · TradingView
 // ============================================================
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,6 +11,7 @@ import '../providers/theme_provider.dart';
 import '../providers/live_price_provider.dart';
 import '../theme/app_themes.dart';
 import '../widgets/tradingview_widget.dart';
+import '../widgets/crypto_icon.dart';
 import '../services/websocket_service.dart';
 
 class MarketScreen extends StatefulWidget {
@@ -25,7 +25,6 @@ class _MarketScreenState extends State<MarketScreen>
   late AnimationController _glowCtrl;
   late AnimationController _tickCtrl;
   Timer? _uiTimer;
-  final _rand = Random();
   final _searchCtrl = TextEditingController();
 
   int _selectedTab = 0;
@@ -100,6 +99,7 @@ class _MarketScreenState extends State<MarketScreen>
           children: [
             _buildHeader(p, lp),
             _buildConnectionBar(p, lp),
+            _buildTopCoinsStrip(p, lp),
             _buildTabBar(p),
             if (_showSearch) _buildSearchBar(p),
             Expanded(
@@ -199,6 +199,62 @@ class _MarketScreenState extends State<MarketScreen>
     );
   }
 
+  // ── Top Coins Icon Strip ─────────────────────────────────
+  Widget _buildTopCoinsStrip(QuantumPalette p, LivePriceProvider lp) {
+    final topSymbols = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'ADA', 'AVAX', 'DOGE', 'DOT', 'LINK', 'MATIC', 'UNI'];
+    return Container(
+      height: 70,
+      decoration: BoxDecoration(
+        color: p.surface.withValues(alpha: 0.25),
+        border: Border(bottom: BorderSide(color: p.primary.withValues(alpha: 0.12))),
+      ),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        itemCount: topSymbols.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 6),
+        itemBuilder: (_, i) {
+          final sym = topSymbols[i];
+          final quote = lp.getQuote(sym);
+          final price = quote?.price ?? 0;
+          final change = quote?.change24h ?? 0;
+          final isUp = change >= 0;
+          final meta = CryptoRegistry.getOrFallback(sym);
+          return GestureDetector(
+            onTap: () {
+              final q = lp.getQuote(sym);
+              if (q != null) _openChart(context, q);
+            },
+            child: Container(
+              width: 72,
+              decoration: BoxDecoration(
+                color: meta.primary.withValues(alpha: 0.07),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: meta.primary.withValues(alpha: 0.2)),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CryptoIcon(sym, size: 26, showBorder: false),
+                  const SizedBox(height: 3),
+                  Text(sym, style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 8, fontWeight: FontWeight.bold)),
+                  if (price > 0)
+                    Text(
+                      '${isUp ? '+' : ''}${change.toStringAsFixed(1)}%',
+                      style: GoogleFonts.spaceMono(
+                        color: isUp ? const Color(0xFF00C896) : const Color(0xFFFF3355),
+                        fontSize: 7, fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildHeaderStat(QuantumPalette p, String label, String value, Color color) {
     return Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
       Text(value, style: GoogleFonts.orbitron(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
@@ -242,7 +298,7 @@ class _MarketScreenState extends State<MarketScreen>
     final isConn2 = status == ExchangeStatus.connecting;
     final badgeColor = isConn ? color : isConn2 ? p.accent : p.textSecondary.withValues(alpha: 0.4);
     return GestureDetector(
-      onTap: () => lp_toggle(p, name),
+      onTap: () => lpToggle(p, name),
       child: Container(
         margin: const EdgeInsets.only(right: 6),
         padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -270,7 +326,7 @@ class _MarketScreenState extends State<MarketScreen>
     );
   }
 
-  void lp_toggle(QuantumPalette p, String name) {}
+  void lpToggle(QuantumPalette p, String name) {}
 
   Widget _buildDataBadge(QuantumPalette p, String name, bool active, Color color) {
     return Container(
@@ -535,27 +591,7 @@ class _MarketScreenState extends State<MarketScreen>
             // Icon + Name
             Expanded(
               child: Row(children: [
-                Container(
-                  width: 32, height: 32,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: p.primary.withValues(alpha: 0.1),
-                  ),
-                  child: q.iconUrl != null
-                      ? ClipOval(child: Image.network(
-                          q.iconUrl!,
-                          width: 32, height: 32,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Center(
-                            child: Text(q.symbol.length >= 2 ? q.symbol.substring(0, 2) : q.symbol,
-                              style: GoogleFonts.orbitron(color: p.primary, fontSize: 9, fontWeight: FontWeight.bold)),
-                          ),
-                        ))
-                      : Center(child: Text(
-                          q.symbol.length >= 2 ? q.symbol.substring(0, 2) : q.symbol,
-                          style: GoogleFonts.orbitron(color: p.primary, fontSize: 9, fontWeight: FontWeight.bold),
-                        )),
-                ),
+                CryptoIcon(q.symbol, size: 36, showShadow: false),
                 const SizedBox(width: 8),
                 Expanded(child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

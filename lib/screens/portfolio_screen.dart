@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/theme_provider.dart';
 import 'oracle_screen.dart';
+import '../widgets/crypto_icon.dart';
 
 class PortfolioScreen extends StatefulWidget {
   const PortfolioScreen({super.key});
@@ -1251,26 +1252,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
       ),
       child: Row(
         children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: p.surfaceVariant,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                  color: p.primary.withValues(alpha: 0.2)),
-            ),
-            child: Center(
-              child: Text(
-                a.icon.length > 3 ? a.icon.substring(0, 3) : a.icon,
-                style: GoogleFonts.spaceMono(
-                  color: p.primary,
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
+          CryptoIcon(a.symbol, size: 40, showShadow: false),
           const SizedBox(width: 10),
           Expanded(
             child: Column(

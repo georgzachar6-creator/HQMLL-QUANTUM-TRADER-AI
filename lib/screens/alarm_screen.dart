@@ -10,6 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../theme/app_themes.dart';
+import '../widgets/asset_icon_widget.dart';
 
 class AlarmScreen extends StatefulWidget {
   const AlarmScreen({super.key});
@@ -357,23 +358,37 @@ class _AlarmScreenState extends State<AlarmScreen>
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
             child: Row(
               children: [
-                AnimatedBuilder(
-                  animation: _ringCtrl,
-                  builder: (_, __) => Container(
-                    width: 32, height: 32,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isNear && isActive
-                          ? p.negative.withValues(alpha: 0.15 + _ringCtrl.value * 0.1)
-                          : priorityColor.withValues(alpha: 0.1),
+                // Coin Icon mit Notification-Overlay
+                Stack(
+                  children: [
+                    AssetIconWidget(
+                      symbol: (a['pair'] as String).split('/').first,
+                      palette: p, size: 36, showBorder: true,
+                      showGlow: isNear && isActive,
                     ),
-                    child: Icon(
-                      isNear && isActive ? Icons.notification_important : Icons.notifications_outlined,
-                      color: isNear && isActive ? p.negative : priorityColor, size: 16,
+                    Positioned(
+                      right: 0, bottom: 0,
+                      child: AnimatedBuilder(
+                        animation: _ringCtrl,
+                        builder: (_, __) => Container(
+                          width: 14, height: 14,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isNear && isActive
+                                ? p.negative.withValues(alpha: 0.9 + _ringCtrl.value * 0.1)
+                                : priorityColor.withValues(alpha: 0.9),
+                            border: Border.all(color: p.surface, width: 1.5),
+                          ),
+                          child: Icon(
+                            isNear && isActive ? Icons.notification_important : Icons.notifications_outlined,
+                            color: Colors.white, size: 8,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Expanded(child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -845,14 +860,14 @@ class _AlarmScreenState extends State<AlarmScreen>
             const SizedBox(width: 6),
             Text('Sound', style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 12)),
             const Spacer(),
-            Switch(value: true, onChanged: (_) {}, activeColor: p.primary),
+            Switch(value: true, onChanged: (_) {}, activeThumbColor: p.primary),
           ]),
           Row(children: [
             Icon(Icons.notifications, color: p.textSecondary, size: 16),
             const SizedBox(width: 6),
             Text('Push Notification', style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 12)),
             const Spacer(),
-            Switch(value: true, onChanged: (_) {}, activeColor: p.primary),
+            Switch(value: true, onChanged: (_) {}, activeThumbColor: p.primary),
           ]),
           const SizedBox(height: 14),
           SizedBox(
@@ -945,7 +960,7 @@ class _AlarmScreenState extends State<AlarmScreen>
           color: p.textPrimary, fontSize: 13,
         )),
         const Spacer(),
-        Switch(value: value, onChanged: onChanged, activeColor: p.primary),
+        Switch(value: value, onChanged: onChanged, activeThumbColor: p.primary),
       ]),
     );
   }
@@ -977,14 +992,19 @@ class _AlarmScreenState extends State<AlarmScreen>
               color: p.accent, fontSize: 12, fontWeight: FontWeight.bold,
             )),
           ]),
-          Slider(
-            value: _cooldown.toDouble(),
-            min: 1,
-            max: 60,
-            divisions: 59,
-            activeColor: p.accent,
-            inactiveColor: p.surface,
-            onChanged: (v) => setState(() => _cooldown = v.toInt()),
+          SliderTheme(
+            data: SliderThemeData(
+              thumbColor: p.accent,
+              activeTrackColor: p.accent,
+              inactiveTrackColor: p.surface,
+            ),
+            child: Slider(
+              value: _cooldown.toDouble(),
+              min: 1,
+              max: 60,
+              divisions: 59,
+              onChanged: (v) => setState(() => _cooldown = v.toInt()),
+            ),
           ),
         ],
       ),

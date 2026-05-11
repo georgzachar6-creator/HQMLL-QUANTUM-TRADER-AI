@@ -8,9 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../widgets/crypto_icon.dart';
+
 import '../providers/theme_provider.dart';
 import '../providers/live_price_provider.dart';
-import '../theme/app_themes.dart';
 
 class OrderbookScreen extends StatefulWidget {
   const OrderbookScreen({super.key});
@@ -56,9 +57,6 @@ class _OrderbookScreenState extends State<OrderbookScreen>
   double _high24h = 69120.0;
   double _low24h = 66340.0;
   double _vol24h = 42318.5;
-
-  // Flash tracking
-  final Map<double, Color> _flashMap = {};
 
   @override
   void initState() {
@@ -271,14 +269,16 @@ class _OrderbookScreenState extends State<OrderbookScreen>
   // ── PAIR SELECTOR ─────────────────────────────────────────
   Widget _buildPairSelector(dynamic p) {
     return Container(
-      height: 38,
+      height: 62,
       color: p.surface,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         itemCount: _pairs.length,
         itemBuilder: (_, i) {
           final sel = _selectedPair == _pairs[i];
+          final sym = _pairs[i].split('/')[0];
+          final meta = CryptoRegistry.getOrFallback(sym);
           return GestureDetector(
             onTap: () {
               HapticFeedback.selectionClick();
@@ -288,19 +288,26 @@ class _OrderbookScreenState extends State<OrderbookScreen>
               });
             },
             child: Container(
-              margin: const EdgeInsets.only(right: 6),
+              margin: const EdgeInsets.only(right: 8),
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
-                color: sel ? p.primary.withValues(alpha: 0.12) : Colors.transparent,
+                color: sel ? meta.primary.withValues(alpha: 0.15) : Colors.transparent,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: sel ? p.primary.withValues(alpha: 0.45) : p.primary.withValues(alpha: 0.08),
                 ),
               ),
-              child: Center(child: Text(_pairs[i], style: GoogleFonts.spaceMono(
-                color: sel ? p.primary : p.textSecondary,
-                fontSize: 10, fontWeight: sel ? FontWeight.bold : FontWeight.normal,
-              ))),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CryptoIcon(sym, size: 24, showBorder: false),
+                  const SizedBox(width: 6),
+                  Text(_pairs[i], style: GoogleFonts.spaceMono(
+                    color: sel ? meta.primary : p.textSecondary,
+                    fontSize: 9, fontWeight: sel ? FontWeight.bold : FontWeight.normal,
+                  )),
+                ],
+              ),
             ),
           );
         },

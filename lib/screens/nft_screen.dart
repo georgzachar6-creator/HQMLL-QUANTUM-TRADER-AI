@@ -8,8 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../widgets/crypto_icon.dart';
+
 import '../providers/theme_provider.dart';
-import '../theme/app_themes.dart';
 
 class NFTScreen extends StatefulWidget {
   const NFTScreen({super.key});
@@ -271,7 +272,7 @@ class _NFTScreenState extends State<NFTScreen>
       'APT': const Color(0xFF00AAFF),
     };
     return Container(
-      height: 40,
+      height: 62,
       color: p.surface,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
@@ -283,20 +284,30 @@ class _NFTScreenState extends State<NFTScreen>
           final col = chainColors[c] ?? p.primary;
           return GestureDetector(
             onTap: () => setState(() => _chain = c),
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
               margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
                 color: sel ? col.withValues(alpha: 0.15) : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: sel ? col.withValues(alpha: 0.5) : p.primary.withValues(alpha: 0.1),
+                  color: sel ? col : p.primary.withValues(alpha: 0.1),
+                  width: sel ? 2 : 1,
                 ),
+                boxShadow: sel ? [BoxShadow(color: col.withValues(alpha: 0.3), blurRadius: 8)] : null,
               ),
-              child: Center(child: Text(c, style: GoogleFonts.spaceMono(
-                color: sel ? col : p.textSecondary, fontSize: 10,
-                fontWeight: sel ? FontWeight.bold : FontWeight.normal,
-              ))),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CryptoIcon(c, size: 26, showBorder: false),
+                  const SizedBox(width: 6),
+                  Text(c, style: GoogleFonts.spaceMono(
+                    color: sel ? col : p.textSecondary, fontSize: 10,
+                    fontWeight: sel ? FontWeight.bold : FontWeight.normal,
+                  )),
+                ],
+              ),
             ),
           );
         },

@@ -10,7 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/live_price_provider.dart';
-import '../theme/app_themes.dart';
+import '../widgets/crypto_icon.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -24,7 +24,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   late AnimationController _pulseCtrl;
   late AnimationController _slideCtrl;
   Timer? _liveTimer;
-  Timer? _newsTimer;
   final _rand = Random();
 
   // Portfolio
@@ -491,11 +490,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               border: Border(top: i > 0 ? BorderSide(color: p.primary.withValues(alpha: 0.06)) : BorderSide.none),
             ),
             child: Row(children: [
-              Container(
-                width: 36, height: 36,
-                decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10), border: Border.all(color: color.withValues(alpha: 0.25))),
-                child: Center(child: Text(w['sym'] as String, style: GoogleFonts.spaceMono(color: color, fontSize: 9, fontWeight: FontWeight.bold))),
-              ),
+              CryptoIcon(w['sym'] as String, size: 38, showShadow: false),
               const SizedBox(width: 10),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(w['sym'] as String, style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 11, fontWeight: FontWeight.bold)),

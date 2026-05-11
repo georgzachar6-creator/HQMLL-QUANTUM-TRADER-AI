@@ -63,7 +63,6 @@ class _OracleScreenState extends State<OracleScreen>
   double _btcSentiment = 74.0;
   double _ethSentiment = 68.0;
   double _marketFear = 38.0; // Fear & Greed Index
-  String _marketMood = 'GREED';
 
   // Pattern recognition
   final List<Map<String, dynamic>> _patterns = [
@@ -698,7 +697,6 @@ class _OracleScreenState extends State<OracleScreen>
 
   Widget _buildScanResultCard(QuantumPalette p, Map<String, dynamic> r) {
     final score = r['score'] as int;
-    final isBull = score >= 70;
     final scoreColor = score >= 80 ? p.positive : score >= 50 ? p.primary : p.negative;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),

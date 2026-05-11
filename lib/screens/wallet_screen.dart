@@ -494,8 +494,7 @@ class _WalletScreenState extends State<WalletScreen>
               items: _assets.map((a) => DropdownMenuItem(
                 value: a.symbol,
                 child: Row(children: [
-                  Container(width: 24, height: 24, decoration: BoxDecoration(shape: BoxShape.circle, color: p.primary.withValues(alpha: 0.15)),
-                      child: Center(child: Text(a.symbol[0], style: TextStyle(color: p.primary, fontSize: 11, fontWeight: FontWeight.bold)))),
+                  AssetIconWidget(symbol: a.symbol, palette: p, size: 24, showBorder: false),
                   const SizedBox(width: 8),
                   Text('${a.symbol}  ·  ${a.amount.toStringAsFixed(4)}'),
                 ]),
@@ -896,15 +895,23 @@ class _WalletScreenState extends State<WalletScreen>
                     onTap: () { setState(() => _selectedAsset = sym); HapticFeedback.selectionClick(); },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 2),
                       decoration: BoxDecoration(
-                        color: sel ? p.primary : Colors.transparent,
+                        color: sel ? AssetIconWidget.symbolColor(sym).withValues(alpha: 0.18) : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
+                        border: sel ? Border.all(color: AssetIconWidget.symbolColor(sym).withValues(alpha: 0.5), width: 1) : null,
                       ),
-                      child: Center(child: Text(sym, style: GoogleFonts.rajdhani(
-                        color: sel ? p.background : p.textSecondary,
-                        fontSize: 10, fontWeight: FontWeight.w700,
-                      ))),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AssetIconWidget(symbol: sym, palette: p, size: 22, showBorder: false, showGlow: sel),
+                          const SizedBox(height: 2),
+                          Text(sym, style: GoogleFonts.rajdhani(
+                            color: sel ? AssetIconWidget.symbolColor(sym) : p.textSecondary,
+                            fontSize: 8, fontWeight: FontWeight.w700,
+                          )),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -1705,6 +1712,7 @@ class _ConfirmRow extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _AddressCard extends StatelessWidget {
   final String network, address;
   final IconData icon;
@@ -1759,6 +1767,7 @@ class _TxHistory {
 }
 
 // QR Code Painter (simplified visual)
+// ignore: unused_element
 class _QRPainter extends CustomPainter {
   final dynamic p;
   _QRPainter(this.p);

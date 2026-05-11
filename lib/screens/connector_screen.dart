@@ -9,10 +9,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../widgets/crypto_icon.dart';
+
 import '../providers/theme_provider.dart';
 import '../providers/live_price_provider.dart';
 import '../services/websocket_service.dart';
-import '../theme/app_themes.dart';
 
 class ConnectorScreen extends StatefulWidget {
   const ConnectorScreen({super.key});
@@ -930,7 +931,7 @@ class _ConnectorScreenState extends State<ConnectorScreen>
         Switch(
           value: value,
           onChanged: onChanged,
-          activeColor: p.primary,
+          activeThumbColor: p.primary,
           activeTrackColor: p.primary.withValues(alpha: 0.3),
         ),
       ]),

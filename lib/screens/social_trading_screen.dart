@@ -42,8 +42,8 @@ class _SocialTradingScreenState extends State<SocialTradingScreen>
   double _copyAmount = 500.0;
   bool _autoCopy = false;
   double _maxRisk = 2.0;
-  bool _copyingNexus = true;
-  bool _copyingDeepAlpha = true;
+  bool _copyingNexus = true; // ignore: unused_field
+  bool _copyingDeepAlpha = true; // ignore: unused_field
 
   // Community feed
   final List<Map<String, dynamic>> _feed = [
@@ -456,14 +456,15 @@ class _SocialTradingScreenState extends State<SocialTradingScreen>
               color: p.primary, fontSize: 13, fontWeight: FontWeight.bold,
             )),
           ]),
-          Slider(
-            value: _copyAmount,
-            min: 50,
-            max: 5000,
-            divisions: 99,
-            activeColor: p.primary,
-            inactiveColor: p.surface,
-            onChanged: (v) => setState(() => _copyAmount = v),
+          SliderTheme(
+            data: SliderThemeData(thumbColor: p.primary, activeTrackColor: p.primary, inactiveTrackColor: p.surface),
+            child: Slider(
+              value: _copyAmount,
+              min: 50,
+              max: 5000,
+              divisions: 99,
+              onChanged: (v) => setState(() => _copyAmount = v),
+            ),
           ),
           // Max Risk
           Row(children: [
@@ -473,14 +474,15 @@ class _SocialTradingScreenState extends State<SocialTradingScreen>
               color: p.negative, fontSize: 13, fontWeight: FontWeight.bold,
             )),
           ]),
-          Slider(
-            value: _maxRisk,
-            min: 0.5,
-            max: 10.0,
-            divisions: 19,
-            activeColor: p.negative,
-            inactiveColor: p.surface,
-            onChanged: (v) => setState(() => _maxRisk = v),
+          SliderTheme(
+            data: SliderThemeData(thumbColor: p.negative, activeTrackColor: p.negative, inactiveTrackColor: p.surface),
+            child: Slider(
+              value: _maxRisk,
+              min: 0.5,
+              max: 10.0,
+              divisions: 19,
+              onChanged: (v) => setState(() => _maxRisk = v),
+            ),
           ),
           // Auto Copy Toggle
           Row(children: [
@@ -489,7 +491,7 @@ class _SocialTradingScreenState extends State<SocialTradingScreen>
             Switch(
               value: _autoCopy,
               onChanged: (v) => setState(() => _autoCopy = v),
-              activeColor: p.primary,
+              activeThumbColor: p.primary,
             ),
           ]),
         ],

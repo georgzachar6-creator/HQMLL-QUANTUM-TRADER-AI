@@ -10,8 +10,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/theme_provider.dart';
-import '../services/live_market_service.dart';
 import '../theme/app_themes.dart';
+import '../widgets/asset_icon_widget.dart';
 
 // ── Trading Bot Model ──────────────────────────────────
 class TradingBot {
@@ -489,14 +489,27 @@ class _TradingBotScreenState extends State<TradingBotScreen> with TickerProvider
         children: [
           Row(
             children: [
-              Container(
-                width: 44, height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(colors: [statusColor.withValues(alpha: 0.3), statusColor.withValues(alpha: 0.1)]),
-                  border: Border.all(color: statusColor.withValues(alpha: 0.5)),
-                ),
-                child: Center(child: Icon(Icons.smart_toy, color: statusColor, size: 22)),
+              // Bot-Icon mit primärem Asset-Coin-Icon
+              Stack(
+                children: [
+                  AssetIconWidget(
+                    symbol: bot.assets.isNotEmpty ? bot.assets.first : 'BTC',
+                    palette: p, size: 44, showBorder: true,
+                    showGlow: isActive,
+                  ),
+                  Positioned(
+                    right: 0, bottom: 0,
+                    child: Container(
+                      width: 16, height: 16,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: statusColor,
+                        border: Border.all(color: p.surface, width: 1.5),
+                      ),
+                      child: const Icon(Icons.smart_toy, color: Colors.white, size: 9),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -534,14 +547,13 @@ class _TradingBotScreenState extends State<TradingBotScreen> with TickerProvider
               const SizedBox(width: 4),
               Text('Capital: \$${bot.capital.toStringAsFixed(0)}', style: TextStyle(color: p.textSecondary, fontSize: 11)),
               const SizedBox(width: 12),
-              ...bot.assets.map((asset) => Container(
-                margin: const EdgeInsets.only(right: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6),
-                  color: const Color(0xFF00D4FF).withValues(alpha: 0.12),
-                ),
-                child: Text(asset, style: const TextStyle(color: Color(0xFF00D4FF), fontSize: 9, fontWeight: FontWeight.w700)),
+              ...bot.assets.map((asset) => Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  AssetIconWidget(symbol: asset, palette: p, size: 18, showBorder: false),
+                  const SizedBox(width: 3),
+                  Text(asset, style: TextStyle(color: AssetIconWidget.symbolColor(asset), fontSize: 9, fontWeight: FontWeight.w700)),
+                ]),
               )),
               const Spacer(),
               IconButton(

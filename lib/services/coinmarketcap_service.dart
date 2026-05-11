@@ -153,9 +153,11 @@ class CoinMarketCapService extends ChangeNotifier {
   CmcGlobalMetrics? _globalMetrics;
   bool _loading = false;
   String? _error;
+  // ignore: unused_field
   DateTime? _lastFetch;
   Timer? _refreshTimer;
   int _requestCount = 0;
+  // ignore: unused_field
   static const int _maxRequestsPerMinute = 30;
 
   List<CmcQuote> get quotes => List.unmodifiable(_quotes);

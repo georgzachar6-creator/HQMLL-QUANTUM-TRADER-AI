@@ -74,13 +74,11 @@ class TradingViewChart extends StatefulWidget {
 class _TradingViewChartState extends State<TradingViewChart> {
   late WebViewController _controller;
   bool _loaded = false;
-  String _currentSymbol = '';
   TvInterval _currentInterval = TvInterval.hour1;
 
   @override
   void initState() {
     super.initState();
-    _currentSymbol = widget.symbol;
     _currentInterval = widget.interval;
     _initController();
   }
@@ -157,7 +155,6 @@ new TradingView.widget({
 
   void changeSymbol(String symbol) {
     setState(() {
-      _currentSymbol = symbol;
       _loaded = false;
     });
     _controller.loadHtmlString(_buildHtml());

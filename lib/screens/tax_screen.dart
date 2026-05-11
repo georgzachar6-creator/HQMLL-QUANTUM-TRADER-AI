@@ -7,8 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../widgets/crypto_icon.dart';
+
 import '../providers/theme_provider.dart';
-import '../theme/app_themes.dart';
 
 class TaxScreen extends StatefulWidget {
   const TaxScreen({super.key});
@@ -65,8 +66,6 @@ class _TaxScreenState extends State<TaxScreen> with TickerProviderStateMixin {
     double totalFees = 0;
     int shortTermCount = 0;
     int longTermCount = 0;
-
-    final now = DateTime.now();
 
     for (final tx in _transactions) {
       if (tx.date.year != int.parse(_taxYear)) continue;
@@ -514,13 +513,22 @@ class _TaxScreenState extends State<TaxScreen> with TickerProviderStateMixin {
         border: Border.all(color: typeColor.withValues(alpha: 0.15)),
       ),
       child: Row(children: [
-        Container(
-          width: 36, height: 36,
-          decoration: BoxDecoration(
-            color: typeColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Center(child: Icon(typeIcon, color: typeColor, size: 18)),
+        Stack(
+          children: [
+            CryptoIcon(tx.symbol, size: 38, showShadow: false),
+            Positioned(
+              right: 0, bottom: 0,
+              child: Container(
+                width: 16, height: 16,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: typeColor,
+                  border: Border.all(color: p.surface, width: 1.5),
+                ),
+                child: Icon(typeIcon, color: Colors.white, size: 9),
+              ),
+            ),
+          ],
         ),
         const SizedBox(width: 10),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -754,7 +762,6 @@ class _TaxScreenState extends State<TaxScreen> with TickerProviderStateMixin {
         onChanged: onChanged,
         title: Text(val, style: GoogleFonts.inter(color: p.textPrimary, fontSize: 12)),
         subtitle: sub.isNotEmpty ? Text(sub, style: GoogleFonts.inter(color: p.textSecondary, fontSize: 10)) : null,
-        activeColor: p.primary,
         dense: true,
       ),
     );
@@ -771,8 +778,7 @@ class _TaxScreenState extends State<TaxScreen> with TickerProviderStateMixin {
       ),
       child: Row(children: [
         Expanded(child: Text(label, style: GoogleFonts.inter(color: p.textPrimary, fontSize: 12))),
-        Switch(value: value, onChanged: onChanged, activeColor: p.primary,
-            activeTrackColor: p.primary.withValues(alpha: 0.3)),
+        Switch(value: value, onChanged: onChanged, activeTrackColor: p.primary.withValues(alpha: 0.3)),
       ]),
     );
   }

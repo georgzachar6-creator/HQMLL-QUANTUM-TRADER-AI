@@ -189,12 +189,11 @@ class CoinGeckoService extends ChangeNotifier {
   List<TrendingCoin> _trending = [];
   bool _loading = false;
   String? _error;
-  DateTime? _lastFetch;
   Timer? _refreshTimer;
   final Map<String, MarketChart> _chartCache = {};
   final Map<String, List<GeckoCandle>> _ohlcCache = {};
   int _rateLimitRemaining = 30;
-  static const int _rateLimit = 30;
+  static const int _rateLimit = 30; // ignore: unused_field
 
   List<GeckoQuote> get markets => List.unmodifiable(_markets);
   List<TrendingCoin> get trending => List.unmodifiable(_trending);
@@ -262,7 +261,6 @@ class CoinGeckoService extends ChangeNotifier {
         } else {
           _markets.addAll(data.map((d) => GeckoQuote.fromJson(d as Map<String, dynamic>)));
         }
-        _lastFetch = DateTime.now();
         _error = null;
       } else if (response.statusCode == 429) {
         _error = 'Rate limited – using cached data';

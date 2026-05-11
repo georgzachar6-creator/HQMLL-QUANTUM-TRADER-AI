@@ -7,8 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/tradingview_widget.dart';
-import '../providers/live_price_provider.dart';
-import '../theme/app_themes.dart';
+import '../widgets/crypto_icon.dart';
 
 class TradingScreen extends StatefulWidget {
   const TradingScreen({super.key});
@@ -169,50 +168,60 @@ class _TradingScreenState extends State<TradingScreen>
 
     return Column(
       children: [
-        // Pair Selector
-        SizedBox(
-          height: 62,
+        // ── Professional Pair Selector with Real Logos ──
+        Container(
+          height: 80,
+          decoration: BoxDecoration(
+            color: p.surface.withValues(alpha: 0.3),
+            border: Border(bottom: BorderSide(color: p.primary.withValues(alpha: 0.1))),
+          ),
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             itemCount: _pairs.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            separatorBuilder: (_, __) => const SizedBox(width: 6),
             itemBuilder: (_, i) {
               final selected = _selectedPair == i;
               final pr = _pairs[i];
               final up = pr.liveTrend;
+              final meta = CryptoRegistry.getOrFallback(pr.symbol);
               return GestureDetector(
                 onTap: () => setState(() => _selectedPair = i),
                 child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  duration: const Duration(milliseconds: 180),
+                  width: 78,
                   decoration: BoxDecoration(
                     color: selected
-                        ? p.primary.withValues(alpha: 0.15)
-                        : p.surfaceVariant,
-                    borderRadius: BorderRadius.circular(12),
+                        ? meta.primary.withValues(alpha: 0.18)
+                        : p.surface.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                        color: selected
-                            ? p.primary
-                            : p.primary.withValues(alpha: 0.15)),
+                      color: selected ? meta.primary : meta.primary.withValues(alpha: 0.2),
+                      width: selected ? 2 : 1,
+                    ),
+                    boxShadow: selected ? [BoxShadow(
+                      color: meta.primary.withValues(alpha: 0.35),
+                      blurRadius: 10, spreadRadius: 0,
+                    )] : null,
                   ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(pr.symbol,
-                          style: GoogleFonts.rajdhani(
-                              color: selected ? p.primary : p.textPrimary,
-                              fontSize: 13,
+                      CryptoIcon(pr.symbol, size: 28, showBorder: false, showShadow: selected),
+                      const SizedBox(height: 3),
+                      Text('${pr.symbol}/USDT',
+                          style: GoogleFonts.spaceMono(
+                              color: selected ? meta.primary : p.textPrimary,
+                              fontSize: 7,
                               fontWeight: FontWeight.bold)),
                       Text(
                         pr.symbol == 'QEMMA'
                             ? '\$${pr.livePrice.toStringAsFixed(4)}'
-                            : '${up ? '▲' : '▼'} \$${pr.livePrice.toStringAsFixed(0)}',
-                        style: TextStyle(
-                            color: up ? p.positive : p.negative,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold),
+                            : '${up ? '▲' : '▼'}\$${pr.livePrice >= 1000 ? (pr.livePrice / 1000).toStringAsFixed(1) + 'K' : pr.livePrice.toStringAsFixed(pr.livePrice < 1 ? 3 : 0)}',
+                        style: GoogleFonts.spaceMono(
+                          color: up ? const Color(0xFF00C896) : const Color(0xFFFF3355),
+                          fontSize: 7, fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
@@ -273,17 +282,20 @@ class _TradingScreenState extends State<TradingScreen>
           ),
           child: Row(
             children: [
+              // Big coin logo with glow
+              CryptoIcon(pair.symbol, size: 52, showShadow: true),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(children: [
                       Text('${pair.symbol}/USDT',
-                          style: GoogleFonts.rajdhani(
+                          style: GoogleFonts.spaceMono(
                               color: p.textPrimary,
-                              fontSize: 18,
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              letterSpacing: 1)),
+                              letterSpacing: 0.5)),
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(

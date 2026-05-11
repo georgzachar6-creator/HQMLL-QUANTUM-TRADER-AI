@@ -8,8 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../widgets/crypto_icon.dart';
+
 import '../providers/theme_provider.dart';
-import '../theme/app_themes.dart';
 
 class StakingScreen extends StatefulWidget {
   const StakingScreen({super.key});
@@ -125,6 +126,7 @@ class _StakingScreenState extends State<StakingScreen>
     _totalLpValue = _lpPools.fold(0, (s, p) => s + p.myLiquidity);
     _totalVaultValue = _vaults.fold(0, (s, v) => s + v.myDeposit);
 
+    // ignore: unused_local_variable
     final total = _totalStakedValue + _totalLpValue + _totalVaultValue;
     final stakingYield = _positions.fold(0.0, (s, p) => s + p.staked * _estPrice(p.symbol) * (p.apy / 100));
     final lpYield = _lpPools.fold(0.0, (s, p) => s + p.myLiquidity * (p.apy / 100));
@@ -497,15 +499,7 @@ class _StakingScreenState extends State<StakingScreen>
         Padding(
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
           child: Row(children: [
-            Container(
-              width: 46, height: 46,
-              decoration: BoxDecoration(
-                color: pos.color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: pos.color.withValues(alpha: 0.3)),
-              ),
-              child: Center(child: Text(pos.emoji, style: const TextStyle(fontSize: 24))),
-            ),
+            CryptoIcon(pos.symbol, size: 46, showShadow: false),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('${pos.symbol} – ${pos.protocol}', style: GoogleFonts.spaceMono(

@@ -22,17 +22,17 @@ class _IntelligenceScreenState extends State<IntelligenceScreen>
   late AnimationController _scanCtrl;
   late AnimationController _pulseCtrl;
   late Animation<double> _glowAnim;
-  late Animation<double> _scanAnim;
+  late Animation<double> _scanAnim; // ignore: unused_field
   late Animation<double> _pulseAnim;
 
   int _activeTab = 0;
   bool _isEncrypting = false;
+  String _inputText = '';
+  String _keyText = '';
   bool _isDecrypting = false;
   bool _vaultLocked = true;
   String _encryptedOutput = '';
   String _decryptedOutput = '';
-  String _inputText = '';
-  String _keyText = '';
   double _encryptProgress = 0.0;
   Timer? _progressTimer;
 

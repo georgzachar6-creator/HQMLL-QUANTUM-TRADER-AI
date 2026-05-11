@@ -10,7 +10,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/theme_provider.dart';
-import '../services/live_market_service.dart';
 import '../theme/app_themes.dart';
 
 class AnalyticsScreen extends StatefulWidget {

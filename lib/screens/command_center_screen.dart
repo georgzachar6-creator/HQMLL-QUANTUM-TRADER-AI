@@ -37,7 +37,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen>
   double _cpuUsage = 34.2;
   double _memUsage = 58.7;
   double _netIn = 124.5;
-  double _netOut = 38.2;
+  double _netOut = 45.2;
   double _diskUsage = 62.4;
   final List<double> _cpuHistory = [];
   final List<double> _netHistory = [];
@@ -407,7 +407,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen>
           children: [
             _sysStatCard('DISK', '${_diskUsage.toStringAsFixed(1)}%', '256 GB / 512 GB', const Color(0xFFFFD700), Icons.disc_full_rounded, p),
             _sysStatCard('UPTIME', '14d 6h 22m', 'Quantum OS 3.0', const Color(0xFF00FF88), Icons.timer_rounded, p),
-            _sysStatCard('PROZESSE', '${142 + _rand.nextInt(10)}', '${8 + _rand.nextInt(4)} Threads', const Color(0xFFFF6B35), Icons.list_rounded, p),
+            _sysStatCard('PROZESSE', '\$142 + _rand.nextInt(10)', '${8 + _rand.nextInt(4)} Threads', const Color(0xFFFF6B35), Icons.list_rounded, p),
             _sysStatCard('TEMP', '${62 + _rand.nextInt(8)}°C', 'CPU Kern-Temp', const Color(0xFFFF3358), Icons.thermostat_rounded, p),
           ],
         ),
