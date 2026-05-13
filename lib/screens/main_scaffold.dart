@@ -41,6 +41,10 @@ import 'tax_screen.dart';
 import 'staking_screen.dart';
 import 'rebalancer_screen.dart';
 import 'alerts_screen.dart';
+import 'accounting_screen.dart';
+import 'auth_screen.dart';
+import '../services/auth_service.dart';
+import '../services/exchange_service.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -89,6 +93,7 @@ class _MainScaffoldState extends State<MainScaffold>
     _NavItem(icon: Icons.savings_outlined, activeIcon: Icons.savings, label: 'STAKING'),
     _NavItem(icon: Icons.auto_awesome, activeIcon: Icons.auto_awesome, label: 'REBALANCER'),
     _NavItem(icon: Icons.notifications_active_outlined, activeIcon: Icons.notifications_active, label: 'ALARMS'),
+    _NavItem(icon: Icons.auto_awesome, activeIcon: Icons.auto_awesome, label: 'BUCHHALTER'),
   ];
 
   @override
@@ -146,6 +151,7 @@ class _MainScaffoldState extends State<MainScaffold>
       const StakingScreen(),
       const RebalancerScreen(),
       const AlertsScreen(),
+      const AccountingScreen(),
     ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -296,6 +302,81 @@ class _MainScaffoldState extends State<MainScaffold>
                           ),
                         ),
                       ),
+                      // Auto-Trade Toggle
+                      Consumer<ExchangeService>(
+                        builder: (_, ex, __) => GestureDetector(
+                          onTap: () {
+                            HapticFeedback.mediumImpact();
+                            ex.setAutoTrade(!ex.autoTradeEnabled);
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text(ex.autoTradeEnabled
+                                  ? '🤖 Auto-Trading AKTIVIERT'
+                                  : '⏹ Auto-Trading DEAKTIVIERT'),
+                              backgroundColor: ex.autoTradeEnabled ? const Color(0xFF00C853) : const Color(0xFFB71C1C),
+                              duration: const Duration(seconds: 2),
+                            ));
+                          },
+                          child: AnimatedBuilder(
+                            animation: _glowCtrl,
+                            builder: (_, __) => Container(
+                              width: 36, height: 36,
+                              margin: const EdgeInsets.only(right: 6),
+                              decoration: BoxDecoration(
+                                color: ex.autoTradeEnabled
+                                    ? p.positive.withValues(alpha: 0.15 + _glowCtrl.value * 0.1)
+                                    : p.surface,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: ex.autoTradeEnabled
+                                      ? p.positive.withValues(alpha: 0.6 + _glowCtrl.value * 0.3)
+                                      : p.primary.withValues(alpha: 0.2),
+                                  width: ex.autoTradeEnabled ? 1.5 : 1,
+                                ),
+                                boxShadow: ex.autoTradeEnabled ? [BoxShadow(
+                                  color: p.positive.withValues(alpha: 0.2 + _glowCtrl.value * 0.2),
+                                  blurRadius: 8 + _glowCtrl.value * 4,
+                                )] : null,
+                              ),
+                              child: Icon(
+                                ex.autoTradeEnabled ? Icons.smart_toy : Icons.smart_toy_outlined,
+                                color: ex.autoTradeEnabled ? p.positive : p.textSecondary,
+                                size: 17,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // User Avatar / Logout
+                      Consumer<AuthService>(
+                        builder: (_, auth, __) => GestureDetector(
+                          onLongPress: () async {
+                            await auth.autoSave();
+                            await auth.logout();
+                            if (context.mounted) {
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(builder: (_) => const AuthScreen()),
+                                (_) => false,
+                              );
+                            }
+                          },
+                          onTap: () => _showUserPanel(context, p, auth),
+                          child: Container(
+                            width: 36, height: 36,
+                            margin: const EdgeInsets.only(right: 6),
+                            decoration: BoxDecoration(
+                              color: p.primary.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: p.primary.withValues(alpha: 0.4)),
+                            ),
+                            child: Center(child: Text(
+                              auth.currentUser?.displayName.isNotEmpty == true
+                                  ? auth.currentUser!.displayName[0].toUpperCase()
+                                  : 'U',
+                              style: GoogleFonts.orbitron(color: p.primary, fontSize: 13, fontWeight: FontWeight.bold),
+                            )),
+                          ),
+                        ),
+                      ),
                       // Notification Button
                       GestureDetector(
                         onTap: () => _showNotificationPanel(context, p),
@@ -400,6 +481,99 @@ class _MainScaffoldState extends State<MainScaffold>
       isScrollControlled: true,
       builder: (_) => _NotificationPanel(palette: p),
     );
+  }
+
+  void _showUserPanel(BuildContext context, dynamic p, AuthService auth) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: p.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border(top: BorderSide(color: p.primary.withValues(alpha: 0.3))),
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(width: 40, height: 4,
+            decoration: BoxDecoration(color: p.textSecondary.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(2))),
+          const SizedBox(height: 16),
+          CircleAvatar(radius: 28,
+            backgroundColor: p.primary.withValues(alpha: 0.15),
+            child: Text(
+              auth.currentUser?.displayName.isNotEmpty == true
+                  ? auth.currentUser!.displayName[0].toUpperCase() : 'U',
+              style: GoogleFonts.orbitron(color: p.primary, fontSize: 22, fontWeight: FontWeight.bold),
+            )),
+          const SizedBox(height: 10),
+          Text(auth.currentUser?.displayName ?? 'User',
+            style: GoogleFonts.orbitron(color: p.textPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
+          Text(auth.currentUser?.email ?? '',
+            style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 12)),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: _kycColor(auth.currentUser?.kycStatus ?? KycStatus.none).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: _kycColor(auth.currentUser?.kycStatus ?? KycStatus.none).withValues(alpha: 0.4)),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.verified_user,
+                color: _kycColor(auth.currentUser?.kycStatus ?? KycStatus.none), size: 12),
+              const SizedBox(width: 4),
+              Text('KYC: ${(auth.currentUser?.kycStatus.name ?? 'none').toUpperCase()}',
+                style: GoogleFonts.orbitron(
+                  color: _kycColor(auth.currentUser?.kycStatus ?? KycStatus.none), fontSize: 9)),
+            ]),
+          ),
+          const SizedBox(height: 16),
+          ListTile(
+            leading: Icon(Icons.account_circle, color: p.primary),
+            title: Text('Profil bearbeiten', style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 14)),
+            onTap: () => Navigator.pop(context),
+          ),
+          ListTile(
+            leading: Icon(Icons.security, color: p.accent),
+            title: Text('2FA Einstellungen', style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 14)),
+            trailing: Switch(
+              value: auth.currentUser?.twoFaEnabled ?? false,
+              activeColor: p.accent,
+              onChanged: (v) async {
+                if (v) { await auth.enable2FA(); }
+                else { await auth.disable2FA(); }
+              },
+            ),
+            onTap: () {},
+          ),
+          ListTile(
+            leading: Icon(Icons.logout, color: p.negative),
+            title: Text('Abmelden', style: GoogleFonts.rajdhani(color: p.negative, fontSize: 14)),
+            onTap: () async {
+              Navigator.pop(context);
+              await auth.autoSave();
+              await auth.logout();
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const AuthScreen()), (_) => false);
+              }
+            },
+          ),
+          const SizedBox(height: 8),
+        ]),
+      ),
+    );
+  }
+
+  Color _kycColor(KycStatus s) {
+    switch (s) {
+      case KycStatus.verified: return const Color(0xFF00C853);
+      case KycStatus.pending:  return const Color(0xFFFFAB00);
+      case KycStatus.rejected: return const Color(0xFFD50000);
+      default:                 return const Color(0xFF607D8B);
+    }
   }
 }
 
@@ -672,6 +846,8 @@ class _LiveTickerBannerState extends State<_LiveTickerBanner>
     _TickerItem('MATIC',0.892,   -2.34),
     _TickerItem('DOT',  7.92,    -0.88),
     _TickerItem('LINK', 14.62,    2.11),
+    _TickerItem('XRP',  0.624,    1.05),
+    _TickerItem('LTC',  84.30,   -0.34),
   ];
 
   @override
@@ -681,17 +857,41 @@ class _LiveTickerBannerState extends State<_LiveTickerBanner>
       vsync: this,
       duration: const Duration(seconds: 30),
     )..repeat();
-    _priceTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+    _priceTimer = Timer.periodic(const Duration(seconds: 2), (_) {
       if (!mounted) return;
-      setState(() {
-        for (final item in _items) {
-          final delta = (_rng.nextDouble() - 0.5) * 0.4;
-          item.price *= (1 + delta / 100);
-          item.change += delta * 0.1;
-          item.change = item.change.clamp(-15.0, 15.0);
-          item.up = delta >= 0;
-        }
-      });
+      // Pull live prices from ExchangeService
+      try {
+        final ex = Provider.of<ExchangeService>(context, listen: false);
+        setState(() {
+          for (final item in _items) {
+            final tick = ex.getTick(item.symbol);
+            if (tick != null) {
+              final prevPrice = item.price;
+              item.price = tick.price;
+              item.change = tick.change24h;
+              item.up = tick.price >= prevPrice;
+              item.isLive = tick.isLive;
+            } else {
+              final delta = (_rng.nextDouble() - 0.5) * 0.4;
+              item.price *= (1 + delta / 100);
+              item.change += delta * 0.1;
+              item.change = item.change.clamp(-15.0, 15.0);
+              item.up = delta >= 0;
+            }
+          }
+        });
+      } catch (_) {
+        // ExchangeService not yet available
+        setState(() {
+          for (final item in _items) {
+            final delta = (_rng.nextDouble() - 0.5) * 0.4;
+            item.price *= (1 + delta / 100);
+            item.change += delta * 0.1;
+            item.change = item.change.clamp(-15.0, 15.0);
+            item.up = delta >= 0;
+          }
+        });
+      }
     });
   }
 
@@ -705,6 +905,7 @@ class _LiveTickerBannerState extends State<_LiveTickerBanner>
   @override
   Widget build(BuildContext context) {
     final p = widget.palette;
+    final ex = Provider.of<ExchangeService>(context);
     return Container(
       height: 28,
       decoration: BoxDecoration(
@@ -713,26 +914,50 @@ class _LiveTickerBannerState extends State<_LiveTickerBanner>
           bottom: BorderSide(color: p.primary.withValues(alpha: 0.15)),
         ),
       ),
-      child: AnimatedBuilder(
-        animation: _scrollCtrl,
-        builder: (_, __) {
-          return ClipRect(
-            child: OverflowBox(
-              alignment: Alignment.centerLeft,
-              maxWidth: double.infinity,
-              child: Transform.translate(
-                offset: Offset(-_scrollCtrl.value * 900, 0),
-                child: Row(
-                  children: [
-                    ..._items.map((item) => _buildTickerChip(item, p)),
-                    ..._items.map((item) => _buildTickerChip(item, p)),
-                  ],
-                ),
+      child: Row(children: [
+        // WS status badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 5, height: 5,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: ex.wsConnected ? const Color(0xFF00C853) : Colors.orange,
               ),
             ),
-          );
-        },
-      ),
+            const SizedBox(width: 4),
+            Text(ex.wsConnected ? 'WS' : 'REST',
+              style: GoogleFonts.orbitron(
+                color: ex.wsConnected ? const Color(0xFF00C853) : Colors.orange,
+                fontSize: 7, fontWeight: FontWeight.bold,
+              )),
+          ]),
+        ),
+        Container(width: 1, height: 14, color: p.primary.withValues(alpha: 0.15)),
+        Expanded(
+          child: AnimatedBuilder(
+            animation: _scrollCtrl,
+            builder: (_, __) {
+              return ClipRect(
+                child: OverflowBox(
+                  alignment: Alignment.centerLeft,
+                  maxWidth: double.infinity,
+                  child: Transform.translate(
+                    offset: Offset(-_scrollCtrl.value * 1100, 0),
+                    child: Row(
+                      children: [
+                        ..._items.map((item) => _buildTickerChip(item, p)),
+                        ..._items.map((item) => _buildTickerChip(item, p)),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ]),
     );
   }
 
@@ -762,6 +987,12 @@ class _LiveTickerBannerState extends State<_LiveTickerBanner>
               color: color, size: 14),
           Text('${item.change >= 0 ? '+' : ''}${item.change.toStringAsFixed(2)}%',
               style: GoogleFonts.spaceMono(color: color, fontSize: 8)),
+          // WS live indicator
+          if (item.isLive)
+            Container(
+              width: 4, height: 4, margin: const EdgeInsets.only(left: 4),
+              decoration: BoxDecoration(shape: BoxShape.circle, color: p.positive),
+            ),
           Container(
             width: 1, height: 14, margin: const EdgeInsets.only(left: 12),
             color: p.primary.withValues(alpha: 0.15),
@@ -777,5 +1008,6 @@ class _TickerItem {
   double price;
   double change;
   bool up;
-  _TickerItem(this.symbol, this.price, this.change) : up = change >= 0;
+  bool isLive;
+  _TickerItem(this.symbol, this.price, this.change) : up = change >= 0, isLive = false;
 }

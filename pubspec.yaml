@@ -1,7 +1,7 @@
 name: quantum_trader
 description: Quantum Trader AI System - Enterprise Edition by Grigori Saks · HQMLL
 publish_to: 'none'
-version: 23.0.0+230
+version: 24.0.0+240
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -25,6 +25,14 @@ dependencies:
   crypto: 3.0.6
   pointycastle: 3.9.1
   convert: 3.1.2
+  # v24.0 additions
+  hive: 2.2.3
+  hive_flutter: 1.1.0
+  local_auth: 2.3.0
+  image_picker: 1.1.2
+  permission_handler: 11.3.1
+  uuid: 4.5.1
+  pinput: 5.0.1
 
 dev_dependencies:
   flutter_test:
