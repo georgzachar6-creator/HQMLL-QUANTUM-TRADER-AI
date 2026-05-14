@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/live_price_provider.dart';
+import '../services/exchange_service.dart';
 import '../theme/app_themes.dart';
 import '../widgets/tradingview_widget.dart';
 import '../widgets/crypto_icon.dart';
@@ -91,6 +92,17 @@ class _MarketScreenState extends State<MarketScreen>
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
     final lp = context.watch<LivePriceProvider>();
+    // ExchangeService für Binance WS Live-Preise (zusätzliche Datenquelle)
+    final ex = context.watch<ExchangeService>();
+    // ExchangeService Ticks in LivePriceProvider synchronisieren
+    ex.ticks.forEach((sym, tick) {
+      final existing = lp.getQuote(sym);
+      if (existing == null && tick.price > 0) {
+        _onNewPrice(sym, tick.price);
+      } else if (existing != null && tick.isLive) {
+        _onNewPrice(sym, tick.price);
+      }
+    });
 
     return Scaffold(
       backgroundColor: p.background,
@@ -202,6 +214,7 @@ class _MarketScreenState extends State<MarketScreen>
   // ── Top Coins Icon Strip ─────────────────────────────────
   Widget _buildTopCoinsStrip(QuantumPalette p, LivePriceProvider lp) {
     final topSymbols = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'ADA', 'AVAX', 'DOGE', 'DOT', 'LINK', 'MATIC', 'UNI'];
+    final ex = context.read<ExchangeService>();
     return Container(
       height: 70,
       decoration: BoxDecoration(
@@ -215,9 +228,11 @@ class _MarketScreenState extends State<MarketScreen>
         separatorBuilder: (_, __) => const SizedBox(width: 6),
         itemBuilder: (_, i) {
           final sym = topSymbols[i];
+          // ExchangeService (Binance WS) hat Vorrang vor LivePriceProvider
+          final exTick = ex.getTick(sym);
           final quote = lp.getQuote(sym);
-          final price = quote?.price ?? 0;
-          final change = quote?.change24h ?? 0;
+          final price = exTick?.price ?? quote?.price ?? 0;
+          final change = exTick?.change24h ?? quote?.change24h ?? 0;
           final isUp = change >= 0;
           final meta = CryptoRegistry.getOrFallback(sym);
           return GestureDetector(

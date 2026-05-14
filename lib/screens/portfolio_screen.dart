@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/theme_provider.dart';
+import '../services/exchange_service.dart';
 import 'oracle_screen.dart';
 import '../widgets/crypto_icon.dart';
 
@@ -89,15 +90,23 @@ class _PortfolioScreenState extends State<PortfolioScreen>
     _chatCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 300));
 
+    // Prüfe live Preise aus ExchangeService (alle 3s aktualisieren)
     _priceTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (!mounted) return;
+      final ex = context.read<ExchangeService>();
       setState(() {
         for (final a in _assets) {
           if (a.symbol == 'USDT') continue;
-          final vol = a.symbol == 'QEMMA' ? 0.007 : 0.0015;
-          final delta = (_rnd.nextDouble() - 0.49) * a.livePrice * vol;
-          a.livePrice =
-              (a.livePrice + delta).clamp(a.price * 0.88, a.price * 1.12);
+          final liveFromEx = ex.getPrice(a.symbol);
+          if (liveFromEx > 0) {
+            // Echter Preis aus ExchangeService (Binance WS / CoinGecko)
+            a.livePrice = liveFromEx;
+          } else {
+            // Fallback: kleine lokale Simulation
+            final vol = a.symbol == 'QEMMA' ? 0.007 : 0.0015;
+            final delta = (_rnd.nextDouble() - 0.49) * a.livePrice * vol;
+            a.livePrice = (a.livePrice + delta).clamp(a.price * 0.88, a.price * 1.12);
+          }
         }
       });
     });

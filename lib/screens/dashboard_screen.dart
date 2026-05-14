@@ -10,6 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/live_price_provider.dart';
+import '../services/exchange_service.dart';
 import '../widgets/crypto_icon.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -156,18 +157,32 @@ class _DashboardScreenState extends State<DashboardScreen>
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
     final lp = context.watch<LivePriceProvider>();
+    // ExchangeService als primäre Preisquelle (Binance WS + CoinGecko)
+    final ex = context.watch<ExchangeService>();
 
-    // Sync watchlist prices from live provider
+    // Sync watchlist prices: ExchangeService hat Vorrang, LivePriceProvider als Fallback
     for (var w in _watchlist) {
       final sym = w['sym'] as String;
-      final q = lp.getQuote(sym);
-      if (q != null) {
-        final prev = w['price'] as double;
-        w['price'] = q.price;
-        w['change'] = q.change24h;
-        if (prev != q.price) {
-          (w['hist'] as List<double>).add(q.price);
+      final exTick = ex.getTick(sym);
+      final prev = w['price'] as double;
+      if (exTick != null && exTick.price > 0) {
+        // ExchangeService (Binance WS / CoinGecko) – bevorzugte Quelle
+        w['price'] = exTick.price;
+        w['change'] = exTick.change24h;
+        if ((prev - exTick.price).abs() > prev * 0.0001) {
+          (w['hist'] as List<double>).add(exTick.price);
           if ((w['hist'] as List<double>).length > 20) (w['hist'] as List<double>).removeAt(0);
+        }
+      } else {
+        // Fallback: LivePriceProvider
+        final q = lp.getQuote(sym);
+        if (q != null) {
+          w['price'] = q.price;
+          w['change'] = q.change24h;
+          if (prev != q.price) {
+            (w['hist'] as List<double>).add(q.price);
+            if ((w['hist'] as List<double>).length > 20) (w['hist'] as List<double>).removeAt(0);
+          }
         }
       }
     }

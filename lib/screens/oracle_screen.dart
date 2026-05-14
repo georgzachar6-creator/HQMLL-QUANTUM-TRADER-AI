@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../theme/app_themes.dart';
+import '../services/exchange_service.dart';
 
 class OracleScreen extends StatefulWidget {
   const OracleScreen({super.key});
@@ -93,17 +94,57 @@ class _OracleScreenState extends State<OracleScreen>
 
   void _updateLive() {
     if (!mounted) return;
+    final ex = context.read<ExchangeService>();
     setState(() {
       _scanProgress = (_scanProgress + 0.05) % 1.0;
       _signalCount += _rand.nextInt(3);
       _oracleAccuracy = 89.0 + _rand.nextDouble() * 4.0;
-      _btcSentiment = 65.0 + _rand.nextDouble() * 20.0;
-      _ethSentiment = 58.0 + _rand.nextDouble() * 22.0;
+
+      // Echte Preise aus ExchangeService für Sentiment
+      final btcTick = ex.getTick('BTC');
+      final ethTick = ex.getTick('ETH');
+      if (btcTick != null) {
+        // Sentiment aus 24h Change ableiten (positiv = höheres Sentiment)
+        _btcSentiment = (55.0 + btcTick.change24h * 3.0).clamp(20.0, 95.0);
+      } else {
+        _btcSentiment = 65.0 + _rand.nextDouble() * 20.0;
+      }
+      if (ethTick != null) {
+        _ethSentiment = (52.0 + ethTick.change24h * 2.8).clamp(20.0, 95.0);
+      } else {
+        _ethSentiment = 58.0 + _rand.nextDouble() * 22.0;
+      }
       _marketFear = 30.0 + _rand.nextDouble() * 30.0;
-      // Update some signal confidences
+
+      // Signale mit echten Preisen aktualisieren
       for (var s in _signals) {
-        s['confidence'] = (s['confidence'] as double) + (_rand.nextDouble() - 0.5) * 0.4;
-        s['confidence'] = (s['confidence'] as double).clamp(50.0, 99.0);
+        final pair = (s['pair'] as String).split('/').first;
+        final tick = ex.getTick(pair);
+        if (tick != null && tick.price > 0) {
+          s['entry'] = tick.price;
+          // TP/SL relativ zum echten Preis anpassen
+          final isLong = s['dir'] == 'LONG';
+          s['tp'] = tick.price * (isLong ? 1.05 : 0.95);
+          s['sl'] = tick.price * (isLong ? 0.975 : 1.025);
+          // Konfidenz aus echtem Change
+          final chgFactor = (tick.change24h.abs() * 2.0).clamp(0.0, 15.0);
+          s['confidence'] = ((s['confidence'] as double) + (_rand.nextDouble() - 0.5) * 0.4 + chgFactor * 0.05).clamp(50.0, 99.0);
+        } else {
+          s['confidence'] = (s['confidence'] as double) + (_rand.nextDouble() - 0.5) * 0.4;
+          s['confidence'] = (s['confidence'] as double).clamp(50.0, 99.0);
+        }
+      }
+      // Vorhersagen mit echten Preisen aktualisieren
+      for (var pred in _predictions) {
+        final ticker = pred['ticker'] as String;
+        final tick = ex.getTick(ticker);
+        if (tick != null && tick.price > 0) {
+          pred['price'] = tick.price;
+          pred['target24h'] = tick.price * (1 + (tick.change24h > 0 ? 0.02 : -0.01));
+          pred['target7d'] = tick.price * (1 + (tick.change24h > 0 ? 0.06 : 0.02));
+          pred['target30d'] = tick.price * (1 + (tick.change24h > 0 ? 0.15 : 0.08));
+          pred['trend'] = tick.change24h > 1 ? 'BULLISH' : tick.change24h < -1 ? 'BEARISH' : 'NEUTRAL';
+        }
       }
     });
   }
@@ -120,6 +161,8 @@ class _OracleScreenState extends State<OracleScreen>
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
+    // ExchangeService auch in build() watchen für reaktive Updates
+    context.watch<ExchangeService>();
     return Scaffold(
       backgroundColor: p.background,
       body: SafeArea(
