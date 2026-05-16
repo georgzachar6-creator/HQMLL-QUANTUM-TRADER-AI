@@ -42,6 +42,9 @@ import 'staking_screen.dart';
 import 'rebalancer_screen.dart';
 import 'alerts_screen.dart';
 import 'accounting_screen.dart';
+import 'enterprise_wallet_screen.dart';
+import 'ai_orchestrator_screen.dart';
+import 'oms_risk_screen.dart';
 import 'auth_screen.dart';
 import '../services/auth_service.dart';
 import '../services/exchange_service.dart';
@@ -65,6 +68,9 @@ class _MainScaffoldState extends State<MainScaffold>
     _NavItem(icon: Icons.bar_chart_rounded, activeIcon: Icons.bar_chart, label: 'MARKT'),
     _NavItem(icon: Icons.pie_chart_outline, activeIcon: Icons.pie_chart, label: 'PORTFOLIO'),
     _NavItem(icon: Icons.account_balance_wallet_outlined, activeIcon: Icons.account_balance_wallet, label: 'WALLET'),
+    _NavItem(icon: Icons.wallet_rounded, activeIcon: Icons.wallet, label: 'ENT.WALLET'),
+    _NavItem(icon: Icons.psychology_alt_outlined, activeIcon: Icons.psychology_alt, label: 'AI-ORCH'),
+    _NavItem(icon: Icons.balance_outlined, activeIcon: Icons.balance, label: 'OMS/RISK'),
     _NavItem(icon: Icons.token_outlined, activeIcon: Icons.token, label: 'QEMMA'),
     _NavItem(icon: Icons.auto_awesome_outlined, activeIcon: Icons.auto_awesome, label: 'AI FORGE'),
     _NavItem(icon: Icons.notifications_outlined, activeIcon: Icons.notifications, label: 'ALARMS'),
@@ -123,6 +129,9 @@ class _MainScaffoldState extends State<MainScaffold>
       const MarketScreen(),
       const PortfolioScreen(),
       const WalletScreen(),
+      const EnterpriseWalletScreen(),
+      const AiOrchestratorScreen(),
+      const OmsRiskScreen(),
       const TokenScreen(),
       const AIForgeScreen(),
       const AlarmScreen(),
