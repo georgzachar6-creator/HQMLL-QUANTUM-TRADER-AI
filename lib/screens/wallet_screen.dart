@@ -7,7 +7,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/quantum_eye_widget.dart';
 import '../widgets/asset_icon_widget.dart';
-import '../services/live_market_service.dart';
+import '../services/exchange_service.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -140,11 +140,11 @@ class _WalletScreenState extends State<WalletScreen>
   // ── Balance Header ────────────────────────────
   // ── Balance Header mit Live-Preisen ───────────
   Widget _buildBalanceHeader(dynamic p, ThemeProvider tp) {
-    final svc = context.watch<LiveMarketService>();
+    final ex = context.watch<ExchangeService>();
     double total = 0;
     for (final a in _assets) {
-      final livePrice = svc.quote(a.symbol)?.price ?? a.price;
-      total += a.balance * livePrice;
+      final lp = ex.getPrice(a.symbol);
+      total += a.balance * (lp > 0 ? lp : a.price);
     }
     final totalEur = total * 0.923;
 
@@ -322,8 +322,10 @@ class _WalletScreenState extends State<WalletScreen>
 
   Widget _buildAssetCard(dynamic p, _WalletAsset a) {
     final isSelected = _selectedAsset == a.symbol;
-    final svc = context.watch<LiveMarketService>();
-    final livePrice = svc.quote(a.symbol)?.price ?? a.price;
+    final ex = context.watch<ExchangeService>();
+    final rawLive = ex.getPrice(a.symbol);
+    final livePrice = rawLive > 0 ? rawLive : a.price;
+    final isLive = rawLive > 0 && (ex.getTick(a.symbol)?.isLive ?? false);
     final liveValue = a.balance * livePrice;
 
     return GestureDetector(
@@ -369,11 +371,21 @@ class _WalletScreenState extends State<WalletScreen>
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text('\$${liveValue.toStringAsFixed(2)}',
-                    style: GoogleFonts.rajdhani(
-                        color: p.textPrimary, fontSize: 15, fontWeight: FontWeight.bold)),
-                Text('${a.amount.toStringAsFixed(a.symbol == 'USDT' ? 0 : 4)} ${a.symbol}',
-                    style: TextStyle(color: p.textSecondary, fontSize: 11)),
+                Row(children: [
+                  Text('\$${liveValue.toStringAsFixed(2)}',
+                      style: GoogleFonts.rajdhani(
+                          color: p.textPrimary, fontSize: 15, fontWeight: FontWeight.bold)),
+                  if (isLive) ...[
+                    const SizedBox(width: 4),
+                    Container(width: 5, height: 5,
+                      decoration: BoxDecoration(shape: BoxShape.circle,
+                        color: const Color(0xFF00FF88),
+                        boxShadow: [BoxShadow(color: const Color(0xFF00FF88).withValues(alpha: 0.6), blurRadius: 4)])),
+                  ],
+                ]),
+                Text('${a.amount.toStringAsFixed(a.symbol == 'USDT' ? 0 : 4)} ${a.symbol}'
+                    '  @\$${livePrice >= 1 ? livePrice.toStringAsFixed(0) : livePrice.toStringAsFixed(4)}',
+                    style: TextStyle(color: p.textSecondary, fontSize: 10)),
               ],
             ),
             const SizedBox(width: 8),

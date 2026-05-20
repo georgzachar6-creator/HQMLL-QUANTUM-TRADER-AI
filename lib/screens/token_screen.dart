@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/theme_provider.dart';
+import '../services/exchange_service.dart';
 import '../widgets/quantum_eye_widget.dart';
 
 class TokenScreen extends StatefulWidget {
@@ -125,12 +126,17 @@ class _TokenScreenState extends State<TokenScreen>
   Widget build(BuildContext context) {
     final tp = context.watch<ThemeProvider>();
     final p = tp.palette;
+    final ex = context.watch<ExchangeService>();
+    // Use ETH/SOL as market context for QEMMA (Solana-based token)
+    final ethPrice = ex.getPrice('ETH');
+    final solPrice = ex.getPrice('SOL');
+    final isLive = ex.getTick('SOL')?.isLive ?? false;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(12),
       child: Column(
         children: [
-          _buildTokenHeader(p),
+          _buildTokenHeader(p, ethPrice, solPrice, isLive),
           const SizedBox(height: 12),
           _buildLiveMiningCard(p),
           const SizedBox(height: 12),
@@ -364,7 +370,7 @@ class _TokenScreenState extends State<TokenScreen>
   }
 
   // ── Token Header ───────────────────────────────
-  Widget _buildTokenHeader(dynamic p) {
+  Widget _buildTokenHeader(dynamic p, double ethPrice, double solPrice, bool isLive) {
     final spots = List.generate(40, (i) {
       final base = 0.04 + i * 0.0013;
       return FlSpot(i.toDouble(),
@@ -400,6 +406,7 @@ class _TokenScreenState extends State<TokenScreen>
                     Text('Quantum Emma AI · Solana Network',
                         style: TextStyle(
                             color: p.textSecondary, fontSize: 11)),
+
                     const SizedBox(height: 4),
                     Row(children: [
                       Container(
@@ -418,6 +425,18 @@ class _TokenScreenState extends State<TokenScreen>
                       Text('Devnet Live · Mining aktiv',
                           style: TextStyle(
                               color: p.positive, fontSize: 10)),
+                    if (solPrice > 0) ...[
+                      const SizedBox(height: 3),
+                      Row(children: [
+                        Text('SOL \$${solPrice.toStringAsFixed(1)}  ETH \$${ethPrice.toStringAsFixed(0)}',
+                            style: TextStyle(color: p.textSecondary, fontSize: 9)),
+                        if (isLive) ...[const SizedBox(width: 4),
+                          Container(padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                            decoration: BoxDecoration(color: p.positive.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(3)),
+                            child: Text('LIVE', style: GoogleFonts.spaceMono(color: p.positive, fontSize: 6, letterSpacing: 0.8))),
+                        ],
+                      ]),
+                    ],
                     ]),
                   ],
                 ),

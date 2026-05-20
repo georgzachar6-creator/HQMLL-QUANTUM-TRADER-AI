@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/theme_provider.dart';
+import '../services/exchange_service.dart';
 
 // ═══════════════════════════════════════════════════════
 //  GOD MODE DASHBOARD  –  PIN: 1985
@@ -167,9 +168,10 @@ class _GodModeScreenState extends State<GodModeScreen>
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
+    final ex = context.watch<ExchangeService>();
     return Scaffold(
       backgroundColor: p.background,
-      body: _unlocked ? _buildDashboard(p) : _buildPinGate(p),
+      body: _unlocked ? _buildDashboard(p, ex) : _buildPinGate(p),
     );
   }
 
@@ -351,12 +353,12 @@ class _GodModeScreenState extends State<GodModeScreen>
   // ═══════════════════════════════════════════════
   //  DASHBOARD
   // ═══════════════════════════════════════════════
-  Widget _buildDashboard(dynamic p) {
+  Widget _buildDashboard(dynamic p, ExchangeService ex) {
     final tabs = ['ÜBERSICHT', 'AGENTEN', 'TRADES', 'SYSTEM', 'SHADOW'];
     return Column(
       children: [
         // Header
-        _buildDashHeader(p),
+        _buildDashHeader(p, ex),
         // Tab-Bar
         Container(
           height: 38,
@@ -399,7 +401,7 @@ class _GodModeScreenState extends State<GodModeScreen>
             children: [
               _buildOverview(p),
               _buildAgentMonitor(p),
-              _buildTradeLog(p),
+              _buildTradeLog(p, ex),
               _buildSystem(p),
               _buildShadowResearch(p),
             ],
@@ -409,7 +411,10 @@ class _GodModeScreenState extends State<GodModeScreen>
     );
   }
 
-  Widget _buildDashHeader(dynamic p) {
+  Widget _buildDashHeader(dynamic p, ExchangeService ex) {
+    final btcPrice = ex.getPrice('BTC');
+    final ethPrice = ex.getPrice('ETH');
+    final isLive = ex.getTick('BTC')?.isLive ?? false;
     return Container(
       color: p.background,
       child: SafeArea(
@@ -454,6 +459,21 @@ class _GodModeScreenState extends State<GodModeScreen>
                 color: p.primary, fontSize: 7,
               )),
             ),
+            if (btcPrice > 0) ...[const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF7931A).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: const Color(0xFFF7931A).withValues(alpha: 0.25)),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  if (isLive) Container(width: 4, height: 4, margin: const EdgeInsets.only(right: 3),
+                    decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF00FF88))),
+                  Text('BTC \$${btcPrice.toStringAsFixed(0)}  ETH \$${ethPrice.toStringAsFixed(0)}',
+                      style: GoogleFonts.spaceMono(color: const Color(0xFFF7931A), fontSize: 7)),
+                ]),
+              )],
             const Spacer(),
             // Lock button
             GestureDetector(
@@ -818,7 +838,7 @@ class _GodModeScreenState extends State<GodModeScreen>
   }
 
   // ── TAB 2: TRADES ─────────────────────────────────────
-  Widget _buildTradeLog(dynamic p) {
+  Widget _buildTradeLog(dynamic p, ExchangeService ex) {
     return ListView(
       padding: const EdgeInsets.all(12),
       children: [
@@ -832,7 +852,7 @@ class _GodModeScreenState extends State<GodModeScreen>
           )),
         ]),
         const SizedBox(height: 10),
-        ..._trades.map((t) => _buildTradeRow(t, p)),
+        ..._trades.map((t) => _buildTradeRow(t, p, ex)),
         const SizedBox(height: 10),
         // Statistiken
         Container(
@@ -861,9 +881,12 @@ class _GodModeScreenState extends State<GodModeScreen>
     );
   }
 
-  Widget _buildTradeRow(_TradeLog t, dynamic p) {
+  Widget _buildTradeRow(_TradeLog t, dynamic p, ExchangeService ex) {
     final isBuy = t.side == 'KAUF';
-    final pnl = t.amount * t.price * (t.changePercent / 100);
+    // Use live price for current price context, keep historical trade price
+    final currentPrice = ex.getPrice(t.symbol);
+    final displayPrice = t.price; // historical execution price
+    final pnl = t.amount * displayPrice * (t.changePercent / 100);
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.all(11),
@@ -911,10 +934,21 @@ class _GodModeScreenState extends State<GodModeScreen>
                   color: isBuy ? p.positive : p.negative, fontSize: 9,
                 )),
               ]),
-              Text(
-                '${t.amount % 1 == 0 ? t.amount.toStringAsFixed(0) : t.amount.toStringAsFixed(4)} × \$${t.price >= 100 ? t.price.toStringAsFixed(0) : t.price.toStringAsFixed(4)}',
-                style: GoogleFonts.inter(color: p.textSecondary, fontSize: 10),
-              ),
+              Row(children: [
+                Text(
+                  '${t.amount % 1 == 0 ? t.amount.toStringAsFixed(0) : t.amount.toStringAsFixed(4)} × \$${displayPrice >= 100 ? displayPrice.toStringAsFixed(0) : displayPrice.toStringAsFixed(4)}',
+                  style: GoogleFonts.inter(color: p.textSecondary, fontSize: 10),
+                ),
+                if (currentPrice > 0 && t.symbol != 'QEMMA') ...[
+                  const SizedBox(width: 4),
+                  Builder(builder: (_) {
+                    final drift = ((currentPrice - displayPrice) / displayPrice * 100);
+                    final driftCol = drift >= 0 ? p.positive : p.negative;
+                    return Text('now \$${currentPrice.toStringAsFixed(0)}',
+                        style: GoogleFonts.spaceMono(color: driftCol.withValues(alpha: 0.7), fontSize: 8));
+                  }),
+                ],
+              ]),
             ],
           ),
         ),

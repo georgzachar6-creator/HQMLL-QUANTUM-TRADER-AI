@@ -11,6 +11,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../theme/app_themes.dart';
+import '../services/exchange_service.dart';
 
 // ── Fiat Transaction Model ─────────────────────────────
 class FiatTransaction {
@@ -201,10 +202,15 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
       if (r.pair == pair) return r.mid;
       if (r.pair == pairRev) return 1.0 / r.mid;
     }
-    // Crypto cross rates
-    const cryptoToUsd = {
-      'BTC': 67842.0, 'ETH': 3548.0, 'USDT': 1.0,
-      'USDC': 1.0, 'BNB': 598.0,
+    // Crypto cross rates — seeded from ExchangeService when available
+    ExchangeService? ex;
+    try { ex = context.read<ExchangeService>(); } catch (_) {}
+    final cryptoToUsd = {
+      'BTC': (ex?.getPrice('BTC') ?? 0) > 0 ? ex!.getPrice('BTC') : 67842.0,
+      'ETH': (ex?.getPrice('ETH') ?? 0) > 0 ? ex!.getPrice('ETH') : 3548.0,
+      'SOL': (ex?.getPrice('SOL') ?? 0) > 0 ? ex!.getPrice('SOL') : 182.0,
+      'BNB': (ex?.getPrice('BNB') ?? 0) > 0 ? ex!.getPrice('BNB') : 598.0,
+      'USDT': 1.0, 'USDC': 1.0,
     };
     const fiatToUsd = {
       'USD': 1.0, 'EUR': 1.0842, 'GBP': 1.2654,
@@ -240,11 +246,12 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
+    final ex = context.watch<ExchangeService>();
     return Scaffold(
       backgroundColor: p.background,
       body: Column(
         children: [
-          _buildHeader(p),
+          _buildHeader(p, ex),
           _buildTabBar(p),
           Expanded(
             child: TabBarView(
@@ -263,7 +270,10 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
   }
 
   // ── Header ────────────────────────────────────────
-  Widget _buildHeader(QuantumPalette p) {
+  Widget _buildHeader(QuantumPalette p, ExchangeService ex) {
+    final btcPrice = ex.getPrice('BTC');
+    final ethPrice = ex.getPrice('ETH');
+    final isLive = ex.getTick('BTC')?.isLive ?? false;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       decoration: BoxDecoration(
@@ -294,7 +304,16 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
                   children: [
                     Text('FIAT BROKER', style: GoogleFonts.orbitron(
                       color: p.textPrimary, fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: 2)),
-                    Text('EUR · USD · GBP · CHF · JPY', style: TextStyle(color: p.textSecondary, fontSize: 10)),
+                    Row(children: [
+                      if (btcPrice > 0)
+                        Text('BTC \$${btcPrice.toStringAsFixed(0)}  ETH \$${ethPrice.toStringAsFixed(0)}',
+                            style: TextStyle(color: p.textSecondary, fontSize: 10)),
+                      if (isLive) ...[const SizedBox(width: 5),
+                        Container(padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                          decoration: BoxDecoration(color: const Color(0xFF00FF88).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(3)),
+                          child: Text('LIVE', style: GoogleFonts.spaceMono(color: const Color(0xFF00FF88), fontSize: 7, letterSpacing: 1)))],
+                      if (btcPrice <= 0) Text('EUR · USD · GBP · CHF', style: TextStyle(color: p.textSecondary, fontSize: 10)),
+                    ]),
                   ],
                 ),
               ),
