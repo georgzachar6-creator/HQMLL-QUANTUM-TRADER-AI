@@ -1,3 +1,4 @@
+// v27.0: NewsScreen v2 – ExchangeService Live Price Context
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/theme_provider.dart';
+import '../services/exchange_service.dart';
 
 class NewsScreen extends StatefulWidget {
   const NewsScreen({super.key});
@@ -202,12 +204,15 @@ class _NewsScreenState extends State<NewsScreen>
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
+    // v27.0: ExchangeService live prices for news price context
+    final ex = context.watch<ExchangeService>();
     return Scaffold(
       backgroundColor: p.background,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(p),
+            _buildHeader(p, ex),
+            _buildLivePriceTicker(p, ex),
             _buildSentimentBar(p),
             _buildCategoryChips(p),
             Expanded(
@@ -221,7 +226,7 @@ class _NewsScreenState extends State<NewsScreen>
                         padding: const EdgeInsets.only(bottom: 20),
                         itemCount: _filteredNews.length + 1,
                         itemBuilder: (ctx, i) {
-                          if (i == 0) return _buildBreakingBanner(p);
+                          if (i == 0) return _buildBreakingBanner(p, ex);
                           final news = _filteredNews[i - 1];
                           return _buildNewsCard(news, p, i - 1);
                         },
@@ -234,8 +239,78 @@ class _NewsScreenState extends State<NewsScreen>
     );
   }
 
+  // ── v27.0: Live Price Ticker Bar ───────────────
+  Widget _buildLivePriceTicker(dynamic p, ExchangeService ex) {
+    final pairs = [
+      ('BTC', const Color(0xFFF7931A)),
+      ('ETH', const Color(0xFF627EEA)),
+      ('SOL', const Color(0xFF9945FF)),
+      ('BNB', const Color(0xFFF3BA2F)),
+      ('AVAX', const Color(0xFFE84142)),
+    ];
+    return Container(
+      height: 32,
+      color: p.surface.withValues(alpha: 0.5),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            color: p.primary.withValues(alpha: 0.1),
+            child: Text('PREISE', style: GoogleFonts.spaceMono(
+              color: p.primary, fontSize: 7, fontWeight: FontWeight.bold,
+            )),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: pairs.map((pair) {
+                  final price = ex.getPrice(pair.$1);
+                  final tick = ex.getTick(pair.$1);
+                  final change = tick?.change24h ?? 0.0;
+                  final isLive = tick?.isLive ?? false;
+                  if (price <= 0) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Row(children: [
+                      Container(width: 6, height: 6,
+                        decoration: BoxDecoration(
+                          color: isLive ? const Color(0xFF00FF88) : pair.$2,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(pair.$1, style: GoogleFonts.spaceMono(
+                        color: pair.$2, fontSize: 9, fontWeight: FontWeight.bold,
+                      )),
+                      const SizedBox(width: 4),
+                      Text(
+                        price >= 1000
+                            ? '\$${(price / 1000).toStringAsFixed(2)}K'
+                            : '\$${price.toStringAsFixed(2)}',
+                        style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 9),
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        '${change >= 0 ? "+" : ""}${change.toStringAsFixed(1)}%',
+                        style: GoogleFonts.spaceMono(
+                          color: change >= 0 ? const Color(0xFF00FF88) : const Color(0xFFFF3358),
+                          fontSize: 8,
+                        ),
+                      ),
+                    ]),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── Header ─────────────────────────────────────
-  Widget _buildHeader(dynamic p) {
+  Widget _buildHeader(dynamic p, ExchangeService ex) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -427,8 +502,14 @@ class _NewsScreenState extends State<NewsScreen>
     );
   }
 
-  // ── Breaking Banner ─────────────────────────────
-  Widget _buildBreakingBanner(dynamic p) {
+  // ── Breaking Banner (v27.0: live BTC price context) ──
+  Widget _buildBreakingBanner(dynamic p, ExchangeService ex) {
+    final btcPrice = ex.getPrice('BTC');
+    final btcChange = ex.getTick('BTC')?.change24h ?? 0.0;
+    final priceStr = btcPrice > 0
+        ? 'BTC \$${btcPrice.toStringAsFixed(0)} (${btcChange >= 0 ? "+" : ""}${btcChange.toStringAsFixed(1)}%)'
+        : 'BTC testet \$70K Widerstand';
+
     return AnimatedBuilder(
       animation: _pulseCtrl,
       builder: (_, __) => Container(
@@ -458,7 +539,7 @@ class _NewsScreenState extends State<NewsScreen>
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'SEC genehmigt Spot-Ethereum-ETF-Optionen · BTC testet \$70K Widerstand',
+              'SEC genehmigt Spot-Ethereum-ETF-Optionen · $priceStr',
               style: GoogleFonts.exo(color: p.textPrimary, fontSize: 12),
               overflow: TextOverflow.ellipsis,
             ),

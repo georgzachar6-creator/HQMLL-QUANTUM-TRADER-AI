@@ -1,5 +1,5 @@
-/// HQMLL Quantum Trader – Advanced Analytics Screen
-/// Heatmap · Korrelations-Matrix · Risk Metrics · Sentiment
+/// Quantum Trader – Advanced Analytics Screen v2 (v27.0)
+/// ExchangeService Live Prices · Heatmap · Korrelations-Matrix · Risk Metrics · Sentiment
 /// Grigori Saks · 2025
 library;
 
@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/theme_provider.dart';
 import '../theme/app_themes.dart';
+import '../services/exchange_service.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({super.key});
@@ -67,16 +68,16 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   }
 
   void _initHeatmap() {
+    // v27.0: Real change24h data seeded from ExchangeService, rest uses fallback
     final assets = [
-      ('BTC', 'Bitcoin', 2.34, 1284e9),
-      ('ETH', 'Ethereum', 1.87, 426e9),
-      ('BNB', 'BNB', 0.94, 88e9),
-      ('SOL', 'Solana', -0.52, 80e9),
-      ('QEMMA', 'QEMMA', 12.45, 156e6),
-      ('XRP', 'Ripple', 0.78, 28.4e9),
-      ('ADA', 'Cardano', -1.23, 15.8e9),
-      ('DOGE', 'Dogecoin', -3.44, 12.7e9),
-      ('AVAX', 'Avalanche', 4.56, 14.9e9),
+      ('BTC', 'Bitcoin', 0.0, 1284e9),
+      ('ETH', 'Ethereum', 0.0, 426e9),
+      ('BNB', 'BNB', 0.0, 88e9),
+      ('SOL', 'Solana', 0.0, 80e9),
+      ('XRP', 'Ripple', 0.0, 28.4e9),
+      ('ADA', 'Cardano', 0.0, 15.8e9),
+      ('DOGE', 'Dogecoin', 0.0, 12.7e9),
+      ('AVAX', 'Avalanche', 0.0, 14.9e9),
       ('DOT', 'Polkadot', -0.88, 9.8e9),
       ('MATIC', 'Polygon', 2.11, 7.1e9),
       ('LINK', 'Chainlink', 3.45, 8.2e9),
@@ -88,6 +89,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       ('META', 'Meta', 1.78, 1220e9),
       ('XAU', 'Gold', 0.34, 0),
       ('XAG', 'Silver', 0.71, 0),
+      ('ATOM', 'Cosmos', 1.23, 3.5e9),
     ];
     for (final a in assets) {
       _heatData.add(_HeatCell(
@@ -96,6 +98,26 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         change: a.$3.toDouble(),
         marketCap: a.$4.toDouble(),
       ));
+    }
+  }
+
+  /// v27.0: Seed heatmap with live ExchangeService change24h data
+  void _seedHeatmapFromExchange(ExchangeService ex) {
+    final liveSyms = ['BTC', 'ETH', 'BNB', 'SOL', 'XRP', 'ADA', 'DOGE', 'AVAX'];
+    for (int i = 0; i < _heatData.length; i++) {
+      final sym = _heatData[i].symbol;
+      if (liveSyms.contains(sym)) {
+        final tick = ex.getTick(sym);
+        if (tick != null && tick.change24h != 0) {
+          _heatData[i] = _HeatCell(
+            symbol: sym,
+            name: _heatData[i].name,
+            change: tick.change24h,
+            marketCap: _heatData[i].marketCap,
+            livePrice: tick.price,
+          );
+        }
+      }
     }
   }
 
@@ -137,6 +159,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
+    // v27.0: ExchangeService reactive live prices
+    final ex = context.watch<ExchangeService>();
+    // Seed heatmap with fresh live data on each rebuild
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _seedHeatmapFromExchange(ex);
+    });
     return Scaffold(
       backgroundColor: p.background,
       body: Column(
@@ -280,7 +308,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
-        childAspectRatio: 1.1,
+        childAspectRatio: 1.05,
         crossAxisSpacing: 4,
         mainAxisSpacing: 4,
       ),
@@ -289,28 +317,41 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
         final cell = _heatData[i];
         final chg = cell.change;
         final isPos = chg >= 0;
-        // Intensity 0-1
         final intensity = (chg.abs() / 10).clamp(0.0, 1.0);
         final bg = isPos
-            ? Color.lerp(Colors.green.shade900,
-                Colors.greenAccent, intensity)!
-            : Color.lerp(Colors.red.shade900,
-                Colors.redAccent, intensity)!;
+            ? Color.lerp(Colors.green.shade900, Colors.greenAccent, intensity)!
+            : Color.lerp(Colors.red.shade900, Colors.redAccent, intensity)!;
+        final hasLive = cell.livePrice > 0;
         return Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
             color: bg.withValues(alpha: 0.25 + intensity * 0.5),
             border: Border.all(
-                color: bg.withValues(alpha: 0.4), width: 0.5),
+              color: hasLive
+                  ? bg.withValues(alpha: 0.7)
+                  : bg.withValues(alpha: 0.3),
+              width: hasLive ? 1.0 : 0.5,
+            ),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(cell.symbol,
-                  style: TextStyle(
-                      color: p.textPrimary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(cell.symbol,
+                      style: TextStyle(
+                          color: p.textPrimary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900)),
+                  if (hasLive) ...[const SizedBox(width: 2),
+                    Container(width: 4, height: 4,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF00FF88), shape: BoxShape.circle,
+                      )),
+                  ],
+                ],
+              ),
               const SizedBox(height: 2),
               Text(
                 '${isPos ? '+' : ''}${chg.toStringAsFixed(2)}%',
@@ -319,6 +360,14 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                     fontSize: 9,
                     fontWeight: FontWeight.w700),
               ),
+              if (hasLive)
+                Text(
+                  cell.livePrice >= 1000
+                      ? '\$${(cell.livePrice / 1000).toStringAsFixed(1)}K'
+                      : '\$${cell.livePrice.toStringAsFixed(2)}',
+                  style: TextStyle(
+                      color: p.textSecondary, fontSize: 7),
+                ),
             ],
           ),
         );
@@ -1112,10 +1161,12 @@ class _HeatCell {
   final String name;
   final double change;
   final double marketCap;
+  final double livePrice; // v27.0: ExchangeService live price
   const _HeatCell({
     required this.symbol,
     required this.name,
     required this.change,
     required this.marketCap,
+    this.livePrice = 0.0,
   });
 }

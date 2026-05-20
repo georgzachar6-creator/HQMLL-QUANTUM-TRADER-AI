@@ -1,6 +1,6 @@
 // ============================================================
-// SOCIAL TRADING SCREEN v2 – Quantum Social Hub
-// Copy Trading, Leaderboard, Live Signals, Community Feed
+// SOCIAL TRADING SCREEN v3 – Quantum Social Hub (v27.0)
+// ExchangeService Live Prices · Copy Trading · Leaderboard · Live Signals
 // ============================================================
 import 'dart:async';
 import 'dart:math';
@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../theme/app_themes.dart';
+import '../services/exchange_service.dart';
 
 class SocialTradingScreen extends StatefulWidget {
   const SocialTradingScreen({super.key});
@@ -78,12 +79,30 @@ class _SocialTradingScreenState extends State<SocialTradingScreen>
       for (var t in _traders) {
         t['roi'] = (t['roi'] as double) + (_rand.nextDouble() - 0.48) * 0.3;
         t['followers'] = (t['followers'] as int) + _rand.nextInt(5);
+        // Update trader PnL based on ROI
+        t['pnl'] = (t['pnl'] as double) * (1 + (_rand.nextDouble() - 0.48) * 0.001);
       }
       // Update feed likes
       for (var f in _feed) {
         f['likes'] = (f['likes'] as int) + _rand.nextInt(3);
       }
     });
+  }
+
+  /// v27.0: Update feed signals with live ExchangeService prices
+  void _updateFeedWithLivePrices(ExchangeService ex) {
+    final btcPrice = ex.getPrice('BTC');
+    final ethPrice = ex.getPrice('ETH');
+    final solPrice = ex.getPrice('SOL');
+    if (btcPrice > 0 && _feed.isNotEmpty) {
+      // Refresh live price context in signal text (first signal only for performance)
+      final priceStr = '\$${btcPrice.toStringAsFixed(0)}';
+      if (_feed[0]['type'] == 'SIGNAL' && !_feed[0]['priceUpdated']) {
+        _feed[0]['livePrice'] = btcPrice;
+        _feed[0]['ethPrice'] = ethPrice;
+        _feed[0]['solPrice'] = solPrice;
+      }
+    }
   }
 
   @override
@@ -97,12 +116,17 @@ class _SocialTradingScreenState extends State<SocialTradingScreen>
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
+    // v27.0: ExchangeService live prices for signal context
+    final ex = context.watch<ExchangeService>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _updateFeedWithLivePrices(ex);
+    });
     return Scaffold(
       backgroundColor: p.background,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(p),
+            _buildHeader(p, ex),
             _buildTabBar(p),
             Expanded(
               child: AnimatedSwitcher(
@@ -116,7 +140,10 @@ class _SocialTradingScreenState extends State<SocialTradingScreen>
     );
   }
 
-  Widget _buildHeader(QuantumPalette p) {
+  Widget _buildHeader(QuantumPalette p, ExchangeService ex) {
+    final btcPrice = ex.getPrice('BTC');
+    final btcTick = ex.getTick('BTC');
+    final isLive = btcTick?.isLive ?? false;
     return AnimatedBuilder(
       animation: _glowCtrl,
       builder: (_, __) => Container(
@@ -151,9 +178,21 @@ class _SocialTradingScreenState extends State<SocialTradingScreen>
                   color: p.primary, fontSize: 16, fontWeight: FontWeight.bold,
                   shadows: [Shadow(color: p.primary.withValues(alpha: 0.5), blurRadius: 8)],
                 )),
-                Text('Community · Copy Trade · Signals', style: GoogleFonts.rajdhani(
-                  color: p.textSecondary, fontSize: 11,
-                )),
+                Row(children: [
+                  Text('Community · Copy Trade · Signals', style: GoogleFonts.rajdhani(
+                    color: p.textSecondary, fontSize: 11,
+                  )),
+                  if (btcPrice > 0) ...[
+                    const SizedBox(width: 6),
+                    Text(
+                      'BTC \$${btcPrice.toStringAsFixed(0)}',
+                      style: GoogleFonts.spaceMono(
+                        color: isLive ? const Color(0xFF00FF88) : const Color(0xFFFFAA00),
+                        fontSize: 9, fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ]),
               ]),
             ),
             _buildHeaderBadge(p, Icons.people_alt, '${_traders.fold<int>(0, (a, b) => a + (b['followers'] as int))}', 'FOLLOWERS', p.primary),

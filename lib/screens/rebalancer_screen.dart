@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../widgets/crypto_icon.dart';
-
 import '../providers/theme_provider.dart';
+import '../services/exchange_service.dart';
 
 // ════════════════════════════════════════════════════════════════════════════
-// AI PORTFOLIO REBALANCER SCREEN  v22.0
-// Quantum Trader AI — Smart AI-driven portfolio optimization engine
+// AI PORTFOLIO REBALANCER SCREEN v2 (v27.0)
+// Quantum Trader AI — Live Prices via ExchangeService · Smart AI-driven portfolio optimization
 // ════════════════════════════════════════════════════════════════════════════
 
 class RebalancerScreen extends StatefulWidget {
@@ -25,14 +25,20 @@ class _RebalancerScreenState extends State<RebalancerScreen>
   late Animation<double> _aiGlow;
   late Animation<double> _pulse; // ignore: unused_field
 
-  // Portfolio Allocation data
+  // v27.0: Static fallback prices (overridden by ExchangeService in build)
+  static const Map<String, double> _fallbackPrices = {
+    'BTC': 67842.0, 'ETH': 3548.0, 'SOL': 185.4, 'BNB': 620.0,
+    'ADA': 0.485, 'DOT': 7.2, 'AVAX': 38.5, 'LINK': 17.8,
+  };
+
+  // Portfolio Allocation data — prices updated by ExchangeService
   final List<_AssetAlloc> _current = [
-    _AssetAlloc('BTC', 'Bitcoin', 38.5, 0.3850, Colors.orange, 42180.0),
-    _AssetAlloc('ETH', 'Ethereum', 22.3, 0.2230, const Color(0xFF627EEA), 2847.0),
+    _AssetAlloc('BTC', 'Bitcoin', 38.5, 0.3850, Colors.orange, 67842.0),
+    _AssetAlloc('ETH', 'Ethereum', 22.3, 0.2230, const Color(0xFF627EEA), 3548.0),
     _AssetAlloc('SOL', 'Solana', 11.8, 0.1180, const Color(0xFF9945FF), 185.4),
-    _AssetAlloc('BNB', 'BNB', 8.6, 0.0860, const Color(0xFFF3BA2F), 412.0),
-    _AssetAlloc('ADA', 'Cardano', 5.4, 0.0540, const Color(0xFF0033AD), 0.62),
-    _AssetAlloc('DOT', 'Polkadot', 4.2, 0.0420, const Color(0xFFE6007A), 8.73),
+    _AssetAlloc('BNB', 'BNB', 8.6, 0.0860, const Color(0xFFF3BA2F), 620.0),
+    _AssetAlloc('ADA', 'Cardano', 5.4, 0.0540, const Color(0xFF0033AD), 0.485),
+    _AssetAlloc('DOT', 'Polkadot', 4.2, 0.0420, const Color(0xFFE6007A), 7.2),
     _AssetAlloc('AVAX', 'Avalanche', 3.9, 0.0390, const Color(0xFFE84142), 38.5),
     _AssetAlloc('LINK', 'Chainlink', 3.1, 0.0310, const Color(0xFF2A5ADA), 17.8),
     _AssetAlloc('Other', 'Others', 2.2, 0.0220, Colors.grey, 0.0),
@@ -40,12 +46,12 @@ class _RebalancerScreenState extends State<RebalancerScreen>
 
   // AI-Suggested optimal allocations
   final List<_AssetAlloc> _target = [
-    _AssetAlloc('BTC', 'Bitcoin', 30.0, 0.3000, Colors.orange, 42180.0),
-    _AssetAlloc('ETH', 'Ethereum', 25.0, 0.2500, const Color(0xFF627EEA), 2847.0),
+    _AssetAlloc('BTC', 'Bitcoin', 30.0, 0.3000, Colors.orange, 67842.0),
+    _AssetAlloc('ETH', 'Ethereum', 25.0, 0.2500, const Color(0xFF627EEA), 3548.0),
     _AssetAlloc('SOL', 'Solana', 15.0, 0.1500, const Color(0xFF9945FF), 185.4),
-    _AssetAlloc('BNB', 'BNB', 8.0, 0.0800, const Color(0xFFF3BA2F), 412.0),
-    _AssetAlloc('ADA', 'Cardano', 4.0, 0.0400, const Color(0xFF0033AD), 0.62),
-    _AssetAlloc('DOT', 'Polkadot', 5.0, 0.0500, const Color(0xFFE6007A), 8.73),
+    _AssetAlloc('BNB', 'BNB', 8.0, 0.0800, const Color(0xFFF3BA2F), 620.0),
+    _AssetAlloc('ADA', 'Cardano', 4.0, 0.0400, const Color(0xFF0033AD), 0.485),
+    _AssetAlloc('DOT', 'Polkadot', 5.0, 0.0500, const Color(0xFFE6007A), 7.2),
     _AssetAlloc('AVAX', 'Avalanche', 7.0, 0.0700, const Color(0xFFE84142), 38.5),
     _AssetAlloc('LINK', 'Chainlink', 4.0, 0.0400, const Color(0xFF2A5ADA), 17.8),
     _AssetAlloc('Other', 'Others', 2.0, 0.0200, Colors.grey, 0.0),
@@ -61,13 +67,13 @@ class _RebalancerScreenState extends State<RebalancerScreen>
   ];
   int _selectedStrategy = 4;
 
-  // Rebalancing trades
+  // Rebalancing trades — prices updated by ExchangeService in build
   final List<_RebTrade> _trades = [
-    _RebTrade('ETH', 'Kaufen', 2.153, 2847.0, 6130.0, true),
+    _RebTrade('ETH', 'Kaufen', 2.153, 3548.0, 7637.0, true),
     _RebTrade('SOL', 'Kaufen', 17.4, 185.4, 3226.0, true),
     _RebTrade('AVAX', 'Kaufen', 8.05, 38.5, 309.8, true),
-    _RebTrade('BTC', 'Verkaufen', 0.202, 42180.0, 8520.4, false),
-    _RebTrade('ADA', 'Verkaufen', 2258.1, 0.62, 1400.0, false),
+    _RebTrade('BTC', 'Verkaufen', 0.126, 67842.0, 8548.1, false),
+    _RebTrade('ADA', 'Verkaufen', 2887.6, 0.485, 1400.5, false),
     _RebTrade('LINK', 'Kaufen', 5.06, 17.8, 90.1, true),
   ];
 
@@ -121,10 +127,49 @@ class _RebalancerScreenState extends State<RebalancerScreen>
     });
   }
 
+  /// v27.0: Sync allocation prices from ExchangeService
+  void _syncPricesFromExchange(ExchangeService ex) {
+    bool changed = false;
+    for (final alloc in _current) {
+      final livePrice = ex.getPrice(alloc.symbol);
+      if (livePrice > 0 && (livePrice - alloc.price).abs() / alloc.price > 0.001) {
+        alloc.price = livePrice;
+        changed = true;
+      }
+    }
+    for (final alloc in _target) {
+      final livePrice = ex.getPrice(alloc.symbol);
+      if (livePrice > 0) alloc.price = livePrice;
+    }
+    for (final trade in _trades) {
+      final livePrice = ex.getPrice(trade.symbol);
+      if (livePrice > 0) {
+        trade.price = livePrice;
+        trade.value = trade.qty * livePrice;
+      }
+    }
+    if (changed) {
+      // Recalculate portfolio value with live prices
+      double newValue = 0;
+      for (final alloc in _current) {
+        if (alloc.symbol != 'Other') {
+          final qty = _portfolioValue * alloc.weight / (alloc.price > 0 ? alloc.price : 1);
+          newValue += qty * alloc.price;
+        }
+      }
+      if (newValue > 50000) _portfolioValue = newValue;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>();
     final pal = p.palette;
+    // v27.0: ExchangeService live prices for portfolio rebalancing
+    final ex = context.watch<ExchangeService>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncPricesFromExchange(ex);
+    });
 
     return Scaffold(
       backgroundColor: pal.background,
@@ -648,8 +693,8 @@ class _RebalancerScreenState extends State<RebalancerScreen>
 
   // ── TAB 3: TRADES ────────────────────────────────────────────────────────
   Widget _buildTradesTab(dynamic pal) {
-    final totalBuy = _trades.where((t) => t.isBuy).fold(0.0, (s, t) => s + t.usdValue);
-    final totalSell = _trades.where((t) => !t.isBuy).fold(0.0, (s, t) => s + t.usdValue);
+    final totalBuy = _trades.where((t) => t.isBuy).fold(0.0, (s, t) => s + t.value);
+    final totalSell = _trades.where((t) => !t.isBuy).fold(0.0, (s, t) => s + t.value);
     final estFees = (totalBuy + totalSell) * 0.001;
 
     return ListView(
@@ -826,13 +871,13 @@ class _RebalancerScreenState extends State<RebalancerScreen>
                   ],
                 ),
                 Text(
-                    '${t.amount.toStringAsFixed(3)} @ \$${t.price.toStringAsFixed(0)}',
+                    '${t.qty.toStringAsFixed(3)} @ \$${t.price.toStringAsFixed(0)}',
                     style: GoogleFonts.spaceMono(
                         color: pal.textSecondary, fontSize: 9)),
               ],
             ),
           ),
-          Text('\$${t.usdValue.toStringAsFixed(0)}',
+          Text('\$${t.value.toStringAsFixed(0)}',
               style: GoogleFonts.spaceMono(
                   color: pal.text, fontSize: 13, fontWeight: FontWeight.bold)),
         ],
@@ -1095,7 +1140,7 @@ class _RebalancerScreenState extends State<RebalancerScreen>
         ),
         content: Text(
             '${_trades.length} Trades werden ausgeführt.\n'
-            'Geschätzte Gebühren: \$${((_trades.fold(0.0, (s, t) => s + t.usdValue) * 0.001)).toStringAsFixed(0)}\n\n'
+            'Geschätzte Gebühren: \$${((_trades.fold(0.0, (s, t) => s + t.value) * 0.001)).toStringAsFixed(0)}\n\n'
             'Dies ist eine Demo-Version. In der Live-Version würden diese Trades über deine konfigurierten Broker ausgeführt.',
             style: GoogleFonts.spaceMono(color: pal.textSecondary, fontSize: 10)),
         actions: [
@@ -1199,8 +1244,8 @@ class _AssetAlloc {
   final double pct;
   final double weight;
   final Color color;
-  final double price;
-  const _AssetAlloc(this.symbol, this.name, this.pct, this.weight, this.color, this.price);
+  double price; // v27.0: mutable — updated by ExchangeService
+  _AssetAlloc(this.symbol, this.name, this.pct, this.weight, this.color, this.price);
 }
 
 class _Strategy {
@@ -1218,12 +1263,11 @@ class _Strategy {
 class _RebTrade {
   final String symbol;
   final String action;
-  final double amount;
-  final double price;
-  final double usdValue;
+  final double qty; // v27.0: renamed from amount for clarity
+  double price;     // v27.0: mutable — updated by ExchangeService
+  double value;     // v27.0: mutable — qty * live price
   final bool isBuy;
-  const _RebTrade(this.symbol, this.action, this.amount, this.price,
-      this.usdValue, this.isBuy);
+  _RebTrade(this.symbol, this.action, this.qty, this.price, this.value, this.isBuy);
 }
 
 class _Insight {

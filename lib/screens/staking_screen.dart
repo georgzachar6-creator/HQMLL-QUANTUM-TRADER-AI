@@ -1,6 +1,6 @@
 // ============================================================
-// STAKING & YIELD DASHBOARD – Quantum Trader v21
-// DeFi Yield · Staking Pools · LP Farming · APY Tracker
+// STAKING & YIELD DASHBOARD v2 – Quantum Trader v27.0
+// ExchangeService Live Prices · DeFi Yield · Staking Pools · LP Farming
 // ============================================================
 import 'dart:async';
 import 'dart:math';
@@ -9,8 +9,8 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../widgets/crypto_icon.dart';
-
 import '../providers/theme_provider.dart';
+import '../services/exchange_service.dart';
 
 class StakingScreen extends StatefulWidget {
   const StakingScreen({super.key});
@@ -33,23 +33,23 @@ class _StakingScreenState extends State<StakingScreen>
     _StakePos(symbol: 'ETH', protocol: 'Lido', type: 'Liquid Staking',
         staked: 2.5, apy: 4.2, rewards: 0.00234, rewardSymbol: 'stETH',
         color: const Color(0xFF627EEA), emoji: '💎', lockDays: 0, chain: 'ETH',
-        tvl: 22.4e9, riskLevel: 'Niedrig'),
+        tvl: 22.4e9, riskLevel: 'Niedrig', currentPrice: 3548.0),
     _StakePos(symbol: 'SOL', protocol: 'Marinade', type: 'Liquid Staking',
         staked: 45.0, apy: 7.1, rewards: 0.0842, rewardSymbol: 'mSOL',
         color: const Color(0xFF9945FF), emoji: '☀️', lockDays: 0, chain: 'SOL',
-        tvl: 1.8e9, riskLevel: 'Niedrig'),
+        tvl: 1.8e9, riskLevel: 'Niedrig', currentPrice: 182.0),
     _StakePos(symbol: 'AVAX', protocol: 'Benqi', type: 'DeFi Staking',
         staked: 120.0, apy: 9.8, rewards: 3.24, rewardSymbol: 'sAVAX',
         color: const Color(0xFFE84142), emoji: '❄️', lockDays: 14, chain: 'AVAX',
-        tvl: 420e6, riskLevel: 'Mittel'),
+        tvl: 420e6, riskLevel: 'Mittel', currentPrice: 36.8),
     _StakePos(symbol: 'ATOM', protocol: 'Cosmos Hub', type: 'Validator Staking',
         staked: 200.0, apy: 14.5, rewards: 8.12, rewardSymbol: 'ATOM',
         color: const Color(0xFF6F4CA1), emoji: '⚛️', lockDays: 21, chain: 'COSMOS',
-        tvl: 2.1e9, riskLevel: 'Niedrig'),
+        tvl: 2.1e9, riskLevel: 'Niedrig', currentPrice: 9.4),
     _StakePos(symbol: 'DOT', protocol: 'Polkadot', type: 'Nominated PoS',
         staked: 500.0, apy: 12.2, rewards: 16.82, rewardSymbol: 'DOT',
         color: const Color(0xFFE6007A), emoji: '⚫', lockDays: 28, chain: 'DOT',
-        tvl: 3.4e9, riskLevel: 'Niedrig'),
+        tvl: 3.4e9, riskLevel: 'Niedrig', currentPrice: 7.2),
   ];
 
   // ── LP Farming Pools ────────────────────────────────────
@@ -122,13 +122,11 @@ class _StakingScreenState extends State<StakingScreen>
   }
 
   void _calcTotals() {
-    _totalStakedValue = _positions.fold(0, (s, p) => s + p.staked * _estPrice(p.symbol));
+    _totalStakedValue = _positions.fold(0, (s, p) => s + p.staked * p.currentPrice);
     _totalLpValue = _lpPools.fold(0, (s, p) => s + p.myLiquidity);
     _totalVaultValue = _vaults.fold(0, (s, v) => s + v.myDeposit);
 
-    // ignore: unused_local_variable
-    final total = _totalStakedValue + _totalLpValue + _totalVaultValue;
-    final stakingYield = _positions.fold(0.0, (s, p) => s + p.staked * _estPrice(p.symbol) * (p.apy / 100));
+    final stakingYield = _positions.fold(0.0, (s, p) => s + p.staked * p.currentPrice * (p.apy / 100));
     final lpYield = _lpPools.fold(0.0, (s, p) => s + p.myLiquidity * (p.apy / 100));
     final vaultYield = _vaults.fold(0.0, (s, v) => s + v.myDeposit * (v.apy / 100));
 
@@ -137,9 +135,23 @@ class _StakingScreenState extends State<StakingScreen>
     _totalDailyYield = _totalYearlyYield / 365;
   }
 
-  double _estPrice(String sym) {
-    const prices = {'ETH': 3548.0, 'SOL': 182.0, 'AVAX': 36.8, 'ATOM': 9.4, 'DOT': 7.2};
+  /// v27.0: Get price from ExchangeService, fallback to static
+  double _estPrice(String sym, [ExchangeService? ex]) {
+    if (ex != null) {
+      final livePrice = ex.getPrice(sym);
+      if (livePrice > 0) return livePrice;
+    }
+    const prices = {'ETH': 3548.0, 'SOL': 182.0, 'AVAX': 36.8, 'ATOM': 9.4, 'DOT': 7.2, 'BNB': 620.0, 'BTC': 67842.0};
     return prices[sym] ?? 1.0;
+  }
+
+  /// v27.0: Update staking position prices from ExchangeService
+  void _syncPricesFromExchange(ExchangeService ex) {
+    for (final pos in _positions) {
+      final livePrice = ex.getPrice(pos.symbol);
+      if (livePrice > 0) pos.currentPrice = livePrice;
+    }
+    _calcTotals();
   }
 
   @override
@@ -153,6 +165,12 @@ class _StakingScreenState extends State<StakingScreen>
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
+    // v27.0: ExchangeService live prices for staking values
+    final ex = context.watch<ExchangeService>();
+    // Sync prices on each rebuild
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncPricesFromExchange(ex);
+    });
     return Scaffold(
       backgroundColor: p.background,
       body: SafeArea(
@@ -868,6 +886,7 @@ class _StakingScreenState extends State<StakingScreen>
 class _StakePos {
   final String symbol, protocol, type, rewardSymbol, chain;
   double staked, apy, rewards;
+  double currentPrice; // v27.0: updated by ExchangeService
   final Color color;
   final String emoji;
   final int lockDays;
@@ -877,7 +896,7 @@ class _StakePos {
       required this.staked, required this.apy, required this.rewards,
       required this.rewardSymbol, required this.color, required this.emoji,
       required this.lockDays, required this.chain, required this.tvl,
-      required this.riskLevel});
+      required this.riskLevel, this.currentPrice = 0.0});
 }
 
 class _LPPool {
