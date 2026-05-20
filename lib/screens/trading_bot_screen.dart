@@ -1,5 +1,5 @@
-/// HQMLL Quantum Trader – AI Trading Bot Screen
-/// Auto-Trading · Strategies · Backtesting · Performance Analytics
+/// Quantum Trader – AI Trading Bot Screen v2 (v28.0)
+/// ExchangeService Live Prices · Auto-Trading · Strategies · Backtesting · Performance Analytics
 /// Grigori Saks · 2025
 library;
 
@@ -12,6 +12,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../providers/theme_provider.dart';
 import '../theme/app_themes.dart';
 import '../widgets/asset_icon_widget.dart';
+import '../services/exchange_service.dart';
 
 // ── Trading Bot Model ──────────────────────────────────
 class TradingBot {
@@ -244,23 +245,44 @@ class _TradingBotScreenState extends State<TradingBotScreen> with TickerProvider
 
   void _initRecentTrades() {
     final sides = ['BUY', 'SELL'];
-    final symbols = ['BTC', 'ETH', 'SOL', 'BNB', 'ADA', 'MATIC'];
+    // v28.0: Realistic prices seeded per symbol
+    final symPrices = {
+      'BTC': 67842.0, 'ETH': 3548.0, 'SOL': 185.4,
+      'BNB': 620.0, 'ADA': 0.485, 'MATIC': 0.892,
+    };
+    final symbols = symPrices.keys.toList();
     final bots = _bots.map((b) => b.name).toList();
     for (int i = 0; i < 20; i++) {
       final side = sides[i % 2];
+      final sym = symbols[i % symbols.length];
+      final basePrice = symPrices[sym]!;
       final pnl = (_rng.nextDouble() - 0.3) * 50;
       _recentTrades.add({
         'id': 'TRD${1000 + i}',
         'bot': bots[i % bots.length],
-        'symbol': symbols[i % symbols.length],
+        'symbol': sym,
         'side': side,
-        'price': 100 + _rng.nextDouble() * 900,
-        'quantity': 0.01 + _rng.nextDouble() * 0.5,
+        'price': basePrice * (1 + (_rng.nextDouble() - 0.5) * 0.005),
+        'quantity': 0.001 + _rng.nextDouble() * 0.1,
         'pnl': pnl,
         'timestamp': DateTime.now().subtract(Duration(minutes: i * 5 + _rng.nextInt(4))),
       });
     }
     _recentTrades.sort((a, b) => (b['timestamp'] as DateTime).compareTo(a['timestamp'] as DateTime));
+  }
+
+  /// v28.0: Update bot trade prices using ExchangeService live data
+  void _syncBotPricesFromExchange(ExchangeService ex) {
+    // Update recent trade prices with live data for active bots
+    for (var trade in _recentTrades) {
+      final sym = trade['symbol'] as String;
+      final live = ex.getPrice(sym);
+      if (live > 0) {
+        final oldPrice = trade['price'] as double;
+        // Drift prices toward live price gradually
+        trade['price'] = oldPrice + (live - oldPrice) * 0.1;
+      }
+    }
   }
 
   void _startPerformanceUpdates() {
@@ -308,11 +330,16 @@ class _TradingBotScreenState extends State<TradingBotScreen> with TickerProvider
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
+    // v28.0: ExchangeService live prices for bot trade context
+    final ex = context.watch<ExchangeService>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncBotPricesFromExchange(ex);
+    });
     return Scaffold(
       backgroundColor: p.background,
       body: Column(
         children: [
-          _buildHeader(p),
+          _buildHeader(p, ex),
           _buildStatsBar(p),
           _buildTabBar(p),
           Expanded(
@@ -333,7 +360,10 @@ class _TradingBotScreenState extends State<TradingBotScreen> with TickerProvider
   }
 
   // ── Header ────────────────────────────────────────
-  Widget _buildHeader(QuantumPalette p) {
+  Widget _buildHeader(QuantumPalette p, ExchangeService ex) {
+    final btcPrice = ex.getPrice('BTC');
+    final ethPrice = ex.getPrice('ETH');
+    final isLive = ex.getTick('BTC')?.isLive ?? false;
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       decoration: BoxDecoration(
@@ -369,7 +399,20 @@ class _TradingBotScreenState extends State<TradingBotScreen> with TickerProvider
               children: [
                 Text('AI TRADING BOTS', style: GoogleFonts.orbitron(
                   color: p.textPrimary, fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: 2)),
-                Text('Quantum Auto-Trading System', style: TextStyle(color: p.textSecondary, fontSize: 10)),
+                // v28.0: Live price context from ExchangeService
+                Row(children: [
+                  Text('Quantum Auto-Trading', style: TextStyle(color: p.textSecondary, fontSize: 10)),
+                  if (btcPrice > 0) ...[
+                    const SizedBox(width: 6),
+                    Text('BTC \$${btcPrice.toStringAsFixed(0)}', style: GoogleFonts.spaceMono(
+                      color: isLive ? const Color(0xFF00FF88) : const Color(0xFFFFAA00), fontSize: 9,
+                    )),
+                    const SizedBox(width: 6),
+                    Text('ETH \$${ethPrice.toStringAsFixed(0)}', style: GoogleFonts.spaceMono(
+                      color: isLive ? const Color(0xFF627EEA) : const Color(0xFFFFAA00), fontSize: 9,
+                    )),
+                  ],
+                ]),
               ],
             ),
           ),

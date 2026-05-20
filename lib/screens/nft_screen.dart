@@ -4,6 +4,7 @@
 // ============================================================
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,6 +12,7 @@ import 'package:provider/provider.dart';
 import '../widgets/crypto_icon.dart';
 
 import '../providers/theme_provider.dart';
+import '../services/exchange_service.dart';
 
 class NFTScreen extends StatefulWidget {
   const NFTScreen({super.key});
@@ -29,6 +31,11 @@ class _NFTScreenState extends State<NFTScreen>
   final _tabs = ['TRENDING', 'COLLECTIONS', 'MEINE NFTs', 'WATCHLIST', 'MINT'];
   String _chain = 'ETH';
   final _chains = ['ETH', 'SOL', 'BTC', 'MATIC', 'APT'];
+
+  // Live price context (v28.0 — ExchangeService)
+  double _ethPrice = 3548.0;
+  double _solPrice = 185.4;
+  bool _ethIsLive = false;
 
   // ── Collections ──────────────────────────────────────────
   final List<Map<String, dynamic>> _collections = [
@@ -160,6 +167,8 @@ class _NFTScreenState extends State<NFTScreen>
       sp.add(c['floor'] as double);
     }
 
+    WidgetsBinding.instance.addPostFrameCallback((_) => _seedPricesFromExchange());
+
     // Live price simulation
     _liveTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (!mounted) return;
@@ -178,6 +187,38 @@ class _NFTScreenState extends State<NFTScreen>
     });
   }
 
+  void _seedPricesFromExchange() {
+    if (!mounted) return;
+    final ex = context.read<ExchangeService>();
+    final ethTick = ex.getTick('ETH');
+    final solTick = ex.getTick('SOL');
+    setState(() {
+      if (ethTick != null && ethTick.price > 0) {
+        _ethPrice = ethTick.price;
+        _ethIsLive = ethTick.isLive;
+      }
+      if (solTick != null && solTick.price > 0) {
+        _solPrice = solTick.price;
+      }
+    });
+  }
+
+  void _syncPricesFromExchange(ExchangeService ex) {
+    final ethTick = ex.getTick('ETH');
+    final solTick = ex.getTick('SOL');
+    bool changed = false;
+    if (ethTick != null && ethTick.price > 0 && (ethTick.price - _ethPrice).abs() / _ethPrice > 0.0005) {
+      _ethPrice = ethTick.price;
+      _ethIsLive = ethTick.isLive;
+      changed = true;
+    }
+    if (solTick != null && solTick.price > 0 && (solTick.price - _solPrice).abs() / _solPrice > 0.0005) {
+      _solPrice = solTick.price;
+      changed = true;
+    }
+    if (kDebugMode && changed) debugPrint('[NFT] prices synced');
+  }
+
   @override
   void dispose() {
     _glowCtrl.dispose();
@@ -189,11 +230,13 @@ class _NFTScreenState extends State<NFTScreen>
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
+    final ex = context.watch<ExchangeService>();
+    _syncPricesFromExchange(ex);
     return Scaffold(
       backgroundColor: p.background,
       body: SafeArea(
         child: Column(children: [
-          _buildHeader(p),
+          _buildHeader(p, ex),
           _buildChainSelector(p),
           _buildTabBar(p),
           Expanded(
@@ -214,7 +257,7 @@ class _NFTScreenState extends State<NFTScreen>
   }
 
   // ── HEADER ───────────────────────────────────────────────
-  Widget _buildHeader(dynamic p) {
+  Widget _buildHeader(dynamic p, ExchangeService ex) {
     // Portfolio value
     double totalValue = 0;
     double totalCost = 0;
@@ -241,9 +284,16 @@ class _NFTScreenState extends State<NFTScreen>
             Text('NFT GALLERY', style: GoogleFonts.spaceMono(
               color: p.primary, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 2,
             )),
-            Text('Portfolio · Marketplace · Collections', style: GoogleFonts.inter(
-              color: p.textSecondary, fontSize: 11,
-            )),
+            Row(children: [
+              Text('ETH \$${_ethPrice.toStringAsFixed(0)} · SOL \$${_solPrice.toStringAsFixed(1)}', style: GoogleFonts.inter(color: p.textSecondary, fontSize: 10)),
+              const SizedBox(width: 5),
+              if (_ethIsLive)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(color: const Color(0xFF627EEA).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(3)),
+                  child: Text('LIVE', style: GoogleFonts.spaceMono(color: const Color(0xFF627EEA), fontSize: 7, letterSpacing: 1)),
+                ),
+            ]),
           ])),
           Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
             Text('${totalValue.toStringAsFixed(2)} ETH', style: GoogleFonts.spaceMono(

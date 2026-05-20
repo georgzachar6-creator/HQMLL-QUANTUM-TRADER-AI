@@ -2,6 +2,7 @@
 // DeFi SCREEN v2 – Decentralized Finance Dashboard
 // Pools, Yield Farming, Staking, Liquidity, Protocol Stats
 // ============================================================
+// v28.0: DeFiScreen v2 – ExchangeService Live Pool Prices + TVL
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
+import '../services/exchange_service.dart';
 
 class DeFiScreen extends StatefulWidget {
   const DeFiScreen({super.key});
@@ -78,11 +80,35 @@ class _DeFiScreenState extends State<DeFiScreen> with TickerProviderStateMixin {
       if (!mounted) return;
       setState(() {
         _totalRewards += _rand.nextDouble() * 0.01;
-        for (var p in _pools) {
-          p['apy'] = ((p['apy'] as double) + (_rand.nextDouble() - 0.5) * 0.2).clamp(1.0, 60.0);
+        for (var pool in _pools) {
+          pool['apy'] = ((pool['apy'] as double) + (_rand.nextDouble() - 0.5) * 0.2).clamp(1.0, 60.0);
         }
       });
     });
+  }
+
+  /// v28.0: Update pool values with ExchangeService live prices
+  void _syncPoolsFromExchange(ExchangeService ex) {
+    double newTVL = 0;
+    for (var stk in _staking) {
+      final sym = stk['token'] as String;
+      final livePrice = ex.getPrice(sym);
+      if (livePrice > 0 && stk['amount'] != null) {
+        final amount = stk['amount'] as double;
+        stk['value'] = amount * livePrice;
+      }
+      newTVL += (stk['value'] as double? ?? 0);
+    }
+    // Update my liquidity values in pools using token prices
+    for (var pool in _pools) {
+      final tok0 = pool['token0'] as String? ?? '';
+      final livePrice = ex.getPrice(tok0);
+      if (livePrice > 0 && pool['myLiq'] != null) {
+        final myLiq = pool['myLiq'] as double;
+        if (myLiq > 0) newTVL += myLiq;
+      }
+    }
+    if (newTVL > 5000) _totalValueLocked = newTVL;
   }
 
   @override
@@ -94,10 +120,15 @@ class _DeFiScreenState extends State<DeFiScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
+    // v28.0: ExchangeService live prices for DeFi calculations
+    final ex = context.watch<ExchangeService>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncPoolsFromExchange(ex);
+    });
     return Scaffold(
       backgroundColor: p.background,
       body: Column(children: [
-        _buildHeader(p),
+        _buildHeader(p, ex),
         _buildTabBar(p),
         Expanded(child: TabBarView(controller: _tab, children: [
           _buildOverview(p),
@@ -109,7 +140,10 @@ class _DeFiScreenState extends State<DeFiScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildHeader(dynamic p) {
+  Widget _buildHeader(dynamic p, ExchangeService ex) {
+    final ethPrice = ex.getPrice('ETH');
+    final solPrice = ex.getPrice('SOL');
+    final isLive = ex.getTick('ETH')?.isLive ?? false;
     return AnimatedBuilder(
       animation: _glowCtrl,
       builder: (_, __) => Container(
@@ -132,7 +166,17 @@ class _DeFiScreenState extends State<DeFiScreen> with TickerProviderStateMixin {
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('DeFi DASHBOARD', style: GoogleFonts.spaceMono(color: const Color(0xFF00CED1), fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 2)),
-            Text('TVL: \$${(_totalValueLocked).toStringAsFixed(2)} · Rewards: \$${_totalRewards.toStringAsFixed(2)} · Ø APY: ${_avgAPY.toStringAsFixed(1)}%', style: GoogleFonts.inter(color: p.textSecondary, fontSize: 10)),
+            Row(children: [
+              Text('TVL: \$${(_totalValueLocked / 1000).toStringAsFixed(1)}K · Ø APY: ${_avgAPY.toStringAsFixed(1)}%', style: GoogleFonts.inter(color: p.textSecondary, fontSize: 10)),
+              if (ethPrice > 0) ...[const SizedBox(width: 6),
+                Text(
+                  'ETH \$${ethPrice.toStringAsFixed(0)} · SOL \$${solPrice.toStringAsFixed(1)}',
+                  style: GoogleFonts.spaceMono(
+                    color: isLive ? const Color(0xFF00FF88) : const Color(0xFFFFAA00), fontSize: 8,
+                  ),
+                ),
+              ],
+            ]),
           ])),
         ]),
       ),

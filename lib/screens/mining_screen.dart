@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
+import '../services/exchange_service.dart';
 
 class MiningScreen extends StatefulWidget {
   const MiningScreen({super.key});
@@ -39,7 +40,8 @@ class _MiningScreenState extends State<MiningScreen>
   int _shareCount = 1847;
   int _rejectedShares = 12;
   double _profitUSD = 193.42;
-  double _btcPrice = 67842.0;
+  double _btcPrice = 67842.0; // seeded from ExchangeService
+  bool _btcIsLive = false;
 
   // GPU Workers
   final List<Map<String, dynamic>> _gpus = [
@@ -83,6 +85,34 @@ class _MiningScreenState extends State<MiningScreen>
 
     _startLiveFeed();
     _calculate();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _seedBtcFromExchange());
+  }
+
+  void _seedBtcFromExchange() {
+    if (!mounted) return;
+    final ex = context.read<ExchangeService>();
+    final tick = ex.getTick('BTC');
+    if (tick != null && tick.price > 0) {
+      setState(() {
+        _btcPrice = tick.price;
+        _btcIsLive = tick.isLive;
+        _profitUSD = _dailyReward * _btcPrice;
+      });
+      _calculate();
+    }
+  }
+
+  void _syncBtcFromExchange(ExchangeService ex) {
+    final tick = ex.getTick('BTC');
+    if (tick != null && tick.price > 0) {
+      final newPrice = tick.price;
+      if ((newPrice - _btcPrice).abs() / _btcPrice > 0.0005) {
+        _btcPrice = newPrice;
+        _btcIsLive = tick.isLive;
+        _profitUSD = _dailyReward * _btcPrice;
+        _calculate();
+      }
+    }
   }
 
   void _startLiveFeed() {
@@ -147,11 +177,13 @@ class _MiningScreenState extends State<MiningScreen>
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
+    final ex = context.watch<ExchangeService>();
+    _syncBtcFromExchange(ex);
     return Scaffold(
       backgroundColor: p.background,
       body: Column(
         children: [
-          _buildHeader(p),
+          _buildHeader(p, ex),
           _buildTabBar(p),
           Expanded(
             child: TabBarView(
@@ -169,7 +201,10 @@ class _MiningScreenState extends State<MiningScreen>
     );
   }
 
-  Widget _buildHeader(dynamic p) {
+  Widget _buildHeader(dynamic p, ExchangeService ex) {
+    final btcTick = ex.getTick('BTC');
+    final livePrice = btcTick?.price ?? _btcPrice;
+    final isLive = btcTick?.isLive ?? false;
     return AnimatedBuilder(
       animation: _glowCtrl,
       builder: (_, __) => Container(
@@ -200,7 +235,17 @@ class _MiningScreenState extends State<MiningScreen>
                     const SizedBox(width: 8),
                     _statusBadge(_miningActive ? 'AKTIV' : 'OFFLINE', _miningActive ? const Color(0xFF00FF88) : const Color(0xFFFF3358)),
                   ]),
-                  Text('v2.0 · Algorithmus: SHA-256 · Pool: HQMLL', style: GoogleFonts.inter(color: p.textSecondary, fontSize: 10)),
+                  Row(children: [
+                    Text('SHA-256 · Pool: HQMLL · ', style: GoogleFonts.inter(color: p.textSecondary, fontSize: 10)),
+                    if (isLive)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(color: const Color(0xFF00FF88).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(3)),
+                        child: Text('LIVE', style: GoogleFonts.spaceMono(color: const Color(0xFF00FF88), fontSize: 7, letterSpacing: 1)),
+                      ),
+                    const SizedBox(width: 4),
+                    Text('BTC \$${livePrice.toStringAsFixed(0)}', style: GoogleFonts.spaceMono(color: isLive ? const Color(0xFF00FF88) : p.textSecondary, fontSize: 10, fontWeight: FontWeight.bold)),
+                  ]),
                 ],
               ),
             ),
@@ -808,7 +853,14 @@ class _MiningScreenState extends State<MiningScreen>
           child: Row(children: [
             Icon(Icons.currency_bitcoin_rounded, color: const Color(0xFFFFD700), size: 20),
             const SizedBox(width: 8),
-            Text('BTC Preis: \$${_btcPrice.toStringAsFixed(0)}', style: GoogleFonts.spaceMono(color: const Color(0xFFFFD700), fontSize: 11)),
+            Text('BTC \$${_btcPrice.toStringAsFixed(0)}', style: GoogleFonts.spaceMono(color: const Color(0xFFFFD700), fontSize: 11)),
+            const SizedBox(width: 6),
+            if (_btcIsLive)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                decoration: BoxDecoration(color: const Color(0xFF00FF88).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(3)),
+                child: Text('LIVE', style: GoogleFonts.spaceMono(color: const Color(0xFF00FF88), fontSize: 7, letterSpacing: 1)),
+              ),
             const Spacer(),
             Text('Netzwerk HR: 623.4 EH/s', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
           ]),

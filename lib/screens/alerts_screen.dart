@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../widgets/crypto_icon.dart';
-
 import '../providers/theme_provider.dart';
+import '../services/exchange_service.dart';
 
 // ════════════════════════════════════════════════════════════════════════════
-// PRICE ALERTS MANAGER SCREEN  v22.0
-// Quantum Trader AI — Advanced price alert & notification system
+// PRICE ALERTS MANAGER SCREEN v2 (v28.0)
+// Quantum Trader AI — ExchangeService Live Prices + Real Alert Triggering
 // ════════════════════════════════════════════════════════════════════════════
 
 class AlertsScreen extends StatefulWidget {
@@ -28,19 +28,22 @@ class _AlertsScreenState extends State<AlertsScreen>
   Timer? _priceTimer;
   final _rand = Random();
 
-  // Live prices (simulated)
+  // v28.0: Live prices sourced from ExchangeService (fallback to static)
   final Map<String, double> _prices = {
-    'BTC': 42180.0,
-    'ETH': 2847.0,
+    'BTC': 67842.0,
+    'ETH': 3548.0,
     'SOL': 185.4,
-    'BNB': 412.0,
-    'ADA': 0.624,
-    'DOT': 8.73,
+    'BNB': 620.0,
+    'ADA': 0.485,
+    'DOT': 7.2,
     'AVAX': 38.5,
     'LINK': 17.8,
     'MATIC': 0.892,
-    'ATOM': 11.4,
+    'ATOM': 9.4,
   };
+
+  // v28.0: newly triggered alerts (shown as notifications)
+  final List<Map<String, dynamic>> _triggeredNow = [];
 
   // Alert list
   late List<_Alert> _alerts;
@@ -110,18 +113,16 @@ class _AlertsScreenState extends State<AlertsScreen>
     ];
     _activeAlerts = _alerts.where((a) => a.enabled).length;
 
-    // Simulate live price updates
-    _priceTimer = Timer.periodic(const Duration(milliseconds: 2000), (_) {
+    // v28.0: Timer only for micro-simulation between ExchangeService refreshes
+    _priceTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
       if (!mounted) return;
       setState(() {
+        // Micro drift around ExchangeService anchor
         for (final key in _prices.keys) {
-          final change = (_rand.nextDouble() - 0.5) * 0.004;
+          final change = (_rand.nextDouble() - 0.5) * 0.0008;
           _prices[key] = _prices[key]! * (1 + change);
         }
-        // Update alert current prices
-        for (var alert in _alerts) {
-          alert.currentPrice = _prices[alert.symbol] ?? alert.currentPrice;
-        }
+        _syncAlertsAndCheck();
       });
     });
   }
@@ -140,15 +141,63 @@ class _AlertsScreenState extends State<AlertsScreen>
   }
 
   @override
+  /// v28.0: Sync prices from ExchangeService and check alert conditions
+  void _syncPricesFromExchange(ExchangeService ex) {
+    bool anyTriggered = false;
+    for (final sym in _prices.keys.toList()) {
+      final live = ex.getPrice(sym);
+      if (live > 0) _prices[sym] = live;
+    }
+    _syncAlertsAndCheck();
+    if (anyTriggered) _ringBell();
+  }
+
+  void _syncAlertsAndCheck() {
+    for (var alert in _alerts) {
+      final price = _prices[alert.symbol] ?? alert.currentPrice;
+      final prevPrice = alert.currentPrice;
+      alert.currentPrice = price;
+      if (!alert.enabled) continue;
+      // Check trigger conditions
+      bool triggered = false;
+      if (alert.condition == 'Preis >') triggered = price > alert.targetValue;
+      if (alert.condition == 'Preis <') triggered = price < alert.targetValue;
+      if (alert.condition == '% Änderung >') {
+        final chg = ((price - prevPrice) / prevPrice) * 100;
+        triggered = chg.abs() > alert.targetValue;
+      }
+      if (triggered && !alert.wasTriggered) {
+        alert.wasTriggered = true;
+        _totalTriggered++;
+        _triggeredNow.add({
+          'symbol': alert.symbol,
+          'condition': '${alert.condition} ${alert.targetValue}',
+          'price': price,
+          'time': DateTime.now(),
+        });
+        if (_triggeredNow.length > 5) _triggeredNow.removeAt(0);
+      } else if (!triggered) {
+        alert.wasTriggered = false;
+      }
+    }
+    _activeAlerts = _alerts.where((a) => a.enabled).length;
+  }
+
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>();
     final pal = p.palette;
+    // v28.0: ExchangeService live prices
+    final ex = context.watch<ExchangeService>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncPricesFromExchange(ex);
+    });
 
     return Scaffold(
       backgroundColor: pal.background,
       appBar: _buildAppBar(pal),
       body: Column(
         children: [
+          _buildLivePriceBand(pal, ex),
           _buildStatsHeader(pal),
           _buildTabBar(pal),
           Expanded(
@@ -170,6 +219,60 @@ class _AlertsScreenState extends State<AlertsScreen>
         }),
         backgroundColor: const Color(0xFFFF0080),
         child: const Icon(Icons.add_alert, color: Colors.white),
+      ),
+    );
+  }
+
+  /// v28.0: Live price band showing ExchangeService prices
+  Widget _buildLivePriceBand(dynamic pal, ExchangeService ex) {
+    final syms = ['BTC', 'ETH', 'SOL', 'BNB', 'ADA', 'AVAX'];
+    return Container(
+      height: 30,
+      color: pal.surface,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            color: const Color(0xFFFF0080).withValues(alpha: 0.15),
+            child: Text('LIVE', style: GoogleFonts.spaceMono(
+              color: const Color(0xFFFF0080), fontSize: 7, fontWeight: FontWeight.bold,
+            )),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: syms.map((sym) {
+                  final p = ex.getPrice(sym);
+                  final tick = ex.getTick(sym);
+                  final chg = tick?.change24h ?? 0.0;
+                  if (p <= 0) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Row(children: [
+                      Text(sym, style: GoogleFonts.spaceMono(
+                        color: pal.textSecondary, fontSize: 8, fontWeight: FontWeight.bold,
+                      )),
+                      const SizedBox(width: 4),
+                      Text(
+                        p >= 1000 ? '\$${p.toStringAsFixed(0)}' : '\$${p.toStringAsFixed(3)}',
+                        style: GoogleFonts.spaceMono(color: pal.textPrimary, fontSize: 8),
+                      ),
+                      const SizedBox(width: 3),
+                      Text(
+                        '${chg >= 0 ? '+' : ''}${chg.toStringAsFixed(1)}%',
+                        style: GoogleFonts.spaceMono(
+                          color: chg >= 0 ? const Color(0xFF00FF88) : const Color(0xFFFF3358),
+                          fontSize: 7,
+                        ),
+                      ),
+                    ]),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1117,9 +1220,10 @@ class _Alert {
   bool enabled;
   final Color color;
   double currentPrice;
+  bool wasTriggered; // v28.0: real trigger state tracking
 
   _Alert(this.symbol, this.condition, this.targetValue, this.channel,
-      this.enabled, this.color, this.currentPrice);
+      this.enabled, this.color, this.currentPrice, {this.wasTriggered = false});
 }
 
 class _AlertEvent {
