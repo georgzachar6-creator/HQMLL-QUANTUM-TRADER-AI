@@ -10,6 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../theme/app_themes.dart';
+import '../services/exchange_service.dart';
 
 class SecureVaultScreen extends StatefulWidget {
   const SecureVaultScreen({super.key});
@@ -99,10 +100,17 @@ class _SecureVaultScreenState extends State<SecureVaultScreen>
     if (!mounted) return;
     setState(() {
       _securityScore = 90.0 + _rand.nextDouble() * 8.0;
-      for (var a in _vaultAssets) {
-        a['value'] = (a['value'] as double) * (1 + (_rand.nextDouble() - 0.49) * 0.01);
-      }
     });
+  }
+
+  void _syncVaultPricesFromExchange(ExchangeService ex) {
+    for (var a in _vaultAssets) {
+      final sym = a['symbol'] as String;
+      final live = ex.getPrice(sym);
+      if (live > 0) {
+        a['value'] = (a['amount'] as double) * live;
+      }
+    }
   }
 
   @override
@@ -117,12 +125,14 @@ class _SecureVaultScreenState extends State<SecureVaultScreen>
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
+    final ex = context.watch<ExchangeService>();
+    _syncVaultPricesFromExchange(ex);
     return Scaffold(
       backgroundColor: p.background,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(p),
+            _buildHeader(p, ex),
             _buildTabBar(p),
             Expanded(
               child: AnimatedSwitcher(
@@ -136,8 +146,10 @@ class _SecureVaultScreenState extends State<SecureVaultScreen>
     );
   }
 
-  Widget _buildHeader(QuantumPalette p) {
+  Widget _buildHeader(QuantumPalette p, ExchangeService ex) {
     final lockColor = _vaultLocked ? p.negative : p.positive;
+    final btcPrice = ex.getPrice('BTC');
+    final isLive = ex.getTick('BTC')?.isLive ?? false;
     return AnimatedBuilder(
       animation: _glowCtrl,
       builder: (_, __) => Container(
@@ -183,6 +195,16 @@ class _SecureVaultScreenState extends State<SecureVaultScreen>
                 )),
                 Text('Quantum Encryption · ${_vaultLocked ? "LOCKED" : "UNLOCKED"}',
                   style: GoogleFonts.rajdhani(color: lockColor, fontSize: 11, fontWeight: FontWeight.bold)),
+                if (btcPrice > 0)
+                  Row(children: [
+                    Text('BTC \$${btcPrice.toStringAsFixed(0)}',
+                        style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 10)),
+                    if (isLive) ...[const SizedBox(width: 4),
+                      Container(width: 5, height: 5,
+                        decoration: BoxDecoration(shape: BoxShape.circle, color: p.positive,
+                          boxShadow: [BoxShadow(color: p.positive.withValues(alpha: 0.7), blurRadius: 4)])),
+                    ],
+                  ]),
               ]),
             ),
             // Security score

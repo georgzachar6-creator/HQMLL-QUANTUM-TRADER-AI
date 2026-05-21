@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../theme/app_themes.dart';
 import '../widgets/asset_icon_widget.dart';
+import '../services/exchange_service.dart';
 
 class AlarmScreen extends StatefulWidget {
   const AlarmScreen({super.key});
@@ -136,6 +137,34 @@ class _AlarmScreenState extends State<AlarmScreen>
     });
   }
 
+  void _syncAlarmsFromExchange(ExchangeService ex) {
+    // Update 'current' price on price-based alarms from live ExchangeService
+    for (var a in _activeAlarms) {
+      final pair = a['pair'] as String;
+      final sym = pair.split('/').first; // 'BTC' from 'BTC/USDT'
+      final live = ex.getPrice(sym);
+      if (live > 0 && a['type'] is String && (a['type'] as String).startsWith('PRICE')) {
+        a['current'] = live;
+        final target = a['value'] as double;
+        final type = a['type'] as String;
+        if (type == 'PRICE_ABOVE') {
+          a['progress'] = (live / target).clamp(0.0, 1.0);
+          if (live >= target && a['triggered'] == false) {
+            a['triggered'] = true;
+            a['timeAgo'] = 'gerade';
+          }
+        } else if (type == 'PRICE_BELOW') {
+          // progress = how close to trigger (1.0 = triggered)
+          a['progress'] = (target / live).clamp(0.0, 1.0);
+          if (live <= target && a['triggered'] == false) {
+            a['triggered'] = true;
+            a['timeAgo'] = 'gerade';
+          }
+        }
+      }
+    }
+  }
+
   @override
   void dispose() {
     _glowCtrl.dispose();
@@ -147,12 +176,14 @@ class _AlarmScreenState extends State<AlarmScreen>
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
+    final ex = context.watch<ExchangeService>();
+    _syncAlarmsFromExchange(ex);
     return Scaffold(
       backgroundColor: p.background,
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(p),
+            _buildHeader(p, ex),
             _buildTabBar(p),
             Expanded(
               child: AnimatedSwitcher(
@@ -166,7 +197,10 @@ class _AlarmScreenState extends State<AlarmScreen>
     );
   }
 
-  Widget _buildHeader(QuantumPalette p) {
+  Widget _buildHeader(QuantumPalette p, ExchangeService ex) {
+    final btcPrice = ex.getPrice('BTC');
+    final ethPrice = ex.getPrice('ETH');
+    final isLive = ex.getTick('BTC')?.isLive ?? false;
     final triggered = _activeAlarms.where((a) => (a['progress'] as double) > 0.98 && a['active'] == true).length;
     return AnimatedBuilder(
       animation: _glowCtrl,
@@ -212,9 +246,17 @@ class _AlarmScreenState extends State<AlarmScreen>
                   color: p.primary, fontSize: 16, fontWeight: FontWeight.bold,
                   shadows: [Shadow(color: p.primary.withValues(alpha: 0.5), blurRadius: 8)],
                 )),
-                Text('AI Conditions · Price · Volume · AI Events', style: GoogleFonts.rajdhani(
-                  color: p.textSecondary, fontSize: 11,
-                )),
+                Row(children: [
+                  if (btcPrice > 0) Text(
+                    'BTC \$${btcPrice.toStringAsFixed(0)}  ETH \$${ethPrice.toStringAsFixed(0)}',
+                    style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 11),
+                  ) else Text('AI Conditions · Price · Volume · AI Events',
+                    style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 11)),
+                  if (isLive) ...[const SizedBox(width: 6),
+                    Container(width: 5, height: 5,
+                      decoration: BoxDecoration(shape: BoxShape.circle, color: p.positive,
+                        boxShadow: [BoxShadow(color: p.positive.withValues(alpha: 0.7), blurRadius: 4)]))],
+                ]),
               ],
             )),
             _buildHeaderBadge(p, 'ACTIVE', '${_activeAlarms.where((a) => a['active'] == true).length}', p.positive),

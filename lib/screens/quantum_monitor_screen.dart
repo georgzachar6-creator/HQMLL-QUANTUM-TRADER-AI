@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/theme_provider.dart';
+import '../services/exchange_service.dart';
 
 class QuantumMonitorScreen extends StatefulWidget {
   const QuantumMonitorScreen({super.key});
@@ -75,6 +76,7 @@ class _QuantumMonitorScreenState extends State<QuantumMonitorScreen>
   Widget build(BuildContext context) {
     final tp = context.watch<ThemeProvider>();
     final p = tp.palette;
+    final ex = context.watch<ExchangeService>();
 
     return Scaffold(
       backgroundColor: p.background,
@@ -100,6 +102,15 @@ class _QuantumMonitorScreenState extends State<QuantumMonitorScreen>
           ),
           const SizedBox(width: 8),
           Text('QUANTUM MONITOR', style: GoogleFonts.rajdhani(color: p.primary, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 2)),
+          Builder(builder: (_) {
+            final btc = ex.getPrice('BTC');
+            if (btc <= 0) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: Text('BTC \$${btc.toStringAsFixed(0)}',
+                  style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
+            );
+          }),
         ]),
         leading: IconButton(
           icon: Icon(Icons.menu, color: p.primary, size: 22),
@@ -791,13 +802,30 @@ class _QuantumMonitorScreenState extends State<QuantumMonitorScreen>
   }
 
   Widget _buildLiveMarketFeed(dynamic p) {
+    // v30.0: Use ExchangeService for live prices
+    final ex = context.read<ExchangeService>();
+    String _fmt(String sym, String fallback) {
+      final pr = ex.getPrice(sym);
+      if (pr <= 0) return fallback;
+      return pr >= 1000 ? (pr / 1000).toStringAsFixed(3) + 'K' : pr.toStringAsFixed(pr >= 1 ? 2 : 4);
+    }
+    String _chg(String sym, String fallback) {
+      final tick = ex.getTick(sym);
+      if (tick == null) return fallback;
+      final c = tick.change24h;
+      return '${c >= 0 ? '+' : ''}${c.toStringAsFixed(2)}%';
+    }
+    bool _pos(String sym, bool fallback) {
+      final tick = ex.getTick(sym);
+      return tick != null ? tick.change24h >= 0 : fallback;
+    }
     final assets = [
-      ('BTC/USDT', '67.842', '+2.14%', true),
-      ('ETH/USDT', '3.548', '+1.87%', true),
-      ('SOL/USDT', '182.40', '-0.43%', false),
-      ('BNB/USDT', '598.30', '+0.91%', true),
-      ('QEMMA/USDT', '0.0847', '+12.45%', true),
-      ('ADA/USDT', '0.624', '-1.23%', false),
+      ('BTC/USDT', _fmt('BTC', '67.842'), _chg('BTC', '+2.14%'), _pos('BTC', true)),
+      ('ETH/USDT', _fmt('ETH', '3.548'), _chg('ETH', '+1.87%'), _pos('ETH', true)),
+      ('SOL/USDT', _fmt('SOL', '182.40'), _chg('SOL', '-0.43%'), _pos('SOL', false)),
+      ('BNB/USDT', _fmt('BNB', '598.30'), _chg('BNB', '+0.91%'), _pos('BNB', true)),
+      ('QEMMA/USDT', '0.0847', '+12.45%', true), // no exchange data for QEMMA
+      ('ADA/USDT', _fmt('ADA', '0.624'), _chg('ADA', '-1.23%'), _pos('ADA', false)),
     ];
     return Container(
       padding: const EdgeInsets.all(14),

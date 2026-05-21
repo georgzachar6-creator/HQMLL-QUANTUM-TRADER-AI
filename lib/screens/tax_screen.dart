@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../widgets/crypto_icon.dart';
 
 import '../providers/theme_provider.dart';
+import '../services/exchange_service.dart';
 
 class TaxScreen extends StatefulWidget {
   const TaxScreen({super.key});
@@ -132,12 +133,13 @@ class _TaxScreenState extends State<TaxScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
+    final ex = context.watch<ExchangeService>();
     final tax = _calcTax();
     return Scaffold(
       backgroundColor: p.background,
       body: SafeArea(
         child: Column(children: [
-          _buildHeader(p, tax),
+          _buildHeader(p, tax, ex),
           _buildTabBar(p),
           Expanded(
             child: IndexedStack(
@@ -156,10 +158,13 @@ class _TaxScreenState extends State<TaxScreen> with TickerProviderStateMixin {
   }
 
   // ── HEADER ───────────────────────────────────────────────
-  Widget _buildHeader(dynamic p, Map<String, dynamic> tax) {
+  Widget _buildHeader(dynamic p, Map<String, dynamic> tax, ExchangeService ex) {
     final totalPnl = tax['totalPnl'] as double;
     final totalTax = tax['totalTax'] as double;
     final isPnlPos = totalPnl >= 0;
+    final btcPrice = ex.getPrice('BTC');
+    final ethPrice = ex.getPrice('ETH');
+    final isLive = ex.getTick('BTC')?.isLive ?? false;
 
     return AnimatedBuilder(
       animation: _glowCtrl,
@@ -179,6 +184,15 @@ class _TaxScreenState extends State<TaxScreen> with TickerProviderStateMixin {
             Text('$_taxYear · $_country · $_taxMethod', style: GoogleFonts.inter(
               color: p.textSecondary, fontSize: 11,
             )),
+            if (btcPrice > 0)
+              Row(children: [
+                Text('BTC \$${btcPrice.toStringAsFixed(0)}  ETH \$${ethPrice.toStringAsFixed(0)}',
+                    style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
+                if (isLive) ...[const SizedBox(width: 4),
+                  Container(width: 4, height: 4,
+                    decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF00FF88))),
+                ],
+              ]),
           ])),
           Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
             Text(

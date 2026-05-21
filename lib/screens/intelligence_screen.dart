@@ -4,6 +4,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../services/exchange_service.dart';
 
 // ═══════════════════════════════════════════════════════════
 //  INTELLIGENCE MODULE — GEHEIMDIENST SECURE ENCRYPTION
@@ -182,11 +184,12 @@ class _IntelligenceScreenState extends State<IntelligenceScreen>
 
   @override
   Widget build(BuildContext context) {
+    final ex = context.watch<ExchangeService>();
     return Scaffold(
       backgroundColor: const Color(0xFF040A14),
       body: Column(
         children: [
-          _buildHeader(),
+          _buildHeader(ex),
           _buildTabBar(),
           Expanded(
             child: _buildTabContent(),
@@ -196,7 +199,10 @@ class _IntelligenceScreenState extends State<IntelligenceScreen>
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(ExchangeService ex) {
+    final btcPrice = ex.getPrice('BTC');
+    final ethPrice = ex.getPrice('ETH');
+    final isLive = ex.getTick('BTC')?.isLive ?? false;
     return AnimatedBuilder(
       animation: _glowAnim,
       builder: (ctx, _) => Container(
@@ -254,14 +260,24 @@ class _IntelligenceScreenState extends State<IntelligenceScreen>
                     letterSpacing: 2,
                   ),
                 ),
-                Text(
-                  'GEHEIMDIENST • SECURE ENCRYPTION v14.0',
-                  style: GoogleFonts.spaceMono(
-                    color: Color.lerp(const Color(0xFF00FF88), const Color(0xFF00AAFF), _glowAnim.value),
-                    fontSize: 10,
-                    letterSpacing: 1.5,
+                Row(children: [
+                  Text(
+                    btcPrice > 0
+                        ? 'BTC \$${btcPrice.toStringAsFixed(0)}  ETH \$${ethPrice.toStringAsFixed(0)}'
+                        : 'GEHEIMDIENST • SECURE ENCRYPTION v14.0',
+                    style: GoogleFonts.spaceMono(
+                      color: Color.lerp(const Color(0xFF00FF88), const Color(0xFF00AAFF), _glowAnim.value),
+                      fontSize: 10,
+                      letterSpacing: 1.5,
+                    ),
                   ),
-                ),
+                  if (isLive) ...[const SizedBox(width: 6),
+                    Container(width: 5, height: 5,
+                      decoration: const BoxDecoration(shape: BoxShape.circle,
+                        color: Color(0xFF00FF88),
+                        boxShadow: [BoxShadow(color: Color(0x9900FF88), blurRadius: 5)])),
+                  ],
+                ]),
               ],
             ),
             const Spacer(),
