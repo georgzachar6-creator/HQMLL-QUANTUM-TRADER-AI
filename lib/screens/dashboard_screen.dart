@@ -9,7 +9,6 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
-import '../providers/live_price_provider.dart';
 import '../services/exchange_service.dart';
 import '../widgets/crypto_icon.dart';
 
@@ -94,10 +93,10 @@ class _DashboardScreenState extends State<DashboardScreen>
     _pulseCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat(reverse: true);
     _slideCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 400))..forward();
 
-    // Initialize live price provider
+    // ExchangeService initialisieren (Binance WS + CoinGecko)
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final lp = context.read<LivePriceProvider>();
-      await lp.initialize();
+      final ex = context.read<ExchangeService>();
+      await ex.initialize();
     });
 
     // Init P&L history
@@ -121,25 +120,56 @@ class _DashboardScreenState extends State<DashboardScreen>
     _startLive();
   }
 
+  /// Berechnet _totalValue aus live Portfolio-Preisen (ExchangeService).
+  /// Fallback auf gespeicherte Werte wenn kein live Preis verfügbar.
+  void _syncPortfolioFromExchange(ExchangeService ex) {
+    // Fallback-Preise für Assets ohne ExchangeService-Symbol
+    const fallback = <String, double>{
+      'BTC': 67842.0, 'ETH': 3548.0, 'SOL': 182.4,
+      'BNB': 598.3, 'QMM': 0.151,
+    };
+    // Mengen entsprechend der initialen Werte / Fallback-Preise
+    const quantities = <String, double>{
+      'BTC': 0.427,   // 28973 / 67842
+      'ETH': 4.789,   // 16989 / 3548
+      'SOL': 61.57,   // 11225 / 182.4
+      'QMM': 51234.0, // 7736 / 0.151
+      'BNB': 9.38,    // 5612 / 598.3
+    };
+
+    double newTotal = 0.0;
+    for (var a in _allocation) {
+      final sym = a['symbol'] as String;
+      if (sym == '...') {
+        newTotal += a['value'] as double; // Andere: statisch
+        continue;
+      }
+      final livePrice = ex.getPrice(sym);
+      final price = livePrice > 0 ? livePrice : (fallback[sym] ?? 0.0);
+      final qty = quantities[sym] ?? 0.0;
+      final liveVal = price * qty;
+      a['value'] = liveVal;
+      newTotal += liveVal;
+    }
+    if (newTotal > 1000) {
+      _totalValue = newTotal;
+      _pnlDay = _totalValue - 73662.82;
+      _pnlDayPct = (_pnlDay / 73662.82) * 100;
+    }
+  }
+
   void _startLive() {
     _liveTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
       if (!mounted) return;
       setState(() {
-        // Animate portfolio value
-        _totalValue += (_rand.nextDouble() - 0.48) * 120;
-        _pnlDay = _totalValue - 73662.82;
-        _pnlDayPct = (_pnlDay / 73662.82) * 100;
-
-        // Animate prices
+        // Sparkline-History für Watchlist animieren (Preise kommen von ExchangeService)
         for (var w in _watchlist) {
           final p = w['price'] as double;
-          final np = p * (1 + (_rand.nextDouble() - 0.5) * 0.004);
-          w['price'] = np;
-          w['change'] = (w['change'] as double) + (_rand.nextDouble() - 0.5) * 0.05;
-          (w['hist'] as List<double>).add(np);
-          if ((w['hist'] as List<double>).length > 20) (w['hist'] as List<double>).removeAt(0);
+          if (p > 0) {
+            (w['hist'] as List<double>).add(p);
+            if ((w['hist'] as List<double>).length > 20) (w['hist'] as List<double>).removeAt(0);
+          }
         }
-
         // Rotate news
         _newsIdx = (_newsIdx + 1) % _news.length;
       });
@@ -156,33 +186,23 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
-    final lp = context.watch<LivePriceProvider>();
-    // ExchangeService als primäre Preisquelle (Binance WS + CoinGecko)
+    // ExchangeService als einzige primäre Preisquelle (Binance WS + CoinGecko)
     final ex = context.watch<ExchangeService>();
 
-    // Sync watchlist prices: ExchangeService hat Vorrang, LivePriceProvider als Fallback
+    // Portfolio live berechnen
+    _syncPortfolioFromExchange(ex);
+
+    // Watchlist-Preise aus ExchangeService synchronisieren
     for (var w in _watchlist) {
       final sym = w['sym'] as String;
       final exTick = ex.getTick(sym);
       final prev = w['price'] as double;
       if (exTick != null && exTick.price > 0) {
-        // ExchangeService (Binance WS / CoinGecko) – bevorzugte Quelle
         w['price'] = exTick.price;
         w['change'] = exTick.change24h;
         if ((prev - exTick.price).abs() > prev * 0.0001) {
           (w['hist'] as List<double>).add(exTick.price);
           if ((w['hist'] as List<double>).length > 20) (w['hist'] as List<double>).removeAt(0);
-        }
-      } else {
-        // Fallback: LivePriceProvider
-        final q = lp.getQuote(sym);
-        if (q != null) {
-          w['price'] = q.price;
-          w['change'] = q.change24h;
-          if (prev != q.price) {
-            (w['hist'] as List<double>).add(q.price);
-            if ((w['hist'] as List<double>).length > 20) (w['hist'] as List<double>).removeAt(0);
-          }
         }
       }
     }
@@ -193,12 +213,12 @@ class _DashboardScreenState extends State<DashboardScreen>
         color: p.primary,
         backgroundColor: p.surface,
         onRefresh: () async {
-          await lp.refresh();
+          await ex.initialize();
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(children: [
-            _buildHeader(p, lp),
+            _buildHeader(p, ex),
             _buildPortfolioCard(p),
             _buildAllocationRow(p),
             _buildAISignalBanner(p),
@@ -214,13 +234,13 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   // ── HEADER ──
-  Widget _buildHeader(dynamic p, LivePriceProvider lp) {
+  Widget _buildHeader(dynamic p, ExchangeService ex) {
     final now = DateTime.now();
     final greeting = now.hour < 12 ? 'Guten Morgen' : now.hour < 18 ? 'Guten Tag' : 'Guten Abend';
-    final isWsConnected = lp.wsConnected;
-    final connCount = lp.connectedExchanges;
-    final tps = lp.ticksPerSecond;
-    final liveColor = isWsConnected ? const Color(0xFF00FF88) : const Color(0xFFFFAA00);
+    final btcPrice = ex.getPrice('BTC');
+    final btcTick = ex.getTick('BTC');
+    final isWsLive = btcTick?.isLive ?? false;
+    final liveColor = isWsLive ? const Color(0xFF00FF88) : const Color(0xFFFFAA00);
     return AnimatedBuilder(
       animation: _glowCtrl,
       builder: (_, __) => Container(
@@ -233,8 +253,8 @@ class _DashboardScreenState extends State<DashboardScreen>
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(greeting, style: GoogleFonts.inter(color: p.textSecondary, fontSize: 12)),
             Text('QUANTUM TRADER', style: GoogleFonts.spaceMono(color: p.primary, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 2)),
-            if (isWsConnected && connCount > 0)
-              Text('$connCount Börsen · ${tps}t/s', style: GoogleFonts.spaceMono(
+            if (btcPrice > 0)
+              Text('BTC \$${btcPrice >= 1000 ? (btcPrice / 1000).toStringAsFixed(1) + 'K' : btcPrice.toStringAsFixed(0)}', style: GoogleFonts.spaceMono(
                 color: liveColor.withValues(alpha: 0.7), fontSize: 9, letterSpacing: 0.5,
               )),
           ])),
@@ -251,7 +271,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ),
               ),
               const SizedBox(width: 6),
-              Text(isWsConnected ? 'WS LIVE' : 'REST', style: GoogleFonts.spaceMono(color: liveColor, fontSize: 10, letterSpacing: 1)),
+              Text(isWsLive ? 'WS LIVE' : 'REST', style: GoogleFonts.spaceMono(color: liveColor, fontSize: 10, letterSpacing: 1)),
             ]),
           ),
           const SizedBox(width: 12),

@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/theme_provider.dart';
+import '../services/exchange_service.dart';
 import 'package:provider/provider.dart';
 
 // ─────────────────────────────────────────────────────────────
@@ -336,11 +337,39 @@ class _AIChatScreenState extends State<AIChatScreen>
 
   String _generateContextualResponse(AgentProfile agent, String input) {
     final lower = input.toLowerCase();
+    // Live-Preise aus ExchangeService
+    final ex = context.read<ExchangeService>();
+    final btcLive = ex.getPrice('BTC');
+    final ethLive = ex.getPrice('ETH');
+    final solLive = ex.getPrice('SOL');
+    final btcPrice = btcLive > 0 ? btcLive : 67842.0;
+    final ethPrice = ethLive > 0 ? ethLive : 3548.0;
+    final solPrice = solLive > 0 ? solLive : 182.0;
+    final btcTick = ex.getTick('BTC');
+    final btcChg = btcTick != null ? btcTick.change24h : 2.34;
+    final btcChgStr = '${btcChg >= 0 ? '+' : ''}${btcChg.toStringAsFixed(2)}%';
+    // Preis-Formatter: 67842.5 -> $67,842
+    String fmtP(double v) {
+      if (v <= 0) return r'$0';
+      final s = v >= 100 ? v.toStringAsFixed(0) : v >= 1 ? v.toStringAsFixed(2) : v.toStringAsFixed(4);
+      final parts = s.split('.');
+      final intPart = parts[0];
+      final decPart = parts.length > 1 ? '.${parts[1]}' : '';
+      final buf = StringBuffer();
+      for (int i = 0; i < intPart.length; i++) {
+        if (i > 0 && (intPart.length - i) % 3 == 0) buf.write(',');
+        buf.write(intPart[i]);
+      }
+      return '\$${buf.toString()}$decPart';
+    }
+    final btcStr = fmtP(btcPrice);
+    final ethStr = fmtP(ethPrice);
+    final solStr = fmtP(solPrice);
 
     // Context-aware responses per agent
     if (agent.type == AgentType.assistant) {
       if (lower.contains('bitcoin') || lower.contains('btc')) {
-        return '📊 **Bitcoin (BTC) Marktanalyse**\n\nAktueller Preis: \$67,842 (+2.34%)\nMarktkapitalisierung: \$1.28 Billionen\n\n**Technische Signale:**\n• RSI(14): 58 → Neutral-Bullisch\n• MACD: Positiver Crossover\n• 200-Tage-MA: Preis darüber (+12%)\n• Volumen: 24h Volumen \$32.1B ↑\n\n**Unterstützung & Widerstand:**\n• Support: \$64,500 / \$61,200\n• Resistance: \$68,800 / \$72,000\n\n**QEMMA-Einschätzung:** Die Marktstimmung ist positiv. Institutionelle Zuflüsse steigen. Langfristig bullisch mit kurzfristiger Konsolidierung möglich.\n\n⚡ Soll ich eine detailliertere Analyse oder Trading-Strategie erstellen?';
+        return '📊 **Bitcoin (BTC) Marktanalyse**\n\nAktueller Preis: $btcStr ($btcChgStr)\nMarktkapitalisierung: \$1.28 Billionen\n\n**Technische Signale:**\n• RSI(14): 58 → Neutral-Bullisch\n• MACD: Positiver Crossover\n• 200-Tage-MA: Preis darüber (+12%)\n• Volumen: 24h Volumen \$32.1B ↑\n\n**Unterstützung & Widerstand:**\n• Support: \$64,500 / \$61,200\n• Resistance: \$68,800 / \$72,000\n\n**QEMMA-Einschätzung:** BTC bei $btcStr, ETH bei $ethStr, SOL bei $solStr. Die Marktstimmung ist positiv. Institutionelle Zuflüsse steigen. Langfristig bullisch mit kurzfristiger Konsolidierung möglich.\n\n⚡ Soll ich eine detailliertere Analyse oder Trading-Strategie erstellen?';
       }
       if (lower.contains('portfolio') || lower.contains('risiko')) {
         return '🎯 **Portfolio-Risikoanalyse**\n\nIch analysiere dein Portfolio:\n\n**Diversifikation Score:** 7.2/10\n**Risikoprofil:** Mittel-Hoch\n**Sharpe Ratio:** 1.42\n\n**Empfehlungen:**\n• 📉 BTC-Gewichtung bei 42% — ideal wäre 30-35%\n• 📊 ETH Exposure: Solide bei 18%\n• ⚠️ Altcoins über 25% erhöhen das Risiko\n• 💰 Stablecoin-Reserve von 10% empfohlen\n\n**Rebalancing-Vorschlag:**\n→ -7% BTC → +5% ETH, +2% Stablecoins\n\nMöchtest du einen automatischen Rebalancing-Plan?';
@@ -355,11 +384,15 @@ class _AIChatScreenState extends State<AIChatScreen>
     }
 
     if (agent.type == AgentType.analyst) {
-      return '📈 **ORACLE Predictive Analyse**\n\nML-Modell v3.2 | Konfidenz: 78%\n\n**Marktstruktur:**\nHöhere Hochs und höhere Tiefs → Uptrend intakt\n\n**Key Indikatoren:**\n• RSI: 62 (Bullisch, kein Overkauf)\n• MACD: Golden Cross vor 3 Tagen\n• Bollinger Bands: Preis im oberen Drittel\n• OBV: Steigend → Akkumulation\n\n**On-Chain Daten:**\n• Whale Wallets: +2,300 BTC in 48h akkumuliert\n• Exchange Outflows: Hoch (bullisch)\n• Miner Capitulation: Keine Anzeichen\n\n**72h Prognose:**\n→ Bullisch: 68% Wahrscheinlichkeit\n→ Bearisch: 22% Wahrscheinlichkeit\n→ Seitwärts: 10%\n\n🎯 Kursziel: \$71,200 (±5%)';
+      final target = fmtP(btcPrice * 1.05);
+      return '📈 **ORACLE Predictive Analyse**\n\nML-Modell v3.2 | Konfidenz: 78%\nBTC aktuell: $btcStr ($btcChgStr)\n\n**Marktstruktur:**\nHöhere Hochs und höhere Tiefs → Uptrend intakt\n\n**Key Indikatoren:**\n• RSI: 62 (Bullisch, kein Overkauf)\n• MACD: Golden Cross vor 3 Tagen\n• Bollinger Bands: Preis im oberen Drittel\n• OBV: Steigend → Akkumulation\n\n**On-Chain Daten:**\n• Whale Wallets: +2,300 BTC in 48h akkumuliert\n• Exchange Outflows: Hoch (bullisch)\n• Miner Capitulation: Keine Anzeichen\n\n**72h Prognose:**\n→ Bullisch: 68% Wahrscheinlichkeit\n→ Bearisch: 22% Wahrscheinlichkeit\n→ Seitwärts: 10%\n\n🎯 Kursziel: $target (±5%)';
     }
 
     if (agent.type == AgentType.trader) {
-      return '⚡ **TR2 Meta-Reasoning Engine**\n\nRekursive Analyse Level 3 abgeschlossen...\n\n**Strategie-Entwicklung:**\n\n📋 **Swing-Trading Strategie (BTC/USDT)**\n• Timeframe: 4H Chart\n• Entry: RSI < 40 + MACD Bullish Divergenz\n• Exit: RSI > 70 ODER -2.5% Stop-Loss\n• Take Profit: R:R = 1:2.5\n\n**Backtest-Ergebnisse (90 Tage):**\n• Win Rate: 64%\n• Profit Factor: 1.87\n• Max Drawdown: -8.3%\n• Sharpe Ratio: 1.94\n• Nettogewinn: +23.4%\n\n**Risikomanagement:**\n• Max 2% pro Trade\n• Kein Margin > 3x\n• Tägliches Verlustlimit: -5%\n\nSoll TR2 diese Strategie automatisch ausführen?';
+      final entryZone = fmtP(btcPrice * 0.96);
+      final tp1 = fmtP(btcPrice * 1.025);
+      final tp2 = fmtP(btcPrice * 1.06);
+      return '⚡ **TR2 Meta-Reasoning Engine**\n\nRekursive Analyse Level 3 abgeschlossen...\nBTC Live: $btcStr ($btcChgStr)\n\n**Strategie-Entwicklung:**\n\n📋 **Swing-Trading Strategie (BTC/USDT)**\n• Timeframe: 4H Chart\n• Entry-Zone: $entryZone (RSI < 40 + MACD Divergenz)\n• TP1: $tp1 | TP2: $tp2\n• Stop-Loss: -2.5% | R:R = 1:2.5\n\n**Backtest-Ergebnisse (90 Tage):**\n• Win Rate: 64%\n• Profit Factor: 1.87\n• Max Drawdown: -8.3%\n• Sharpe Ratio: 1.94\n• Nettogewinn: +23.4%\n\n**Risikomanagement:**\n• Max 2% pro Trade\n• Kein Margin > 3x\n• Tägliches Verlustlimit: -5%\n\nSoll TR2 diese Strategie automatisch ausführen?';
     }
 
     if (agent.type == AgentType.researcher) {

@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
+import '../services/exchange_service.dart';
 
 class CommandCenterScreen extends StatefulWidget {
   const CommandCenterScreen({super.key});
@@ -163,13 +164,53 @@ class _CommandCenterScreenState extends State<CommandCenterScreen>
         // price command
         if (trimmed.startsWith('price ')) {
           final coin = trimmed.substring(6).toUpperCase();
-          final prices = {'BTC': '\$67,842', 'ETH': '\$3,548', 'SOL': '\$182', 'BNB': '\$584', 'ADA': '\$0.45'};
-          final price = prices[coin] ?? 'Unbekannt';
-          _termLines.add(_TermLine(text: '💱 $coin Preis: $price (CoinGecko Live)', type: 'success'));
+          // Live-Preis aus ExchangeService holen
+          final ex = context.read<ExchangeService>();
+          final livePrice = ex.getPrice(coin);
+          final tick = ex.getTick(coin);
+          final isLive = tick?.isLive ?? false;
+          String priceStr;
+          if (livePrice > 0) {
+            final formatted = livePrice >= 1000
+                ? '\$${livePrice.toStringAsFixed(0).replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',')}'
+                : livePrice >= 1 ? '\$${livePrice.toStringAsFixed(2)}' : '\$${livePrice.toStringAsFixed(4)}';
+            final chgStr = tick != null ? ' (${tick.change24h >= 0 ? '+' : ''}${tick.change24h.toStringAsFixed(2)}%)' : '';
+            priceStr = '$formatted$chgStr';
+          } else {
+            const fallback = {'BTC': '\$67,842', 'ETH': '\$3,548', 'SOL': '\$182', 'BNB': '\$584', 'ADA': '\$0.45'};
+            priceStr = fallback[coin] ?? 'Unbekannt';
+          }
+          final source = isLive ? 'Binance WS LIVE' : livePrice > 0 ? 'CoinGecko REST' : 'Fallback';
+          _termLines.add(_TermLine(text: '💱 $coin Preis: $priceStr [$source]', type: 'success'));
         } else if (trimmed.startsWith('ping ')) {
           final host = cmd.trim().substring(5);
           final ms = _rand.nextInt(200) + 5;
           _termLines.add(_TermLine(text: 'PING $host: ${ms}ms · TTL=64 · Status: ONLINE', type: 'success'));
+        } else if (trimmed == 'balance') {
+          // Live balance aus ExchangeService
+          final exB = context.read<ExchangeService>();
+          final btcP = exB.getPrice('BTC'); final ethP = exB.getPrice('ETH'); final solP = exB.getPrice('SOL');
+          final bUsd = btcP > 0 ? btcP : 67842.0;
+          final eUsd = ethP > 0 ? ethP : 3548.0;
+          final sUsd = solP > 0 ? solP : 182.0;
+          final bVal = (0.48271 * bUsd).round();
+          final eVal = (4.8402 * eUsd).round();
+          final sVal = (142.8 * sUsd).round();
+          final tot = bVal + eVal + sVal;
+          String fmtVal(int v) {
+            final s = v.toString();
+            final buf = StringBuffer();
+            for (int i = 0; i < s.length; i++) {
+              if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+              buf.write(s[i]);
+            }
+            return '\$${buf.toString()}';
+          }
+          _termLines.add(_TermLine(text: '\u{1F4B0} Wallet Balance (Live):', type: 'output'));
+          _termLines.add(_TermLine(text: '  BTC: 0.48271 (\u2248 ${fmtVal(bVal)})', type: 'info'));
+          _termLines.add(_TermLine(text: '  ETH: 4.8402 (\u2248 ${fmtVal(eVal)})', type: 'info'));
+          _termLines.add(_TermLine(text: '  SOL: 142.8 (\u2248 ${fmtVal(sVal)})', type: 'info'));
+          _termLines.add(_TermLine(text: '  Total: \u2248 ${fmtVal(tot)}', type: 'success'));
         } else if (_commands.containsKey(trimmed)) {
           final result = _commands[trimmed]!;
           if (result == '__CLEAR__') {
