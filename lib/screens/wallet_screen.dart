@@ -51,6 +51,12 @@ class _WalletScreenState extends State<WalletScreen>
     _pulseCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1800))
       ..repeat(reverse: true);
+    // v33.0: ExchangeService initialisieren damit live Preise sofort in _buildAssetCard verfügbar
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final ex = context.read<ExchangeService>();
+      await ex.initialize();
+    });
   }
 
   @override
@@ -65,6 +71,8 @@ class _WalletScreenState extends State<WalletScreen>
   Widget build(BuildContext context) {
     final tp = context.watch<ThemeProvider>();
     final p = tp.palette;
+    // v33.0: ExchangeService watch für reaktive live Preise in _buildAssetCard
+    context.watch<ExchangeService>();
 
     return Scaffold(
       backgroundColor: p.background,

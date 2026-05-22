@@ -51,35 +51,42 @@ class _PortfolioScreenState extends State<PortfolioScreen>
   final List<String> _periods = ['1T', '1W', '1M', '3M', '1J'];
   List<Color> _sectorColors = [];
 
-  // Emma Antworten fur Portfolio-Chat
-  final Map<String, String> _emmaResponses = {
-    'btc': 'BTC-Analyse: Preis \$67.842. RSI: 62.4 — leicht uberkauft. '
-           '17-Tage-Zyklus Phase 3/4. HQMLL-Konfidenz: 82%. '
-           'Empfehlung: Halten. Nachkaufen unter \$64.000.',
-    'eth': 'ETH-Analyse: Preis \$3.548. Merge-Effekt stabil. '
-           'Gas-Fees niedrig — gutes Kaufsignal. RSI: 58.2. '
-           'HQMLL Agenten-Konsens: 5/6 BULLISH.',
-    'qemma': 'QEMMA-Analyse: +12.45% heute. Mining-Rate optimal. '
-             'Tokenomics stabil: 35% Mining-Pool noch unerschlossen. '
-             'Empfehlung: 15% Teilgewinnmitnahme — Rest halten fur Mining-Boost.',
-    'risiko': 'Risiko-Analyse Ihres Portfolios: Score 6.2/10. '
-              'Hauptrisiko: Geringe Stablecoin-Reserve (6.9% vs. Ziel 15%). '
-              'Beta: 0.82. Sharpe: 1.84. Max Drawdown: -12.3%. '
-              'Massnahme: USDT auf 15% erhohen — kostet ca. \$3.840.',
-    'rebalancing': 'Rebalancing-Vorschlag:\n'
-                   '- USDT: 6.9% -> 15% (+\$3.840)\n'
-                   '- BNB: 5.5% -> 4% (-\$844)\n'
-                   '- QEMMA: 4.7% -> 5% (+\$136)\n'
-                   'BTC optimal. Gesamtkosten: ~\$35 Gebuehren.',
-    'sol': 'SOL-Analyse: -0.52% heute — seitwarts. Fundamentaldaten stark. '
-           'Validator-Aktivitat +12% diese Woche. '
-           'HQMLL-Empfehlung: Halten. Kaufzone: unter \$170.',
-    'performance': 'Portfolio-Performance 1M: +\$1.240 (+2.18%). '
-                   'Beste Position: QEMMA +12.45%. '
-                   'Schlechteste: SOL -0.52%. '
-                   'Gesamt-Rendite YTD: +18.7%. Benchmark BTC: +14.2%. '
-                   'Alpha: +4.5% — HQMLL-optimiert.',
-  };
+  // Emma Antworten fur Portfolio-Chat (v33.0: live Preise via _buildEmmaResponse())
+  Map<String, String> _buildEmmaResponses(ExchangeService ex) {
+    final btcP = ex.getPrice('BTC'); final btcStr = _fmtChatPrice(btcP > 0 ? btcP : 67842.0);
+    final ethP = ex.getPrice('ETH'); final ethStr = _fmtChatPrice(ethP > 0 ? ethP : 3548.20);
+    final solP = ex.getPrice('SOL'); final solStr = _fmtChatPrice(solP > 0 ? solP : 182.40);
+    final btcBuy = _fmtChatPrice((btcP > 0 ? btcP : 67842.0) * 0.943);
+    final ethBuy = _fmtChatPrice((ethP > 0 ? ethP : 3548.20) * 0.945);
+    final solBuy = _fmtChatPrice((solP > 0 ? solP : 182.40) * 0.933);
+    return {
+      'btc': 'BTC-Analyse: Preis $btcStr. RSI: 62.4 — leicht uberkauft. '
+             '17-Tage-Zyklus Phase 3/4. HQMLL-Konfidenz: 82%. '
+             'Empfehlung: Halten. Nachkaufen unter $btcBuy.',
+      'eth': 'ETH-Analyse: Preis $ethStr. Merge-Effekt stabil. '
+             'Gas-Fees niedrig — gutes Kaufsignal. RSI: 58.2. '
+             'HQMLL Agenten-Konsens: 5/6 BULLISH.',
+      'qemma': 'QEMMA-Analyse: +12.45% heute. Mining-Rate optimal. '
+               'Tokenomics stabil: 35% Mining-Pool noch unerschlossen. '
+               'Empfehlung: 15% Teilgewinnmitnahme — Rest halten fur Mining-Boost.',
+      'risiko': 'Risiko-Analyse Ihres Portfolios: Score 6.2/10. '
+                'Hauptrisiko: Geringe Stablecoin-Reserve (6.9% vs. Ziel 15%). '
+                'Beta: 0.82. Sharpe: 1.84. Max Drawdown: -12.3%. '
+                'Massnahme: USDT auf 15% erhohen.',
+      'rebalancing': 'Rebalancing-Vorschlag:\n'
+                     '- USDT: 6.9% -> 15% (+\$3.840)\n'
+                     '- BNB: 5.5% -> 4% (-\$844)\n'
+                     '- QEMMA: 4.7% -> 5% (+\$136)\n'
+                     'BTC optimal. Gesamtkosten: ~\$35 Gebuehren.',
+      'sol': 'SOL-Analyse: Preis $solStr. Fundamentaldaten stark. '
+             'Validator-Aktivitat +12% diese Woche. '
+             'HQMLL-Empfehlung: Halten. Kaufzone: unter $solBuy.',
+      'performance': 'Portfolio-Performance 1M: +\$1.240 (+2.18%). '
+                     'Beste Position: QEMMA +12.45%. Schlechteste: SOL -0.52%. '
+                     'Gesamt-Rendite YTD: +18.7%. Benchmark BTC: +14.2%. '
+                     'Alpha: +4.5% — HQMLL-optimiert.',
+    };
+  }
 
   @override
   void initState() {
@@ -90,26 +97,52 @@ class _PortfolioScreenState extends State<PortfolioScreen>
     _chatCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 300));
 
+    // v33.0: Sofort beim ersten Frame live Preise laden
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final ex = context.read<ExchangeService>();
+      setState(() => _syncPortfolioFromExchange(ex));
+    });
+
     // Prüfe live Preise aus ExchangeService (alle 3s aktualisieren)
     _priceTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (!mounted) return;
       final ex = context.read<ExchangeService>();
       setState(() {
-        for (final a in _assets) {
-          if (a.symbol == 'USDT') continue;
-          final liveFromEx = ex.getPrice(a.symbol);
-          if (liveFromEx > 0) {
-            // Echter Preis aus ExchangeService (Binance WS / CoinGecko)
-            a.livePrice = liveFromEx;
-          } else {
-            // Fallback: kleine lokale Simulation
-            final vol = a.symbol == 'QEMMA' ? 0.007 : 0.0015;
-            final delta = (_rnd.nextDouble() - 0.49) * a.livePrice * vol;
-            a.livePrice = (a.livePrice + delta).clamp(a.price * 0.88, a.price * 1.12);
-          }
-        }
+        _syncPortfolioFromExchange(ex);
       });
     });
+  }
+
+  // v33.0: Sync _assets live prices from ExchangeService
+  void _syncPortfolioFromExchange(ExchangeService ex) {
+    for (final a in _assets) {
+      if (a.symbol == 'USDT') continue;
+      final liveFromEx = ex.getPrice(a.symbol);
+      if (liveFromEx > 0) {
+        a.livePrice = liveFromEx;
+      } else {
+        final vol = a.symbol == 'QEMMA' ? 0.007 : 0.0015;
+        final delta = (_rnd.nextDouble() - 0.49) * a.livePrice * vol;
+        a.livePrice = (a.livePrice + delta).clamp(a.price * 0.88, a.price * 1.12);
+      }
+    }
+  }
+
+  // v33.0: Formatiert Preis für Emma-Chat (67842.5 → $67,842)
+  String _fmtChatPrice(double v) {
+    if (v <= 0) return 'N/A';
+    if (v >= 1000) {
+      final s = v.toStringAsFixed(0);
+      final buf = StringBuffer();
+      for (int i = 0; i < s.length; i++) {
+        if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+        buf.write(s[i]);
+      }
+      return '\$${buf.toString()}';
+    }
+    if (v >= 1) return '\$${v.toStringAsFixed(2)}';
+    return '\$${v.toStringAsFixed(4)}';
   }
 
   @override
@@ -136,13 +169,16 @@ class _PortfolioScreenState extends State<PortfolioScreen>
     _chatInput.clear();
     _scrollChatToBottom();
 
+    // v33.0: Emma-Responses mit live Preisen aus ExchangeService
+    final ex = context.read<ExchangeService>();
+    final responses = _buildEmmaResponses(ex);
     final lower = text.toLowerCase();
     String response = 'Ich analysiere Ihre Anfrage mit allen 6 HQMLL-Agenten. '
         'Stellen Sie spezifische Fragen zu BTC, ETH, SOL, QEMMA, Risiko, '
         'Rebalancing oder Performance.';
-    for (final key in _emmaResponses.keys) {
+    for (final key in responses.keys) {
       if (lower.contains(key)) {
-        response = _emmaResponses[key]!;
+        response = responses[key]!;
         break;
       }
     }

@@ -844,6 +844,13 @@ class _LiveTickerBannerState extends State<_LiveTickerBanner>
   late Timer _priceTimer;
   final Random _rng = Random();
 
+  // v33.0: Fallback-Seed-Preise (werden sofort durch ExchangeService überschrieben)
+  static const _fallbackPrices = <String, double>{
+    'BTC': 67842.50, 'ETH': 3548.20, 'SOL': 182.40, 'BNB': 598.30,
+    'ADA': 0.452, 'AVAX': 36.80, 'MATIC': 0.892, 'DOT': 7.92,
+    'LINK': 14.62, 'XRP': 0.624, 'LTC': 84.30,
+  };
+
   final List<_TickerItem> _items = [
     _TickerItem('BTC',  67842.50, 2.34),
     _TickerItem('ETH',  3548.20,  1.87),
@@ -859,6 +866,21 @@ class _LiveTickerBannerState extends State<_LiveTickerBanner>
     _TickerItem('LTC',  84.30,   -0.34),
   ];
 
+  // v33.0: Sofort-Sync aus ExchangeService — überschreibt Fallback-Seed-Preise
+  void _syncTickerFromExchange(ExchangeService ex) {
+    for (final item in _items) {
+      final tick = ex.getTick(item.symbol);
+      if (tick != null && tick.price > 0) {
+        item.price = tick.price;
+        item.change = tick.change24h;
+        item.isLive = tick.isLive;
+      } else {
+        final live = ex.getPrice(item.symbol);
+        if (live > 0) item.price = live;
+      }
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -866,6 +888,14 @@ class _LiveTickerBannerState extends State<_LiveTickerBanner>
       vsync: this,
       duration: const Duration(seconds: 30),
     )..repeat();
+    // v33.0: Sofort beim ersten Frame live Preise laden
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      try {
+        final ex = Provider.of<ExchangeService>(context, listen: false);
+        setState(() => _syncTickerFromExchange(ex));
+      } catch (_) {}
+    });
     _priceTimer = Timer.periodic(const Duration(seconds: 2), (_) {
       if (!mounted) return;
       // Pull live prices from ExchangeService

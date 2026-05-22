@@ -105,6 +105,12 @@ class _TradingBotScreenState extends State<TradingBotScreen> with TickerProvider
     _initRecentTrades();
     _startPerformanceUpdates();
     _calculateStats();
+    // v33.0: Sofort beim ersten Frame live Preise in Recent Trades laden
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final ex = context.read<ExchangeService>();
+      setState(() => _syncBotPricesFromExchange(ex));
+    });
   }
 
   void _initStrategies() {
@@ -245,8 +251,8 @@ class _TradingBotScreenState extends State<TradingBotScreen> with TickerProvider
 
   void _initRecentTrades() {
     final sides = ['BUY', 'SELL'];
-    // v28.0: Realistic prices seeded per symbol
-    final symPrices = {
+    // v33.0: Fallback-Seed-Preise (werden sofort via addPostFrameCallback überschrieben)
+    final symPrices = <String, double>{
       'BTC': 67842.0, 'ETH': 3548.0, 'SOL': 185.4,
       'BNB': 620.0, 'ADA': 0.485, 'MATIC': 0.892,
     };
