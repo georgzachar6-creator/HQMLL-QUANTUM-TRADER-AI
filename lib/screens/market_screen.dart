@@ -51,10 +51,15 @@ class _MarketScreenState extends State<MarketScreen>
       ..repeat(reverse: true);
     _tickCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
 
-    // Init live price provider
+    // ExchangeService als primäre Preisquelle initialisieren
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final provider = context.read<LivePriceProvider>();
-      await provider.initialize();
+      final ex = context.read<ExchangeService>();
+      await ex.initialize();
+      // LivePriceProvider als Sekundär-Quelle für Market-Metadaten (rank, sparkline, mcap)
+      if (mounted) {
+        final lp = context.read<LivePriceProvider>();
+        await lp.initialize();
+      }
     });
 
     // UI refresh for flash effects
@@ -91,17 +96,12 @@ class _MarketScreenState extends State<MarketScreen>
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
-    final lp = context.watch<LivePriceProvider>();
-    // ExchangeService für Binance WS Live-Preise (zusätzliche Datenquelle)
+    // ExchangeService als primäre Preisquelle (Binance WS + CoinGecko)
     final ex = context.watch<ExchangeService>();
-    // ExchangeService Ticks in LivePriceProvider synchronisieren
+    final lp = context.watch<LivePriceProvider>();
+    // ExchangeService live Ticks → Flash-Animation + LivePriceProvider-Override
     ex.ticks.forEach((sym, tick) {
-      final existing = lp.getQuote(sym);
-      if (existing == null && tick.price > 0) {
-        _onNewPrice(sym, tick.price);
-      } else if (existing != null && tick.isLive) {
-        _onNewPrice(sym, tick.price);
-      }
+      if (tick.price > 0) _onNewPrice(sym, tick.price);
     });
 
     return Scaffold(
@@ -109,9 +109,9 @@ class _MarketScreenState extends State<MarketScreen>
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(p, lp),
-            _buildConnectionBar(p, lp),
-            _buildTopCoinsStrip(p, lp),
+            _buildHeader(p, lp, ex),
+            _buildConnectionBar(p, lp, ex),
+            _buildTopCoinsStrip(p, lp, ex),
             _buildTabBar(p),
             if (_showSearch) _buildSearchBar(p),
             Expanded(
@@ -127,7 +127,13 @@ class _MarketScreenState extends State<MarketScreen>
   }
 
   // ── Header ──────────────────────────────────────────────
-  Widget _buildHeader(QuantumPalette p, LivePriceProvider lp) {
+  Widget _buildHeader(QuantumPalette p, LivePriceProvider lp, ExchangeService ex) {
+    // ExchangeService hat Vorrang bei WS-Status
+    final wsLive = ex.wsConnected || lp.wsConnected;
+    final liveColor = wsLive ? p.positive : p.accent;
+    final btcPrice = ex.getPrice('BTC');
+    final btcTick = ex.getTick('BTC');
+    final trackedCount = ex.ticks.length > lp.quotes.length ? ex.ticks.length : lp.quotes.length;
     return AnimatedBuilder(
       animation: _glowCtrl,
       builder: (_, __) => Container(
@@ -167,17 +173,18 @@ class _MarketScreenState extends State<MarketScreen>
                     width: 6, height: 6,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: lp.wsConnected ? p.positive : p.negative,
-                      boxShadow: lp.wsConnected ? [BoxShadow(color: p.positive, blurRadius: 4)] : [],
+                      color: liveColor,
+                      boxShadow: wsLive ? [BoxShadow(color: liveColor, blurRadius: 4)] : [],
                     ),
                   ),
                   const SizedBox(width: 5),
                   Text(
-                    lp.wsConnected
-                        ? '${lp.connectedExchanges} Exchange${lp.connectedExchanges != 1 ? "s" : ""} Live · ${lp.ticksPerSecond}/s'
+                    wsLive
+                        ? 'Binance WS ${btcTick?.isLive == true ? "LIVE" : "REST"}'  
+                            '${btcPrice > 0 ? " · BTC \$${(btcPrice/1000).toStringAsFixed(1)}K" : ""}'
                         : 'Connecting...',
                     style: GoogleFonts.rajdhani(
-                      color: lp.wsConnected ? p.positive : p.accent,
+                      color: liveColor,
                       fontSize: 10,
                     ),
                   ),
@@ -185,7 +192,7 @@ class _MarketScreenState extends State<MarketScreen>
               ]),
             ),
             // Stats
-            _buildHeaderStat(p, 'TRACKED', '${lp.quotes.length}', p.primary),
+            _buildHeaderStat(p, 'TRACKED', '$trackedCount', p.primary),
             const SizedBox(width: 8),
             _buildHeaderStat(p, 'TICKS', '${lp.totalTicks}', p.accent),
             const SizedBox(width: 8),
@@ -201,7 +208,11 @@ class _MarketScreenState extends State<MarketScreen>
             const SizedBox(width: 8),
             IconButton(
               icon: Icon(Icons.refresh, color: p.textSecondary, size: 20),
-              onPressed: () => lp.refresh(),
+              onPressed: () async {
+                // ExchangeService als primäre Refresh-Quelle
+                await ex.initialize();
+                if (mounted) lp.refresh();
+              },
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
             ),
@@ -212,9 +223,8 @@ class _MarketScreenState extends State<MarketScreen>
   }
 
   // ── Top Coins Icon Strip ─────────────────────────────────
-  Widget _buildTopCoinsStrip(QuantumPalette p, LivePriceProvider lp) {
+  Widget _buildTopCoinsStrip(QuantumPalette p, LivePriceProvider lp, ExchangeService ex) {
     final topSymbols = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'ADA', 'AVAX', 'DOGE', 'DOT', 'LINK', 'MATIC', 'UNI'];
-    final ex = context.read<ExchangeService>();
     return Container(
       height: 70,
       decoration: BoxDecoration(
@@ -228,17 +238,18 @@ class _MarketScreenState extends State<MarketScreen>
         separatorBuilder: (_, __) => const SizedBox(width: 6),
         itemBuilder: (_, i) {
           final sym = topSymbols[i];
-          // ExchangeService (Binance WS) hat Vorrang vor LivePriceProvider
+          // ExchangeService primär, LivePriceProvider als Fallback
           final exTick = ex.getTick(sym);
           final quote = lp.getQuote(sym);
-          final price = exTick?.price ?? quote?.price ?? 0;
-          final change = exTick?.change24h ?? quote?.change24h ?? 0;
+          final price = (exTick?.price ?? 0) > 0 ? exTick!.price : (quote?.price ?? 0);
+          final change = (exTick?.price ?? 0) > 0 ? (exTick!.change24h) : (quote?.change24h ?? 0);
           final isUp = change >= 0;
           final meta = CryptoRegistry.getOrFallback(sym);
           return GestureDetector(
             onTap: () {
+              // Chart öffnen: LiveQuote bevorzugen, sonst ExchangeService-Tick synthetisch
               final q = lp.getQuote(sym);
-              if (q != null) _openChart(context, q);
+              if (q != null) { _openChart(context, q); }
             },
             child: Container(
               width: 72,
@@ -278,9 +289,11 @@ class _MarketScreenState extends State<MarketScreen>
   }
 
   // ── Connection Bar ───────────────────────────────────────
-  Widget _buildConnectionBar(QuantumPalette p, LivePriceProvider lp) {
+  Widget _buildConnectionBar(QuantumPalette p, LivePriceProvider lp, ExchangeService ex) {
+    // ExchangeService WS-Status für Binance
+    final binanceConn = ex.wsConnected ? ExchangeStatus.connected : lp.exchangeStatuses['Binance'];
     final exchanges = [
-      ('Binance', lp.exchangeStatuses['Binance'], const Color(0xFFF3BA2F)),
+      ('Binance', binanceConn, const Color(0xFFF3BA2F)),
       ('Coinbase', lp.exchangeStatuses['Coinbase'], const Color(0xFF0052FF)),
       ('Bybit', lp.exchangeStatuses['Bybit'], const Color(0xFFFF7028)),
       ('Kraken', lp.exchangeStatuses['Kraken'], const Color(0xFF5741D9)),
@@ -288,7 +301,7 @@ class _MarketScreenState extends State<MarketScreen>
     ];
 
     final dataSources = [
-      ('CoinGecko', lp.geckoActive, const Color(0xFF8DC647)),
+      ('CoinGecko', ex.ticks.isNotEmpty || lp.geckoActive, const Color(0xFF8DC647)),
       ('CMC', lp.cmcActive, const Color(0xFF17C2A4)),
       ('TradingView', true, p.primary),
     ];
@@ -475,6 +488,8 @@ class _MarketScreenState extends State<MarketScreen>
 
   // ── Tab Content ──────────────────────────────────────────
   Widget _buildTabContent(QuantumPalette p, LivePriceProvider lp) {
+    // Hole ExchangeService für Preis-Override
+    final ex = context.read<ExchangeService>();
     List<LiveQuote> coins;
     switch (_selectedTab) {
       case 1: coins = lp.topGainers; break;
@@ -482,6 +497,14 @@ class _MarketScreenState extends State<MarketScreen>
       case 3: coins = lp.topByVolume; break;
       case 4: coins = lp.sortedByRank.where((q) => _watchlist.contains(q.symbol)).toList(); break;
       default: coins = lp.sortedByRank; break;
+    }
+
+    // ExchangeService-Preise in LiveQuotes patchen (Binance WS Vorrang)
+    for (final q in coins) {
+      final exTick = ex.getTick(q.symbol);
+      if (exTick != null && exTick.price > 0) {
+        _onNewPrice(q.symbol, exTick.price);
+      }
     }
 
     // Apply search
@@ -495,7 +518,7 @@ class _MarketScreenState extends State<MarketScreen>
     // Apply sort
     coins = _sortCoins(coins);
 
-    if (coins.isEmpty && lp.isInitialized && !lp.quotes.isEmpty) {
+    if (coins.isEmpty && lp.isInitialized && lp.quotes.isNotEmpty) {
       return Center(child: Text('No results for "$_searchQuery"',
         style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 14)));
     }
