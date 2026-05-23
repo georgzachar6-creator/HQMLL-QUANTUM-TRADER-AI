@@ -110,6 +110,12 @@ class _RebalancerScreenState extends State<RebalancerScreen>
     _pulse = Tween<double>(begin: 0.8, end: 1.2).animate(
       CurvedAnimation(parent: _pulseAnim, curve: Curves.easeInOut),
     );
+    // v34.0: Sofort beim ersten Frame live Preise in Allokationen laden
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final ex = context.read<ExchangeService>();
+      setState(() => _syncPricesFromExchange(ex));
+    });
   }
 
   @override

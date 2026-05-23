@@ -98,6 +98,12 @@ class _GodModeScreenState extends State<GodModeScreen>
       TweenSequenceItem(tween: Tween(begin: 6, end: 0), weight: 1),
     ]).animate(CurvedAnimation(parent: _shakeCtrl, curve: Curves.linear));
 
+    // v34.0: ExchangeService initialisieren damit _buildTradeRow sofort live Preise hat
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await context.read<ExchangeService>().initialize();
+    });
+
     _metricTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (!mounted || !_unlocked) return;
       setState(() {

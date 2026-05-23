@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
+import '../services/exchange_service.dart';
 
 class DeployHubScreen extends StatefulWidget {
   const DeployHubScreen({super.key});
@@ -75,6 +76,13 @@ class _DeployHubScreenState extends State<DeployHubScreen>
     _glowCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2500))..repeat(reverse: true);
     _pulseCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000))..repeat(reverse: true);
     _startLiveTxFeed();
+    // v34.0: _ethPrice sofort aus ExchangeService laden
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final ex = context.read<ExchangeService>();
+      final live = ex.getPrice('ETH');
+      if (live > 0) setState(() => _ethPrice = live);
+    });
   }
 
   void _startLiveTxFeed() {
@@ -183,6 +191,9 @@ class _DeployHubScreenState extends State<DeployHubScreen>
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
+    // v34.0: Live ETH price für Gas-Kosten-Berechnungen
+    final ethLive = context.watch<ExchangeService>().getPrice('ETH');
+    if (ethLive > 0) _ethPrice = ethLive;
     return Scaffold(
       backgroundColor: p.background,
       body: Column(children: [

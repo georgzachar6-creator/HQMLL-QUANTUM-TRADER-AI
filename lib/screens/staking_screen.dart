@@ -102,6 +102,12 @@ class _StakingScreenState extends State<StakingScreen>
     _countCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
 
     _calcTotals();
+    // v34.0: Sofort beim ersten Frame live Preise in Staking-Positionen laden
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final ex = context.read<ExchangeService>();
+      setState(() => _syncPricesFromExchange(ex));
+    });
 
     // Live yield ticker
     _yieldTimer = Timer.periodic(const Duration(milliseconds: 400), (_) {
