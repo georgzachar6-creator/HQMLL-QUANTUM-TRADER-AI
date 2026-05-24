@@ -179,6 +179,10 @@ class _NewsScreenState extends State<NewsScreen>
     _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) setState(() => _sentimentIndex = 60 + Random().nextInt(20));
     });
+    // v36.0: Ersten-Frame Seed — Live-Ticker sofort sichtbar
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   @override

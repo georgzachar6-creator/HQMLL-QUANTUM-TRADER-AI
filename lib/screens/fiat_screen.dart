@@ -87,6 +87,16 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
   final List<FxRate> _fxRates = [];
   final List<FiatTransaction> _transactions = [];
 
+  // v36.0: Live crypto-to-USD rates — seeded by ExchangeService on first frame
+  static const _fallbackCryptoRates = <String, double>{
+    'BTC': 67842.0, 'ETH': 3548.0, 'SOL': 182.0, 'BNB': 598.0,
+    'USDT': 1.0, 'USDC': 1.0,
+  };
+  final Map<String, double> _cryptoToUsd = {
+    'BTC': 67842.0, 'ETH': 3548.0, 'SOL': 182.0, 'BNB': 598.0,
+    'USDT': 1.0, 'USDC': 1.0,
+  };
+
   // Form controllers
   final _fromCtrl = TextEditingController(text: '1000');
   final _toCtrl = TextEditingController();
@@ -110,6 +120,20 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
   static const List<String> _fiatCurrencies = ['EUR', 'USD', 'GBP', 'CHF', 'JPY', 'CAD', 'AUD'];
   static const List<String> _cryptoCurrencies = ['BTC', 'ETH', 'USDT', 'USDC', 'BNB'];
 
+  // v36.0: Sync live crypto rates from ExchangeService into _cryptoToUsd state field
+  void _syncCryptoRatesFromExchange(ExchangeService ex) {
+    bool updated = false;
+    for (final sym in _fallbackCryptoRates.keys) {
+      if (sym == 'USDT' || sym == 'USDC') continue;
+      final live = ex.getPrice(sym);
+      if (live > 0 && live != _cryptoToUsd[sym]) {
+        _cryptoToUsd[sym] = live;
+        updated = true;
+      }
+    }
+    if (updated) _updateConvertedAmount();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -122,6 +146,12 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
     _initTransactions();
     _startFxUpdates();
     _updateConvertedAmount();
+    // v36.0: Ersten-Frame Seed — Crypto-Kreuzraten sofort live
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final ex = context.read<ExchangeService>();
+      setState(() => _syncCryptoRatesFromExchange(ex));
+    });
   }
 
   void _initFxRates() {
@@ -202,22 +232,13 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
       if (r.pair == pair) return r.mid;
       if (r.pair == pairRev) return 1.0 / r.mid;
     }
-    // Crypto cross rates — seeded from ExchangeService when available
-    ExchangeService? ex;
-    try { ex = context.read<ExchangeService>(); } catch (_) {}
-    final cryptoToUsd = {
-      'BTC': (ex?.getPrice('BTC') ?? 0) > 0 ? ex!.getPrice('BTC') : 67842.0,
-      'ETH': (ex?.getPrice('ETH') ?? 0) > 0 ? ex!.getPrice('ETH') : 3548.0,
-      'SOL': (ex?.getPrice('SOL') ?? 0) > 0 ? ex!.getPrice('SOL') : 182.0,
-      'BNB': (ex?.getPrice('BNB') ?? 0) > 0 ? ex!.getPrice('BNB') : 598.0,
-      'USDT': 1.0, 'USDC': 1.0,
-    };
+    // v36.0: Use live _cryptoToUsd state field (seeded by ExchangeService on first frame)
     const fiatToUsd = {
       'USD': 1.0, 'EUR': 1.0842, 'GBP': 1.2654,
       'CHF': 1.0 / 0.9012, 'JPY': 1.0 / 154.82, 'CAD': 1.0 / 1.3621, 'AUD': 0.6543,
     };
-    final fromUsd = cryptoToUsd[from] ?? fiatToUsd[from] ?? 1.0;
-    final toUsd = cryptoToUsd[to] ?? fiatToUsd[to] ?? 1.0;
+    final fromUsd = _cryptoToUsd[from] ?? fiatToUsd[from] ?? 1.0;
+    final toUsd = _cryptoToUsd[to] ?? fiatToUsd[to] ?? 1.0;
     return fromUsd / toUsd;
   }
 
@@ -247,6 +268,8 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
     final ex = context.watch<ExchangeService>();
+    // v36.0: Reactive live rate sync on every ExchangeService update
+    _syncCryptoRatesFromExchange(ex);
     return Scaffold(
       backgroundColor: p.background,
       body: Column(

@@ -80,6 +80,12 @@ class _TokenScreenState extends State<TokenScreen>
         _liveTrend = delta >= 0;
       });
     });
+    // v36.0: Ersten-Frame Seed — ETH/SOL sofort live über ExchangeService
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await context.read<ExchangeService>().initialize();
+      if (mounted) setState(() {});
+    });
   }
 
   @override
