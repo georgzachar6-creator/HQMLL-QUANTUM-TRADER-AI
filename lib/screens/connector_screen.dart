@@ -13,6 +13,7 @@ import '../widgets/crypto_icon.dart';
 
 import '../providers/theme_provider.dart';
 import '../providers/live_price_provider.dart';
+import '../services/exchange_service.dart';
 import '../services/websocket_service.dart';
 
 class ConnectorScreen extends StatefulWidget {
@@ -53,10 +54,15 @@ class _ConnectorScreenState extends State<ConnectorScreen>
     _pulseCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 800))
       ..repeat(reverse: true);
 
-    // Initialize live price provider
+    // v35.0: ExchangeService + LivePriceProvider beide initialisieren
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final lp = context.read<LivePriceProvider>();
-      await lp.initialize();
+      if (!mounted) return;
+      final ex = context.read<ExchangeService>();
+      await ex.initialize();
+      if (mounted) {
+        final lp = context.read<LivePriceProvider>();
+        await lp.initialize();
+      }
     });
 
     _refreshTimer = Timer.periodic(const Duration(seconds: 2), (_) {
@@ -76,11 +82,13 @@ class _ConnectorScreenState extends State<ConnectorScreen>
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
     final lp = context.watch<LivePriceProvider>();
+    // v35.0: ExchangeService als primäre WS-Quelle
+    final ex = context.watch<ExchangeService>();
     return Scaffold(
       backgroundColor: p.background,
       body: SafeArea(
         child: Column(children: [
-          _buildHeader(p, lp),
+          _buildHeader(p, lp, ex),
           _buildTabs(p),
           Expanded(
             child: IndexedStack(
@@ -99,11 +107,12 @@ class _ConnectorScreenState extends State<ConnectorScreen>
   }
 
   // ── HEADER ──────────────────────────────────────────────
-  Widget _buildHeader(dynamic p, LivePriceProvider lp) {
-    final wsConnected = lp.wsConnected;
-    final connCount = lp.connectedExchanges;
+  Widget _buildHeader(dynamic p, LivePriceProvider lp, ExchangeService ex) {
+    // v35.0: ExchangeService als primäre WS-Quelle, LP als Fallback
+    final wsConnected = ex.wsConnected || lp.wsConnected;
+    final connCount = ex.wsConnected ? (lp.connectedExchanges > 0 ? lp.connectedExchanges : 1) : lp.connectedExchanges;
     final tps = lp.ticksPerSecond;
-    final totalTicks = lp.totalTicks;
+    final totalTicks = ex.ticks.isNotEmpty ? ex.ticks.length + lp.totalTicks : lp.totalTicks;
 
     return AnimatedBuilder(
       animation: _glowCtrl,
@@ -140,7 +149,7 @@ class _ConnectorScreenState extends State<ConnectorScreen>
             const SizedBox(width: 8),
             _buildStatChip(p, 'GESAMT', _formatCount(totalTicks), const Color(0xFFAA88FF)),
             const SizedBox(width: 8),
-            _buildStatChip(p, 'ASSETS', '${lp.quotes.length}', const Color(0xFFFFAA00)),
+            _buildStatChip(p, 'ASSETS', '${ex.ticks.isNotEmpty ? ex.ticks.length : lp.quotes.length}', const Color(0xFFFFAA00)),
           ]),
         ]),
       ),

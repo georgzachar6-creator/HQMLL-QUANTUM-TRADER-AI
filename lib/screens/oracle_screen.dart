@@ -90,6 +90,10 @@ class _OracleScreenState extends State<OracleScreen>
     _scanCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 3))
       ..repeat();
     _liveTimer = Timer.periodic(const Duration(seconds: 2), (_) => _updateLive());
+    // v35.0: Ersten-Frame Seed — Signals/Predictions sofort live
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _updateLive();
+    });
   }
 
   void _updateLive() {
