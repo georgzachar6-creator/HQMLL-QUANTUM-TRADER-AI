@@ -188,6 +188,12 @@ class _AiOrchestratorScreenState extends State<AiOrchestratorScreen>
 
     _agentTimer = Timer.periodic(const Duration(seconds: 8), (_) => _updateAgents());
     _signalTimer = Timer.periodic(const Duration(seconds: 15), (_) => _maybeGenerateSignal());
+    // v37.0: Ersten-Frame Seed — _buildSignalCard zeigt live currentPrice sofort
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await context.read<ExchangeService>().initialize();
+      if (mounted) setState(() {});
+    });
   }
 
   @override
