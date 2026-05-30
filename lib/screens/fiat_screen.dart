@@ -1,5 +1,6 @@
-/// HQMLL Quantum Trader – Fiat Transaction Screen
+/// HQMLL Quantum Trader – Fiat Transaction Screen v3
 /// EUR/USD Live Broker API · Bank Transfer · SEPA · SWIFT
+/// v38.0: Secure Bank Account Integration (local encrypted storage)
 /// Grigori Saks · 2025
 library;
 
@@ -12,6 +13,7 @@ import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../theme/app_themes.dart';
 import '../services/exchange_service.dart';
+import '../services/persistence_service.dart';
 
 // ── Fiat Transaction Model ─────────────────────────────
 class FiatTransaction {
@@ -137,7 +139,7 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 4, vsync: this);
+    _tabCtrl = TabController(length: 5, vsync: this);
     _pulseCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))
       ..repeat(reverse: true);
     _slideCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600))
@@ -284,6 +286,7 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
                 _buildExchangeTab(p),
                 _buildTransactionsTab(p),
                 _buildBankingTab(p),
+                _buildMyAccountsTab(p),
               ],
             ),
           ),
@@ -412,10 +415,11 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
         unselectedLabelColor: p.textSecondary,
         labelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.5),
         tabs: const [
-          Tab(text: 'FX RATES', icon: Icon(Icons.currency_exchange, size: 16)),
-          Tab(text: 'EXCHANGE', icon: Icon(Icons.swap_horiz, size: 16)),
-          Tab(text: 'HISTORY', icon: Icon(Icons.history, size: 16)),
-          Tab(text: 'BANKING', icon: Icon(Icons.account_balance, size: 16)),
+          Tab(text: 'FX RATES', icon: Icon(Icons.currency_exchange, size: 14)),
+          Tab(text: 'EXCHANGE', icon: Icon(Icons.swap_horiz, size: 14)),
+          Tab(text: 'HISTORY', icon: Icon(Icons.history, size: 14)),
+          Tab(text: 'BANKING', icon: Icon(Icons.account_balance, size: 14)),
+          Tab(text: 'MY BANK', icon: Icon(Icons.credit_card, size: 14)),
         ],
       ),
     );
@@ -1105,5 +1109,304 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
     if (c == 'ETH') return const Color(0xFF627EEA);
     if (c == 'USDT') return const Color(0xFF26A17B);
     return const Color(0xFF00D4FF);
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // v38.0: MY BANK ACCOUNTS TAB — Secure local storage
+  // ══════════════════════════════════════════════════════════
+  Widget _buildMyAccountsTab(QuantumPalette p) {
+    final ps = context.watch<PersistenceService>();
+    final accounts = ps.bankAccounts;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(12),
+      child: Column(children: [
+        // ── Total Balance Card ──
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [const Color(0xFF003399), const Color(0xFF0055CC)],
+              begin: Alignment.topLeft, end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [BoxShadow(color: const Color(0xFF003399).withValues(alpha: 0.4), blurRadius: 20, offset: const Offset(0, 8))],
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              const Icon(Icons.account_balance, color: Colors.white70, size: 16),
+              const SizedBox(width: 6),
+              Text('FIAT GUTHABEN GESAMT', style: GoogleFonts.spaceMono(color: Colors.white70, fontSize: 10, letterSpacing: 1.5)),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+                child: Text('LOKAL VERSCHLÜSSELT', style: GoogleFonts.spaceMono(color: Colors.white60, fontSize: 7)),
+              ),
+            ]),
+            const SizedBox(height: 12),
+            Text(
+              '€ ${ps.totalFiatBalance.toStringAsFixed(2)}',
+              style: GoogleFonts.spaceMono(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${accounts.length} Konto${accounts.length != 1 ? "s" : ""} verknüpft',
+              style: GoogleFonts.spaceMono(color: Colors.white60, fontSize: 10),
+            ),
+          ]),
+        ),
+        const SizedBox(height: 16),
+
+        // ── Security Notice ──
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.amber.withValues(alpha: 0.1),
+            border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(children: [
+            const Icon(Icons.lock, color: Colors.amber, size: 16),
+            const SizedBox(width: 8),
+            Expanded(child: Text(
+              '🔒 Bankdaten werden NUR lokal auf diesem Gerät gespeichert. Keine Cloud-Übertragung.',
+              style: GoogleFonts.spaceMono(color: Colors.amber, fontSize: 9),
+            )),
+          ]),
+        ),
+        const SizedBox(height: 16),
+
+        // ── Account Cards ──
+        if (accounts.isEmpty)
+          _buildAddAccountPrompt(p)
+        else ...[
+          ...accounts.map((acc) => _buildBankCard(acc, p, ps)),
+          const SizedBox(height: 8),
+        ],
+
+        // ── Add Account Button ──
+        GestureDetector(
+          onTap: () => _showAddAccountDialog(p),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(color: p.primary.withValues(alpha: 0.4), style: BorderStyle.solid),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Icon(Icons.add_circle_outline, color: p.primary, size: 20),
+              const SizedBox(width: 8),
+              Text('Bankkonto hinzufügen', style: GoogleFonts.spaceMono(color: p.primary, fontSize: 11, fontWeight: FontWeight.bold)),
+            ]),
+          ),
+        ),
+      ]),
+    );
+  }
+
+  Widget _buildAddAccountPrompt(QuantumPalette p) {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      child: Column(children: [
+        Icon(Icons.account_balance_wallet_outlined, color: p.textSecondary, size: 48),
+        const SizedBox(height: 12),
+        Text('Noch kein Bankkonto', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 13)),
+        const SizedBox(height: 6),
+        Text('Füge dein Sparkasse- oder\nanderem Bankkonto hinzu', textAlign: TextAlign.center,
+          style: GoogleFonts.spaceMono(color: p.textSecondary.withValues(alpha: 0.6), fontSize: 10)),
+      ]),
+    );
+  }
+
+  Widget _buildBankCard(BankAccount acc, QuantumPalette p, PersistenceService ps) {
+    final isSparkasse = acc.bankName.toLowerCase().contains('sparkasse');
+    final cardColor = isSparkasse ? const Color(0xFFFF0000) : const Color(0xFF1A237E);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Stack(children: [
+        // Card background
+        Container(
+          height: 160,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [cardColor, cardColor.withValues(alpha: 0.7)],
+              begin: Alignment.topLeft, end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [BoxShadow(color: cardColor.withValues(alpha: 0.3), blurRadius: 15, offset: const Offset(0, 6))],
+          ),
+        ),
+        // Decorative circles
+        Positioned(right: -20, top: -20, child: Container(width: 120, height: 120,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.05)))),
+        Positioned(right: 20, bottom: -30, child: Container(width: 80, height: 80,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.05)))),
+        // Card content
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Expanded(child: Text(acc.bankName,
+                style: GoogleFonts.spaceMono(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold))),
+              if (acc.isDefault)
+                Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
+                  child: Text('STANDARD', style: GoogleFonts.spaceMono(color: Colors.white, fontSize: 7))),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => _showEditBalanceDialog(acc, p, ps),
+                child: Icon(Icons.edit, color: Colors.white60, size: 16),
+              ),
+              const SizedBox(width: 6),
+              GestureDetector(
+                onTap: () => ps.removeBankAccount(acc.id),
+                child: Icon(Icons.delete_outline, color: Colors.white38, size: 16),
+              ),
+            ]),
+            const Spacer(),
+            Text(acc.maskedIban, style: GoogleFonts.spaceMono(color: Colors.white70, fontSize: 10, letterSpacing: 1)),
+            const SizedBox(height: 6),
+            Row(children: [
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('GUTHABEN', style: GoogleFonts.spaceMono(color: Colors.white60, fontSize: 8)),
+                Text('€ ${acc.balance.toStringAsFixed(2)}',
+                  style: GoogleFonts.spaceMono(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              ])),
+              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                Text(acc.cardType.toUpperCase(), style: GoogleFonts.spaceMono(color: Colors.white70, fontSize: 8)),
+                Text(acc.cardDisplay, style: GoogleFonts.spaceMono(color: Colors.white, fontSize: 10)),
+              ]),
+            ]),
+            const SizedBox(height: 4),
+            Text(acc.accountHolder, style: GoogleFonts.spaceMono(color: Colors.white60, fontSize: 9)),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  void _showAddAccountDialog(QuantumPalette p) {
+    final labelCtrl = TextEditingController();
+    final bankCtrl = TextEditingController();
+    final holderCtrl = TextEditingController();
+    final ibanCtrl = TextEditingController();
+    final bicCtrl = TextEditingController();
+    final balanceCtrl = TextEditingController(text: '0.00');
+    final cardLastCtrl = TextEditingController();
+    final cardExpCtrl = TextEditingController();
+    String cardType = 'girocard';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setS) => AlertDialog(
+        backgroundColor: p.surface,
+        title: Text('Bankkonto hinzufügen', style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 13)),
+        content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(
+            color: Colors.amber.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+            child: Text('🔒 Daten werden nur lokal gespeichert', style: GoogleFonts.spaceMono(color: Colors.amber, fontSize: 9))),
+          const SizedBox(height: 12),
+          _dialogField(labelCtrl, 'Bezeichnung', 'z.B. Sparkasse Girokonto', p),
+          _dialogField(bankCtrl, 'Bank', 'z.B. Sparkasse Dortmund', p),
+          _dialogField(holderCtrl, 'Kontoinhaber', 'Vor- und Nachname', p),
+          _dialogField(ibanCtrl, 'IBAN', 'DE00 0000 0000 0000 0000 00', p),
+          _dialogField(bicCtrl, 'BIC', 'z.B. DORTDE33XXX', p),
+          _dialogField(balanceCtrl, 'Aktuelles Guthaben (€)', '0.00', p,
+            type: TextInputType.numberWithOptions(decimal: true)),
+          _dialogField(cardLastCtrl, 'Letzte 4 Stellen Kartennr.', '0000', p,
+            type: TextInputType.number, maxLen: 4),
+          _dialogField(cardExpCtrl, 'Gültig bis', 'MM/YY', p),
+          DropdownButtonFormField<String>(
+            value: cardType,
+            dropdownColor: p.surface,
+            style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 11),
+            decoration: InputDecoration(labelText: 'Kartentyp',
+              labelStyle: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 10)),
+            items: ['girocard', 'Debitkarte', 'Kreditkarte', 'Prepaid']
+              .map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+            onChanged: (v) => setS(() => cardType = v ?? cardType),
+          ),
+        ])),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx),
+            child: Text('Abbrechen', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 10))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: p.primary),
+            onPressed: () {
+              if (ibanCtrl.text.isEmpty || bankCtrl.text.isEmpty) return;
+              final ps = context.read<PersistenceService>();
+              ps.addBankAccount(BankAccount(
+                id: ps.generateId(),
+                label: labelCtrl.text.isEmpty ? '${bankCtrl.text} Konto' : labelCtrl.text,
+                bankName: bankCtrl.text,
+                accountHolder: holderCtrl.text,
+                iban: ibanCtrl.text.replaceAll(' ', ''),
+                bic: bicCtrl.text,
+                currency: 'EUR',
+                balance: double.tryParse(balanceCtrl.text.replaceAll(',', '.')) ?? 0.0,
+                cardNumber: cardLastCtrl.text.padLeft(4, '0'),
+                cardExpiry: cardExpCtrl.text,
+                cardType: cardType,
+                isDefault: false,
+                addedAt: DateTime.now(),
+              ));
+              Navigator.pop(ctx);
+            },
+            child: Text('Hinzufügen', style: GoogleFonts.spaceMono(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      )),
+    );
+  }
+
+  Widget _dialogField(TextEditingController ctrl, String label, String hint, QuantumPalette p,
+      {TextInputType? type, int? maxLen}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: TextField(
+        controller: ctrl,
+        keyboardType: type,
+        maxLength: maxLen,
+        style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 11),
+        decoration: InputDecoration(
+          labelText: label, hintText: hint,
+          labelStyle: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 10),
+          hintStyle: GoogleFonts.spaceMono(color: p.textSecondary.withValues(alpha: 0.5), fontSize: 10),
+          counterText: '',
+        ),
+      ),
+    );
+  }
+
+  void _showEditBalanceDialog(BankAccount acc, QuantumPalette p, PersistenceService ps) {
+    final ctrl = TextEditingController(text: acc.balance.toStringAsFixed(2));
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      backgroundColor: p.surface,
+      title: Text('Guthaben aktualisieren', style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 12)),
+      content: TextField(
+        controller: ctrl, autofocus: true,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 16),
+        decoration: InputDecoration(
+          prefixText: '€ ',
+          prefixStyle: GoogleFonts.spaceMono(color: p.primary, fontSize: 16),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx),
+          child: Text('Abbrechen', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 10))),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: p.primary),
+          onPressed: () {
+            final val = double.tryParse(ctrl.text.replaceAll(',', '.'));
+            if (val != null) ps.updateBalance(acc.id, val);
+            Navigator.pop(ctx);
+          },
+          child: Text('Speichern', style: GoogleFonts.spaceMono(color: Colors.black, fontSize: 10)),
+        ),
+      ],
+    ));
   }
 }

@@ -8,6 +8,7 @@ import 'services/coinmarketcap_service.dart';
 import 'services/secure_vault_service.dart';
 import 'services/auth_service.dart';
 import 'services/exchange_service.dart';
+import 'services/persistence_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/main_scaffold.dart';
@@ -33,6 +34,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => LiveMarketService()),
         ChangeNotifierProvider(create: (_) => CoinMarketCapService()),
         ChangeNotifierProvider(create: (_) => SecureVaultService()),
+        ChangeNotifierProvider(create: (_) => PersistenceService()),
         ChangeNotifierProvider.value(value: authService),
         ChangeNotifierProvider.value(value: exchangeService),
       ],

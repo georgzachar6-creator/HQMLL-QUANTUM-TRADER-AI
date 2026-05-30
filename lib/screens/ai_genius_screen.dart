@@ -10,6 +10,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/theme_provider.dart';
+import '../services/exchange_service.dart';
+import '../services/persistence_service.dart';
 
 // ══════════════════════════════════════════════════════════════
 // AI GENIUS META-REASONING ENGINE
@@ -46,14 +48,20 @@ class _AIGeniusScreenState extends State<AIGeniusScreen>
   final List<ReasoningChain> _chains = [];
   final _commandCtrl = TextEditingController();
 
-  // ─ Agent States ─
+  // ─ 12-Agent Orchestrator (v38.0) ─
   final List<AgentModule> _agents = [
-    AgentModule('META-ANALYST', Icons.analytics, 'AKTIV', 0.94),
-    AgentModule('QUANTEN-ORACLE', Icons.remove_red_eye, 'AKTIV', 0.89),
-    AgentModule('TR2-CORE', Icons.memory, 'AKTIV', 0.97),
-    AgentModule('MEMORY-MGR', Icons.storage, 'AKTIV', 0.91),
-    AgentModule('REASONING-LOOP', Icons.loop, 'AKTIV', 0.88),
-    AgentModule('GENIUS-SYNTH', Icons.auto_awesome, 'AKTIV', 0.96),
+    AgentModule('META-ANALYST',    Icons.analytics,          'AKTIV', 0.94),
+    AgentModule('QUANTEN-ORACLE',  Icons.remove_red_eye,     'AKTIV', 0.89),
+    AgentModule('TR2-CORE',        Icons.memory,             'AKTIV', 0.97),
+    AgentModule('MEMORY-MGR',      Icons.storage,            'AKTIV', 0.91),
+    AgentModule('REASONING-LOOP',  Icons.loop,               'AKTIV', 0.88),
+    AgentModule('GENIUS-SYNTH',    Icons.auto_awesome,       'AKTIV', 0.96),
+    AgentModule('SELF-HEALER',     Icons.health_and_safety,  'AKTIV', 0.99),
+    AgentModule('MARKET-SCANNER',  Icons.radar,              'AKTIV', 0.93),
+    AgentModule('RISK-GUARDIAN',   Icons.shield_outlined,    'AKTIV', 0.87),
+    AgentModule('ALPHA-HUNTER',    Icons.trending_up,        'AKTIV', 0.91),
+    AgentModule('SENTIMENT-AI',    Icons.psychology,         'AKTIV', 0.85),
+    AgentModule('QUANTUM-BRIDGE',  Icons.hub,                'AKTIV', 0.95),
   ];
 
   @override
@@ -67,6 +75,45 @@ class _AIGeniusScreenState extends State<AIGeniusScreen>
     _initMemory();
     _initChains();
     _startBackgroundProcessing();
+    // v38.0: Ersten-Frame Seed — Live-Preise sofort in Memory-Nodes
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final ex = context.read<ExchangeService>();
+      await ex.initialize();
+      if (mounted) _updateMemoryWithLivePrices(ex);
+    });
+  }
+
+  // v38.0: Update memory nodes with live prices from ExchangeService
+  void _updateMemoryWithLivePrices(ExchangeService ex) {
+    final btc = ex.getPrice('BTC');
+    final eth = ex.getPrice('ETH');
+    final sol = ex.getPrice('SOL');
+    if (!mounted) return;
+    setState(() {
+      if (btc > 0) {
+        final idx = _memory.indexWhere((m) => m.id == 'MEM-001');
+        if (idx >= 0) {
+          _memory[idx] = MemoryNode(
+            'MEM-001',
+            'BTC Live: \$${btc.toStringAsFixed(0)} | ${ex.getTick('BTC')?.change24h.toStringAsFixed(2) ?? '0.00'}% 24h',
+            MemoryType.market, 0.98,
+            DateTime.now(),
+          );
+        }
+      }
+      if (eth > 0) {
+        final idx = _memory.indexWhere((m) => m.id == 'MEM-002');
+        if (idx >= 0) {
+          _memory[idx] = MemoryNode(
+            'MEM-002',
+            'ETH Live: \$${eth.toStringAsFixed(0)} | SOL: \$${sol > 0 ? sol.toStringAsFixed(1) : "—"}',
+            MemoryType.market, 0.96,
+            DateTime.now(),
+          );
+        }
+      }
+    });
   }
 
   @override
@@ -210,6 +257,11 @@ class _AIGeniusScreenState extends State<AIGeniusScreen>
     final tp = context.watch<ThemeProvider>();
     final p = tp.palette;
     final accentColor = const Color(0xFF00E5FF);
+    // v38.0: Reactive live price updates + agent count from PersistenceService
+    final ex = context.watch<ExchangeService>();
+    final ps = context.watch<PersistenceService>();
+    _updateMemoryWithLivePrices(ex);
+    final agentCount = ps.activeAgentCount.clamp(1, _agents.length);
 
     return Scaffold(
       backgroundColor: p.background,
@@ -283,7 +335,7 @@ class _AIGeniusScreenState extends State<AIGeniusScreen>
                       fontWeight: FontWeight.bold, letterSpacing: 2,
                     ),
                   ),
-                  Text('TR2 Meta-Reasoning · Memory Library · Deep Loops',
+                  Text('TR2 · ${_agents.length}-AGENTEN · Memory · Deep Loops',
                     style: GoogleFonts.inter(color: p.textSecondary, fontSize: 9),
                   ),
                 ],
@@ -710,7 +762,31 @@ class _AIGeniusScreenState extends State<AIGeniusScreen>
   Widget _buildAgentTab(dynamic p, Color accent) {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      children: _agents.map((agent) {
+      children: [
+        // v38.0: 12-Agent Orchestrator Status Header
+        Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [accent.withValues(alpha: 0.1), p.surface]),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: accent.withValues(alpha: 0.3)),
+          ),
+          child: Row(children: [
+            Icon(Icons.hub, color: accent, size: 20),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('12-AGENTEN ORCHESTER', style: GoogleFonts.spaceMono(color: accent, fontSize: 11, fontWeight: FontWeight.bold)),
+              Text('Alle ${_agents.length} Agenten aktiv · Autonome Koordination', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
+            ])),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: const Color(0xFF00FF88).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+              child: Text('${_agents.where((a) => a.status == "AKTIV").length}/12', style: GoogleFonts.spaceMono(color: const Color(0xFF00FF88), fontSize: 12, fontWeight: FontWeight.bold)),
+            ),
+          ]),
+        ),
+        ..._agents.map((agent) {
         final loadColor = agent.load > 0.9
             ? const Color(0xFF00E676)
             : agent.load > 0.7
@@ -782,6 +858,7 @@ class _AIGeniusScreenState extends State<AIGeniusScreen>
           ),
         );
       }).toList(),
+      ],  // close outer list children
     );
   }
 

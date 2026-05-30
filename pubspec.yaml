@@ -1,7 +1,7 @@
 name: quantum_trader
 description: Quantum Trader AI System - Enterprise Edition by Grigori Saks · HQMLL
 publish_to: 'none'
-version: 37.0.0+370
+version: 38.0.0+380
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
