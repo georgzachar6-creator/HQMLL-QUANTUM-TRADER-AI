@@ -4,6 +4,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../services/exchange_service.dart';
 
 // ═══════════════════════════════════════════════════════════════
 //  HQMLL WRITER — Document Intelligence & AI Drafting Module
@@ -234,6 +236,25 @@ contract QEMMAToken is ERC20, Ownable {
       if (_docCtrl.text.isNotEmpty) _triggerAutoSave();
     });
     _docCtrl.addListener(_updateCounts);
+    // Live BTC-Preis in Market-Memo-Template nachträglich einsetzen
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final ex = context.read<ExchangeService>();
+      await ex.initialize();
+      if (!mounted) return;
+      final btc = ex.getPrice('BTC');
+      if (btc > 0 && _docCtrl.text.contains('67,000')) {
+        final btcStr = '\$${(btc / 1000).toStringAsFixed(1)}K';
+        final updated = _docCtrl.text.replaceFirst(
+          r'$67,000', btcStr,
+        );
+        _docCtrl.value = TextEditingValue(
+          text: updated,
+          selection: TextSelection.collapsed(
+              offset: _docCtrl.selection.baseOffset.clamp(0, updated.length)),
+        );
+      }
+    });
   }
 
   @override

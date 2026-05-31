@@ -13,6 +13,7 @@ import '../services/exchange_service.dart';
 import '../theme/app_themes.dart';
 import '../widgets/tradingview_widget.dart';
 import '../widgets/crypto_icon.dart';
+import '../widgets/quantum_coin_tile.dart';
 import '../services/websocket_service.dart';
 
 class MarketScreen extends StatefulWidget {
@@ -224,58 +225,22 @@ class _MarketScreenState extends State<MarketScreen>
 
   // ── Top Coins Icon Strip ─────────────────────────────────
   Widget _buildTopCoinsStrip(QuantumPalette p, LivePriceProvider lp, ExchangeService ex) {
-    final topSymbols = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'ADA', 'AVAX', 'DOGE', 'DOT', 'LINK', 'MATIC', 'UNI'];
-    return Container(
-      height: 70,
-      decoration: BoxDecoration(
-        color: p.surface.withValues(alpha: 0.25),
-        border: Border(bottom: BorderSide(color: p.primary.withValues(alpha: 0.12))),
-      ),
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        itemCount: topSymbols.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 6),
-        itemBuilder: (_, i) {
-          final sym = topSymbols[i];
-          // ExchangeService primär, LivePriceProvider als Fallback
+    // Verwende die neue animierte QuantumCoinTile-basierte CoinBrandStrip
+    final topSymbols = ['BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'ADA', 'AVAX', 'DOGE', 'DOT', 'LINK', 'MATIC', 'UNI', 'ATOM', 'NEAR', 'LTC'];
+    return SizedBox(
+      height: 88,
+      child: CoinBrandStrip(
+        symbols: topSymbols,
+        getPriceAndChange: (sym) {
           final exTick = ex.getTick(sym);
           final quote = lp.getQuote(sym);
           final price = (exTick?.price ?? 0) > 0 ? exTick!.price : (quote?.price ?? 0);
-          final change = (exTick?.price ?? 0) > 0 ? (exTick!.change24h) : (quote?.change24h ?? 0);
-          final isUp = change >= 0;
-          final meta = CryptoRegistry.getOrFallback(sym);
-          return GestureDetector(
-            onTap: () {
-              // Chart öffnen: LiveQuote bevorzugen, sonst ExchangeService-Tick synthetisch
-              final q = lp.getQuote(sym);
-              if (q != null) { _openChart(context, q); }
-            },
-            child: Container(
-              width: 72,
-              decoration: BoxDecoration(
-                color: meta.primary.withValues(alpha: 0.07),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: meta.primary.withValues(alpha: 0.2)),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CryptoIcon(sym, size: 26, showBorder: false),
-                  const SizedBox(height: 3),
-                  Text(sym, style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 8, fontWeight: FontWeight.bold)),
-                  if (price > 0)
-                    Text(
-                      '${isUp ? '+' : ''}${change.toStringAsFixed(1)}%',
-                      style: GoogleFonts.spaceMono(
-                        color: isUp ? const Color(0xFF00C896) : const Color(0xFFFF3355),
-                        fontSize: 7, fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          );
+          final change = (exTick?.price ?? 0) > 0 ? exTick!.change24h : (quote?.change24h ?? 0);
+          return (price, change);
+        },
+        onTap: (sym) {
+          final q = lp.getQuote(sym);
+          if (q != null) _openChart(context, q);
         },
       ),
     );
