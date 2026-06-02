@@ -99,6 +99,9 @@ class _TR2PreviewScreenState extends State<TR2PreviewScreen>
       await ex.initialize();
       final ps = context.read<PersistenceService>();
       if (ps.selfHealEnabled) _startSelfHeal();
+      // v40: SystemLog boot event
+      ps.addSystemLog('AI', 'TR2 Engine gestartet — Self-Heal: ${ps.selfHealEnabled}',
+          level: SysLogLevel.success);
       if (mounted) setState(() {});
     });
   }
@@ -115,12 +118,22 @@ class _TR2PreviewScreenState extends State<TR2PreviewScreen>
         _healLog.insert(0, '[${_timeNow()}] $msg');
         if (_healLog.length > 12) _healLog.removeLast();
       });
+      // v40: SystemLog heal event (every 5th event to avoid spam)
+      if (_healEvents % 5 == 0 && mounted) {
+        context.read<PersistenceService>().addSystemLog('AI',
+            'Self-Heal #$_healEvents: $msg', level: SysLogLevel.info);
+      }
     });
   }
 
   void _stopSelfHeal() {
     _healTimer?.cancel();
     setState(() => _selfHealActive = false);
+    if (mounted) {
+      context.read<PersistenceService>().addSystemLog('AI',
+          'Self-Heal Engine gestoppt nach $_healEvents Events',
+          level: SysLogLevel.warning);
+    }
   }
 
   @override

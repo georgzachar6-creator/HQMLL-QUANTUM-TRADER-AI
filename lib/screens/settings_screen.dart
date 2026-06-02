@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/theme_provider.dart';
+import '../services/persistence_service.dart';
 import '../theme/app_themes.dart';
 import '../widgets/quantum_eye_widget.dart';
 import 'quantum_monitor_screen.dart';
@@ -232,7 +233,15 @@ class SettingsScreen extends StatelessWidget {
             final pal = AppThemes.getPalette(theme);
             final selected = tp.currentTheme == theme;
             return GestureDetector(
-              onTap: () => tp.setTheme(theme),
+              onTap: () {
+                tp.setTheme(theme);
+                // v40.1: SystemLog Theme-Wechsel
+                context.read<PersistenceService>().addSystemLog(
+                  'SYSTEM',
+                  'Theme gewechselt: ${theme.name.toUpperCase()}',
+                  level: SysLogLevel.info,
+                );
+              },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 220),
                 margin: const EdgeInsets.only(bottom: 10),

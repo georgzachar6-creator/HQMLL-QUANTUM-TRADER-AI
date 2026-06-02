@@ -1,8 +1,9 @@
 // ============================================================
-// CONNECTOR SCREEN v1 – Quantum Trader v20
+// CONNECTOR SCREEN v40.1 – Quantum Trader
 // Broker · Exchange · Data-Source Manager
 // Binance · Coinbase · Kraken · Bybit · OKX
 // CoinGecko · CoinMarketCap · TradingView
+// v40.1: SystemLog + WS-Config persistent
 // ============================================================
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ import '../widgets/crypto_icon.dart';
 
 import '../providers/theme_provider.dart';
 import '../providers/live_price_provider.dart';
+import '../services/persistence_service.dart';
 import '../services/exchange_service.dart';
 import '../services/websocket_service.dart';
 
@@ -62,6 +64,13 @@ class _ConnectorScreenState extends State<ConnectorScreen>
       if (mounted) {
         final lp = context.read<LivePriceProvider>();
         await lp.initialize();
+        // v40.1: SystemLog WS connection event
+        final ps = context.read<PersistenceService>();
+        ps.addSystemLog('WS',
+            'Connector initialisiert — Binance WS: ${ex.wsConnected ? "AKTIV" : "GETRENNT"}',
+            level: ex.wsConnected ? SysLogLevel.success : SysLogLevel.warning);
+        // v40.1: Persist WS config snapshot
+        await ps.saveWsConfig(ps.wsConfig);
       }
     });
 

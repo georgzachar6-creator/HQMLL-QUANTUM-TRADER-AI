@@ -80,7 +80,14 @@ class _AIGeniusScreenState extends State<AIGeniusScreen>
       if (!mounted) return;
       final ex = context.read<ExchangeService>();
       await ex.initialize();
-      if (mounted) _updateMemoryWithLivePrices(ex);
+      if (mounted) {
+        _updateMemoryWithLivePrices(ex);
+        // v40.1: SystemLog agent orchestration boot
+        final ps = context.read<PersistenceService>();
+        ps.addSystemLog('AI',
+            'AI-Orchester v40 gestartet — ${ps.activeAgentCount}/12 Agenten aktiv',
+            level: SysLogLevel.success);
+      }
     });
   }
 
