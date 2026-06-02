@@ -1,7 +1,8 @@
 // ============================================================
-// QUANTUM DEEP RESEARCH SCREEN v39.0 – HQMLL Quantum Trader
+// QUANTUM DEEP RESEARCH SCREEN v40.0 – HQMLL Quantum Trader
 // Quantum Resonanz · Frequenz-Spektrum · Funkwellen · Gravity
 // Time Gate Portal · Raum-Zeit-Analyse · Live Market Oracle
+// System Log · TX-History · Persistent Research State
 // Grigori Saks · 2025
 // ============================================================
 
@@ -12,6 +13,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/exchange_service.dart';
+import '../services/persistence_service.dart';
 import '../theme/app_themes.dart';
 
 // ── Frequenz-Resonanz Datenmodell ─────────────────────────
@@ -98,8 +100,13 @@ class _QuantumResearchScreenState extends State<QuantumResearchScreen>
   bool _deepScanActive = false;
   bool _gravityFieldActive = true;
   Timer? _scanTimer;
+  Timer? _autoSaveTimer;
   final List<String> _researchLog = [];
   int _quantumScore = 0;
+  bool _logLoaded = false;
+  final ScrollController _sysLogScrollCtrl = ScrollController();
+  String _txFilter = 'ALL';
+  String _sysFilter = 'ALL';
 
   // Frequency nodes — market resonance spectrum
   static const List<FrequencyNode> _freqNodes = [
@@ -139,19 +146,36 @@ class _QuantumResearchScreenState extends State<QuantumResearchScreen>
     _pulseCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1800))..repeat(reverse: true);
     _scanCtrl  = AnimationController(vsync: this, duration: const Duration(seconds: 3))..repeat();
     _portalCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 8))..repeat();
-    _tabCtrl = TabController(length: 4, vsync: this);
+    _tabCtrl = TabController(length: 6, vsync: this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final ex = context.read<ExchangeService>();
+      final ps = context.read<PersistenceService>();
       await ex.initialize();
       if (mounted) {
+        final saved = ps.researchLogs;
+        final savedScore = ps.quantumScore;
         setState(() {
-          _quantumScore = 847 + (ex.getPrice('BTC') > 0 ? 100 : 0);
-          _researchLog.add('[BOOT] Quantum Research Engine v39.0 initialisiert');
+          if (saved.isNotEmpty) {
+            _researchLog.addAll(saved);
+            _quantumScore = savedScore;
+          } else {
+            _quantumScore = 847 + (ex.getPrice('BTC') > 0 ? 100 : 0);
+          }
+          _researchLog.add('[BOOT] Quantum Research Engine v40.0 gestartet');
           _researchLog.add('[INIT] Frequenz-Matrix geladen — 8 Resonanz-Knoten aktiv');
           _researchLog.add('[SCAN] Raum-Zeit-Gitter stabilisiert');
-          _researchLog.add('[LIVE] Marktdaten-Synchronisation → ExchangeService');
+          _researchLog.add('[LIVE] Marktdaten-Synchronisation aktiv');
+          _logLoaded = true;
+        });
+        await ps.saveResearchLog(_researchLog, _quantumScore);
+        ps.addSystemLog('RESONANZ',
+            'QuantumResearchScreen v40 initialisiert — Score: \$_quantumScore',
+            level: SysLogLevel.success);
+        _autoSaveTimer = Timer.periodic(const Duration(seconds: 90), (_) {
+          if (!mounted) return;
+          ps.saveResearchLog(_researchLog, _quantumScore);
         });
       }
     });
@@ -166,16 +190,20 @@ class _QuantumResearchScreenState extends State<QuantumResearchScreen>
     _portalCtrl.dispose();
     _tabCtrl.dispose();
     _scanTimer?.cancel();
+    _autoSaveTimer?.cancel();
+    _sysLogScrollCtrl.dispose();
     super.dispose();
   }
 
   void _startDeepScan() {
     if (_deepScanActive) return;
+    final ps = context.read<PersistenceService>();
     setState(() {
       _deepScanActive = true;
       _scanProgress = 0.0;
       _researchLog.add('[DEEP SCAN] Initiiere Quanten-Tiefenscan...');
     });
+    ps.addSystemLog('FREQUENZ', 'Deep-Scan gestartet', level: SysLogLevel.info);
     _scanTimer?.cancel();
     _scanTimer = Timer.periodic(const Duration(milliseconds: 120), (t) {
       if (!mounted) { t.cancel(); return; }
@@ -188,9 +216,23 @@ class _QuantumResearchScreenState extends State<QuantumResearchScreen>
           _researchLog.add('[DEEP SCAN] ✓ Analyse abgeschlossen — Score: +37 pts');
           _researchLog.add('[RESULT] Quanten-Kohärenz: ${(87 + _quantumScore % 10).clamp(0, 100)}%');
           t.cancel();
+          ps.saveResearchLog(_researchLog, _quantumScore);
+          ps.addSystemLog('RESONANZ', 'Deep-Scan abgeschlossen — Score: $_quantumScore',
+              level: SysLogLevel.success);
         }
       });
     });
+  }
+
+  void _addLog(String entry, {int scoreIncrement = 0, String sysCategory = 'SYSTEM'}) {
+    if (!mounted) return;
+    final ps = context.read<PersistenceService>();
+    setState(() {
+      _researchLog.add(entry);
+      if (scoreIncrement > 0) _quantumScore += scoreIncrement;
+    });
+    ps.addResearchLogEntry(entry, newScore: scoreIncrement > 0 ? _quantumScore : null);
+    ps.addSystemLog(sysCategory, entry);
   }
 
   // ── BUILD ────────────────────────────────────────────────
@@ -198,6 +240,7 @@ class _QuantumResearchScreenState extends State<QuantumResearchScreen>
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
     final ex = context.watch<ExchangeService>();
+    final ps = context.watch<PersistenceService>();
 
     return Scaffold(
       backgroundColor: p.background,
@@ -208,10 +251,12 @@ class _QuantumResearchScreenState extends State<QuantumResearchScreen>
             _buildQuantumBar(p),
             TabBar(
               controller: _tabCtrl,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
               indicatorColor: p.primary,
               indicatorWeight: 2,
-              labelStyle: GoogleFonts.orbitron(fontSize: 9, fontWeight: FontWeight.bold),
-              unselectedLabelStyle: GoogleFonts.orbitron(fontSize: 8),
+              labelStyle: GoogleFonts.orbitron(fontSize: 8, fontWeight: FontWeight.bold),
+              unselectedLabelStyle: GoogleFonts.orbitron(fontSize: 7),
               labelColor: p.primary,
               unselectedLabelColor: p.textSecondary,
               tabs: const [
@@ -219,6 +264,8 @@ class _QuantumResearchScreenState extends State<QuantumResearchScreen>
                 Tab(text: 'GRAVITATION'),
                 Tab(text: 'TIME GATE'),
                 Tab(text: 'DEEP LOG'),
+                Tab(text: 'SYSTEM LOG'),
+                Tab(text: 'TX HISTORY'),
               ],
             ),
             Expanded(
@@ -228,7 +275,9 @@ class _QuantumResearchScreenState extends State<QuantumResearchScreen>
                   _buildFrequencyTab(p, ex),
                   _buildGravityTab(p, ex),
                   _buildTimeGateTab(p, ex),
-                  _buildDeepLogTab(p),
+                  _buildDeepLogTab(p, ps),
+                  _buildSystemLogTab(p, ps),
+                  _buildTxHistoryTab(p, ex),
                 ],
               ),
             ),
@@ -882,10 +931,11 @@ class _QuantumResearchScreenState extends State<QuantumResearchScreen>
               final sel = idx == _selectedPortal;
               return Expanded(
                 child: GestureDetector(
-                  onTap: () => setState(() {
-                    _selectedPortal = idx;
-                    _researchLog.add('[PORTAL] ${portal.label} aktiviert — ${portal.period} Fenster');
-                  }),
+                  onTap: () {
+                    setState(() => _selectedPortal = idx);
+                    _addLog('[PORTAL] ${portal.label} aktiviert — ${portal.period} Fenster',
+                        sysCategory: 'GRAVITY');
+                  },
                   child: AnimatedBuilder(
                     animation: _pulseCtrl,
                     builder: (_, __) => Container(
@@ -1050,9 +1100,9 @@ class _QuantumResearchScreenState extends State<QuantumResearchScreen>
   }
 
   // ═══════════════════════════════════════════════════════
-  // TAB 4 — DEEP LOG
+  // TAB 4 — DEEP LOG (Research Log — persistent)
   // ═══════════════════════════════════════════════════════
-  Widget _buildDeepLogTab(QuantumPalette p) {
+  Widget _buildDeepLogTab(QuantumPalette p, PersistenceService ps) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1062,10 +1112,30 @@ class _QuantumResearchScreenState extends State<QuantumResearchScreen>
             _buildSpectrumTitle(p, 'QUANTUM RESEARCH LOG', Icons.terminal),
             const Spacer(),
             GestureDetector(
-              onTap: () => setState(() {
-                _researchLog.add('[USER] Manuelle Log-Einheit: ${DateTime.now().toIso8601String().substring(11, 19)}');
-                _quantumScore += 5;
-              }),
+              onTap: () async {
+                await ps.clearResearchLog();
+                setState(() {
+                  _researchLog.clear();
+                  _quantumScore = 847;
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFFFF3355).withValues(alpha: 0.4)),
+                  color: const Color(0xFFFF3355).withValues(alpha: 0.06),
+                ),
+                child: Text('CLR', style: GoogleFonts.orbitron(color: const Color(0xFFFF3355), fontSize: 8)),
+              ),
+            ),
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: () => _addLog(
+                '[USER] Manuelle Log-Einheit: ${DateTime.now().toIso8601String().substring(11, 19)}',
+                scoreIncrement: 5,
+                sysCategory: 'SYSTEM',
+              ),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -1076,6 +1146,29 @@ class _QuantumResearchScreenState extends State<QuantumResearchScreen>
                 child: Text('+ LOG', style: GoogleFonts.orbitron(color: const Color(0xFF00F0FF), fontSize: 8)),
               ),
             ),
+          ]),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 0, 14, 6),
+          child: Row(children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(4),
+                color: const Color(0xFF00FF88).withValues(alpha: 0.1),
+                border: Border.all(color: const Color(0xFF00FF88).withValues(alpha: 0.3)),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Container(width: 4, height: 4, decoration: const BoxDecoration(
+                  shape: BoxShape.circle, color: Color(0xFF00FF88))),
+                const SizedBox(width: 4),
+                Text('AUTO-SAVE AKTIV', style: GoogleFonts.orbitron(
+                    color: const Color(0xFF00FF88), fontSize: 7)),
+              ]),
+            ),
+            const SizedBox(width: 8),
+            Text('${_researchLog.length} Eintraege',
+                style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
           ]),
         ),
         Expanded(
@@ -1097,7 +1190,14 @@ class _QuantumResearchScreenState extends State<QuantumResearchScreen>
                       final entry = _researchLog[_researchLog.length - 1 - i];
                       final isError = entry.contains('[ERROR]');
                       final isResult = entry.contains('[RESULT]') || entry.contains('✓');
-                      final c = isError ? const Color(0xFFFF3355) : isResult ? const Color(0xFF00FF88) : const Color(0xFF00F0FF);
+                      final isUser = entry.contains('[USER]');
+                      final c = isError
+                          ? const Color(0xFFFF3355)
+                          : isResult
+                              ? const Color(0xFF00FF88)
+                              : isUser
+                                  ? const Color(0xFFF7931A)
+                                  : const Color(0xFF00F0FF);
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1111,6 +1211,322 @@ class _QuantumResearchScreenState extends State<QuantumResearchScreen>
           ),
         ),
       ],
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // TAB 5 — SYSTEM LOG (zentrale persistente Protokollierung)
+  // ═══════════════════════════════════════════════════════
+  Widget _buildSystemLogTab(QuantumPalette p, PersistenceService ps) {
+    final logs = ps.systemLogs.toList().reversed.toList();
+    final filtered = _sysFilter == 'ALL'
+        ? logs
+        : logs.where((l) => l.category == _sysFilter).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+          child: Row(children: [
+            _buildSpectrumTitle(p, 'SYSTEM LOG', Icons.monitor_heart),
+            const Spacer(),
+            Text('${logs.length}', style: GoogleFonts.orbitron(
+                color: const Color(0xFF9945FF), fontSize: 10, fontWeight: FontWeight.bold)),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () async => await ps.clearSystemLogs(),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFFFF3355).withValues(alpha: 0.4)),
+                  color: const Color(0xFFFF3355).withValues(alpha: 0.06),
+                ),
+                child: Text('CLR', style: GoogleFonts.orbitron(color: const Color(0xFFFF3355), fontSize: 8)),
+              ),
+            ),
+          ]),
+        ),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+          child: Row(
+            children: ['ALL', 'RESONANZ', 'FREQUENZ', 'GRAVITY', 'TX', 'WS', 'AI', 'SYSTEM', 'BANK']
+                .map((cat) {
+              final isActive = _sysFilter == cat;
+              const c = Color(0xFF9945FF);
+              return GestureDetector(
+                onTap: () => setState(() => _sysFilter = cat),
+                child: Container(
+                  margin: const EdgeInsets.only(right: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    color: c.withValues(alpha: isActive ? 0.2 : 0.05),
+                    border: Border.all(color: c.withValues(alpha: isActive ? 0.7 : 0.2)),
+                  ),
+                  child: Text(cat, style: GoogleFonts.orbitron(
+                      color: isActive ? c : p.textSecondary, fontSize: 7,
+                      fontWeight: isActive ? FontWeight.bold : FontWeight.normal)),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        Expanded(
+          child: filtered.isEmpty
+              ? Center(child: Text('Keine System-Events', style: GoogleFonts.spaceMono(
+                  color: const Color(0xFF9945FF).withValues(alpha: 0.4), fontSize: 10)))
+              : ListView.builder(
+                  controller: _sysLogScrollCtrl,
+                  itemCount: filtered.length,
+                  itemBuilder: (ctx, i) => _buildSysLogEntry(p, filtered[i]),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSysLogEntry(QuantumPalette p, SystemLogEntry entry) {
+    Color c;
+    switch (entry.level) {
+      case SysLogLevel.success: c = const Color(0xFF00FF88); break;
+      case SysLogLevel.warning: c = const Color(0xFFF7931A); break;
+      case SysLogLevel.error:   c = const Color(0xFFFF3355); break;
+      case SysLogLevel.quantum: c = const Color(0xFF9945FF); break;
+      default:                  c = const Color(0xFF00F0FF);
+    }
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 0, 14, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: c.withValues(alpha: 0.04),
+        border: Border.all(color: c.withValues(alpha: 0.15)),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(4),
+            color: c.withValues(alpha: 0.12),
+          ),
+          child: Text(entry.category,
+              style: GoogleFonts.orbitron(color: c, fontSize: 6, fontWeight: FontWeight.bold)),
+        ),
+        const SizedBox(width: 7),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(entry.message,
+                style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 10, height: 1.3)),
+            const SizedBox(height: 2),
+            Row(children: [
+              Text(entry.prefix, style: GoogleFonts.spaceMono(color: c, fontSize: 8)),
+              const SizedBox(width: 4),
+              Text(
+                '${entry.timestamp.hour.toString().padLeft(2,'0')}:'
+                '${entry.timestamp.minute.toString().padLeft(2,'0')}:'
+                '${entry.timestamp.second.toString().padLeft(2,'0')}'
+                ' · ${entry.timestamp.day}.${entry.timestamp.month}.${entry.timestamp.year}',
+                style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 7),
+              ),
+            ]),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // TAB 6 — TX HISTORY (vollstaendige Transaktions-Historie)
+  // ═══════════════════════════════════════════════════════
+  Widget _buildTxHistoryTab(QuantumPalette p, ExchangeService ex) {
+    final allTx = ex.getLedger();
+    final txFilters = ['ALL', 'BUY', 'SELL', 'SWAP', 'SEND', 'RECEIVE', 'DEPOSIT'];
+    final currentTxFilter = _txFilter.startsWith('TX:')
+        ? _txFilter.substring(3)
+        : (_txFilter == 'ALL' ? 'ALL' : 'ALL');
+    final filtered = currentTxFilter == 'ALL'
+        ? allTx
+        : allTx.where((t) => t.typeLabel == currentTxFilter).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+          child: Row(children: [
+            _buildSpectrumTitle(p, 'TX HISTORY', Icons.receipt_long),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(6),
+                color: const Color(0xFF00FF88).withValues(alpha: 0.1),
+                border: Border.all(color: const Color(0xFF00FF88).withValues(alpha: 0.3)),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Container(width: 4, height: 4, decoration: const BoxDecoration(
+                    shape: BoxShape.circle, color: Color(0xFF00FF88))),
+                const SizedBox(width: 4),
+                Text('LIVE SYNC', style: GoogleFonts.orbitron(
+                    color: const Color(0xFF00FF88), fontSize: 7)),
+              ]),
+            ),
+          ]),
+        ),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+          child: Row(
+            children: txFilters.map((f) {
+              final isActive = currentTxFilter == f;
+              const c = Color(0xFF00FF88);
+              return GestureDetector(
+                onTap: () => setState(() => _txFilter = 'TX:$f'),
+                child: Container(
+                  margin: const EdgeInsets.only(right: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    color: c.withValues(alpha: isActive ? 0.2 : 0.05),
+                    border: Border.all(color: c.withValues(alpha: isActive ? 0.7 : 0.2)),
+                  ),
+                  child: Text(f, style: GoogleFonts.orbitron(
+                      color: isActive ? c : p.textSecondary, fontSize: 7,
+                      fontWeight: isActive ? FontWeight.bold : FontWeight.normal)),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        if (allTx.isNotEmpty) Padding(
+          padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+          child: Row(children: [
+            _txStat(p, 'TOTAL', '${allTx.length}', const Color(0xFF00F0FF)),
+            const SizedBox(width: 12),
+            _txStat(p, 'PNL', '\$${ex.getTotalPnL().toStringAsFixed(2)}',
+                ex.getTotalPnL() >= 0 ? const Color(0xFF00FF88) : const Color(0xFFFF3355)),
+            const SizedBox(width: 12),
+            _txStat(p, 'HEUTE', '\$${ex.getDailyPnL().toStringAsFixed(2)}',
+                ex.getDailyPnL() >= 0 ? const Color(0xFF00FF88) : const Color(0xFFFF3355)),
+          ]),
+        ),
+        Expanded(
+          child: filtered.isEmpty
+              ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(Icons.receipt_long, color: const Color(0xFF00F0FF).withValues(alpha: 0.3), size: 40),
+                  const SizedBox(height: 12),
+                  Text('Keine Transaktionen', style: GoogleFonts.orbitron(
+                      color: const Color(0xFF00F0FF).withValues(alpha: 0.4), fontSize: 11)),
+                  const SizedBox(height: 6),
+                  Text('Starte Trading um die History zu befuellen',
+                      style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 10)),
+                ]))
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                  itemCount: filtered.length,
+                  itemBuilder: (_, i) {
+                    final tx = filtered[filtered.length - 1 - i];
+                    return _buildTxRow(p, tx, ex);
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _txStat(QuantumPalette p, String label, String value, Color c) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(value, style: GoogleFonts.orbitron(color: c, fontSize: 10, fontWeight: FontWeight.bold)),
+      Text(label, style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 7)),
+    ]);
+  }
+
+  Widget _buildTxRow(QuantumPalette p, QTransaction tx, ExchangeService ex) {
+    Color typeColor;
+    IconData typeIcon;
+    switch (tx.type) {
+      case TxType.buy:      typeColor = const Color(0xFF00FF88); typeIcon = Icons.arrow_downward; break;
+      case TxType.sell:     typeColor = const Color(0xFFFF3355); typeIcon = Icons.arrow_upward;   break;
+      case TxType.swap:     typeColor = const Color(0xFF00F0FF); typeIcon = Icons.swap_horiz;     break;
+      case TxType.send:     typeColor = const Color(0xFFF7931A); typeIcon = Icons.send;           break;
+      case TxType.receive:  typeColor = const Color(0xFF9945FF); typeIcon = Icons.download;       break;
+      case TxType.deposit:  typeColor = const Color(0xFF00FF88); typeIcon = Icons.add_circle;     break;
+      case TxType.withdraw: typeColor = const Color(0xFFFF6B35); typeIcon = Icons.remove_circle;  break;
+      default:              typeColor = const Color(0xFF00F0FF); typeIcon = Icons.circle;         break;
+    }
+    final statusColor = tx.status == TxStatus.completed
+        ? const Color(0xFF00FF88)
+        : tx.status == TxStatus.failed
+            ? const Color(0xFFFF3355)
+            : const Color(0xFFF7931A);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        color: typeColor.withValues(alpha: 0.04),
+        border: Border.all(color: typeColor.withValues(alpha: 0.2)),
+      ),
+      child: Row(children: [
+        Container(
+          width: 34, height: 34,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: typeColor.withValues(alpha: 0.12),
+            border: Border.all(color: typeColor.withValues(alpha: 0.35)),
+          ),
+          child: Icon(typeIcon, color: typeColor, size: 16),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Text(tx.typeLabel, style: GoogleFonts.orbitron(
+                  color: typeColor, fontSize: 9, fontWeight: FontWeight.bold)),
+              const SizedBox(width: 6),
+              Text('${tx.fromAsset}→${tx.toAsset}',
+                  style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color: statusColor.withValues(alpha: 0.12),
+                ),
+                child: Text(tx.statusLabel,
+                    style: GoogleFonts.orbitron(color: statusColor, fontSize: 6)),
+              ),
+            ]),
+            const SizedBox(height: 3),
+            Row(children: [
+              Text(
+                '${tx.fromAmount.toStringAsFixed(tx.fromAmount < 1 ? 6 : 4)} ${tx.fromAsset}',
+                style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 9, fontWeight: FontWeight.bold),
+              ),
+              if (tx.price > 0) ...[
+                const SizedBox(width: 6),
+                Text('@\$${tx.price.toStringAsFixed(tx.price > 100 ? 0 : 2)}',
+                    style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
+              ],
+              const Spacer(),
+              Text(
+                '${tx.createdAt.day}.${tx.createdAt.month} '
+                '${tx.createdAt.hour.toString().padLeft(2,'0')}:${tx.createdAt.minute.toString().padLeft(2,'0')}',
+                style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 7),
+              ),
+            ]),
+            if (tx.pnl != 0)
+              Text(
+                'PnL: ${tx.pnl >= 0 ? '+' : ''}\$${tx.pnl.toStringAsFixed(2)}',
+                style: GoogleFonts.spaceMono(
+                    color: tx.pnl >= 0 ? const Color(0xFF00FF88) : const Color(0xFFFF3355),
+                    fontSize: 8),
+              ),
+          ]),
+        ),
+      ]),
     );
   }
 }
