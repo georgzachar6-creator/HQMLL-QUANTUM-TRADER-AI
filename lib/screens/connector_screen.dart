@@ -515,12 +515,14 @@ class _ConnectorScreenState extends State<ConnectorScreen>
     final feeds = [
       {
         'id': 'coingecko', 'name': 'CoinGecko', 'icon': '🦎',
-        'color': const Color(0xFF8DC63F), 'type': 'REST API',
+        'color': const Color(0xFF8DC63F), 'type': 'REST + WS',
         'status': lp.geckoActive, 'interval': '45s',
         'features': ['Marktpreise', 'OHLCV', 'Sparklines', 'Trending'],
         'apiNeeded': false, 'plan': 'Free / Pro',
         'rateLimit': '10-50 req/min',
         'docs': 'api.coingecko.com',
+        'restUrl': 'https://api.coingecko.com/api/v3',
+        'wsUrl': 'wss://stream.coingecko.com/api/v3/ws',
       },
       {
         'id': 'coinmarketcap', 'name': 'CoinMarketCap', 'icon': '📊',
@@ -530,6 +532,19 @@ class _ConnectorScreenState extends State<ConnectorScreen>
         'apiNeeded': true, 'plan': 'Basic Free / Pro',
         'rateLimit': '333 req/day (free)',
         'docs': 'pro.coinmarketcap.com',
+        'restUrl': 'https://pro-api.coinmarketcap.com/v1',
+        'wsUrl': '',
+      },
+      {
+        'id': 'binancews', 'name': 'Binance WebSocket', 'icon': '⚡',
+        'color': const Color(0xFFF3BA2F), 'type': 'WebSocket',
+        'status': true, 'interval': 'Echtzeit',
+        'features': ['Ticker 24h', 'Orderbook', 'Klines', 'Trades', 'Depth'],
+        'apiNeeded': false, 'plan': 'Kostenlos',
+        'rateLimit': '1200 Nachrichten/min',
+        'docs': 'binance-docs.github.io',
+        'restUrl': 'https://api.binance.com/api/v3',
+        'wsUrl': 'wss://stream.binance.com:9443/ws',
       },
       {
         'id': 'tradingview', 'name': 'TradingView', 'icon': '📈',
@@ -539,6 +554,41 @@ class _ConnectorScreenState extends State<ConnectorScreen>
         'apiNeeded': false, 'plan': 'Widget (kostenlos)',
         'rateLimit': 'Unbegrenzt',
         'docs': 'tradingview.com/widget',
+        'restUrl': 'https://symbol-search.tradingview.com/symbol_search',
+        'wsUrl': '',
+      },
+      {
+        'id': 'cryptocompare', 'name': 'CryptoCompare', 'icon': '🔗',
+        'color': const Color(0xFF00897B), 'type': 'REST + WS',
+        'status': false, 'interval': '30s',
+        'features': ['OHLCV Historisch', 'News', 'Social Data', 'Mining'],
+        'apiNeeded': true, 'plan': 'Free / Hanna Pro',
+        'rateLimit': '100K req/Monat (free)',
+        'docs': 'min-api.cryptocompare.com',
+        'restUrl': 'https://min-api.cryptocompare.com/data',
+        'wsUrl': 'wss://streamer.cryptocompare.com',
+      },
+      {
+        'id': 'kraken_pub', 'name': 'Kraken Public API', 'icon': '🐙',
+        'color': const Color(0xFF5741D9), 'type': 'REST + WS',
+        'status': false, 'interval': '10s',
+        'features': ['Ticker', 'Orderbook', 'Trades', 'OHLCV', 'Assets'],
+        'apiNeeded': false, 'plan': 'Kostenlos (public)',
+        'rateLimit': '15 req/s',
+        'docs': 'docs.kraken.com/api',
+        'restUrl': 'https://api.kraken.com/0/public',
+        'wsUrl': 'wss://ws.kraken.com/v2',
+      },
+      {
+        'id': 'cloudflare', 'name': 'Cloudflare Workers AI', 'icon': '☁️',
+        'color': const Color(0xFFF38020), 'type': 'Edge API',
+        'status': false, 'interval': 'On-Demand',
+        'features': ['Edge Computing', 'KV Store', 'D1 Database', 'AI Inference'],
+        'apiNeeded': true, 'plan': 'Free / Workers Paid',
+        'rateLimit': '100K Anfragen/Tag (free)',
+        'docs': 'developers.cloudflare.com',
+        'restUrl': 'https://api.cloudflare.com/client/v4',
+        'wsUrl': 'wss://[workers].workers.dev',
       },
     ];
 
@@ -549,8 +599,110 @@ class _ConnectorScreenState extends State<ConnectorScreen>
         const SizedBox(height: 8),
         ...feeds.map((feed) => _buildDataFeedCard(p, feed, lp)),
         const SizedBox(height: 16),
+        _buildCloudflareSection(p),
+        const SizedBox(height: 8),
         _buildDataSourceGuide(p),
       ],
+    );
+  }
+
+  // ── CLOUDFLARE SECTION ────────────────────────────────────
+  Widget _buildCloudflareSection(dynamic p) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFF38020).withValues(alpha: 0.12),
+            const Color(0xFF2C7EFF).withValues(alpha: 0.08),
+          ],
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFFF38020).withValues(alpha: 0.3),
+        ),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const Text('☁️', style: TextStyle(fontSize: 22)),
+          const SizedBox(width: 10),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('CLOUDFLARE INTEGRATION',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: p.accent2)),
+            Text('Edge Computing · Workers · KV · D1 Database',
+              style: TextStyle(fontSize: 10, color: p.textSecondary)),
+          ]),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+            ),
+            child: const Text('KONFIGURIERBAR',
+              style: TextStyle(fontSize: 9, color: Colors.orange, fontWeight: FontWeight.bold)),
+          ),
+        ]),
+        const SizedBox(height: 12),
+        // Cloudflare API Endpoints
+        ...[
+          ('Workers API', 'https://api.cloudflare.com/client/v4/accounts/{id}/workers/scripts', 'REST'),
+          ('Workers AI', 'https://api.cloudflare.com/client/v4/accounts/{id}/ai/run/@cf/meta/llama-3.1-8b', 'AI'),
+          ('KV Storage', 'https://api.cloudflare.com/client/v4/accounts/{id}/storage/kv/namespaces', 'KV'),
+          ('D1 Database', 'https://api.cloudflare.com/client/v4/accounts/{id}/d1/database', 'DB'),
+          ('Pages Deploy', 'https://api.cloudflare.com/client/v4/accounts/{id}/pages/projects', 'CI/CD'),
+          ('Turnstile', 'https://challenges.cloudflare.com/turnstile/v0/siteverify', 'Security'),
+        ].map((e) {
+          final (name, url, tag) = e;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF38020).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(tag, style: const TextStyle(fontSize: 8, color: Color(0xFFF38020), fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '$name: ${url.length > 45 ? '${url.substring(0, 45)}...' : url}',
+                  style: TextStyle(fontSize: 9.5, color: p.textSecondary),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              GestureDetector(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: url));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('$name URL kopiert'),
+                      duration: const Duration(seconds: 1),
+                      backgroundColor: const Color(0xFFF38020),
+                    ),
+                  );
+                },
+                child: Icon(Icons.copy, size: 12, color: p.textSecondary),
+              ),
+            ]),
+          );
+        }),
+        const Divider(height: 16),
+        Row(children: [
+          Icon(Icons.info_outline, size: 13, color: p.textSecondary),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'API-Token benötigt: Cloudflare Dashboard → My Profile → API Tokens',
+              style: TextStyle(fontSize: 9, color: p.textSecondary),
+            ),
+          ),
+        ]),
+      ]),
     );
   }
 
@@ -637,6 +789,65 @@ class _ConnectorScreenState extends State<ConnectorScreen>
             )).toList(),
           ),
         ),
+        // Endpoints display
+        if ((feed['restUrl'] as String? ?? '').isNotEmpty || (feed['wsUrl'] as String? ?? '').isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 6),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: color.withValues(alpha: 0.1)),
+              ),
+              child: Column(children: [
+                if ((feed['restUrl'] as String? ?? '').isNotEmpty)
+                  Row(children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(3)),
+                      child: Text('REST', style: TextStyle(fontSize: 8, color: color, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(child: Text(feed['restUrl'] as String,
+                      style: TextStyle(fontSize: 8.5, color: p.textSecondary), overflow: TextOverflow.ellipsis)),
+                    GestureDetector(
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: feed['restUrl'] as String));
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text('REST URL kopiert'),
+                          duration: const Duration(seconds: 1),
+                        ));
+                      },
+                      child: Icon(Icons.copy, size: 11, color: p.textSecondary),
+                    ),
+                  ]),
+                if ((feed['restUrl'] as String? ?? '').isNotEmpty && (feed['wsUrl'] as String? ?? '').isNotEmpty)
+                  const SizedBox(height: 4),
+                if ((feed['wsUrl'] as String? ?? '').isNotEmpty)
+                  Row(children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(3)),
+                      child: Text('WS', style: TextStyle(fontSize: 8, color: Colors.green.shade400, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(child: Text(feed['wsUrl'] as String,
+                      style: TextStyle(fontSize: 8.5, color: p.textSecondary), overflow: TextOverflow.ellipsis)),
+                    GestureDetector(
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: feed['wsUrl'] as String));
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text('WS URL kopiert'),
+                          duration: const Duration(seconds: 1),
+                        ));
+                      },
+                      child: Icon(Icons.copy, size: 11, color: p.textSecondary),
+                    ),
+                  ]),
+              ]),
+            ),
+          ),
         // Details
         Container(
           padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),

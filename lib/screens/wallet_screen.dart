@@ -7,7 +7,10 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/quantum_eye_widget.dart';
 import '../widgets/asset_icon_widget.dart';
+import '../widgets/coin_logos.dart';
 import '../services/exchange_service.dart';
+import '../services/wallet_service.dart';
+import '../services/auto_save_service.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -51,11 +54,21 @@ class _WalletScreenState extends State<WalletScreen>
     _pulseCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1800))
       ..repeat(reverse: true);
-    // v33.0: ExchangeService initialisieren damit live Preise sofort in _buildAssetCard verfügbar
+    // v41: WalletService + ExchangeService initialisieren
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final ex = context.read<ExchangeService>();
       await ex.initialize();
+      // Sync live prices to WalletService for USD values
+      if (mounted) {
+        final ws = context.read<WalletService>();
+        final prices = <String, double>{};
+        for (final sym in ['BTC','ETH','SOL','BNB','USDT','ADA','AVAX','MATIC','DOT','XRP']) {
+          final p2 = ex.getPrice(sym);
+          if (p2 > 0) prices[sym] = p2;
+        }
+        if (prices.isNotEmpty) await ws.updateAllBalancesFromPrices(prices);
+      }
     });
   }
 
@@ -71,8 +84,8 @@ class _WalletScreenState extends State<WalletScreen>
   Widget build(BuildContext context) {
     final tp = context.watch<ThemeProvider>();
     final p = tp.palette;
-    // v33.0: ExchangeService watch für reaktive live Preise in _buildAssetCard
     context.watch<ExchangeService>();
+    final ws = context.watch<WalletService>();
 
     return Scaffold(
       backgroundColor: p.background,

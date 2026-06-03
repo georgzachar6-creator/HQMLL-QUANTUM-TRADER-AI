@@ -1,6 +1,7 @@
 // ============================================================
-// MARKET SCREEN v3 – Quantum Trader
+// MARKET SCREEN v41 – Quantum Trader
 // Live Prices · WebSocket · CMC · CoinGecko · TradingView
+// v41: MarketService persistent watchlist + alerts
 // ============================================================
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -10,9 +11,12 @@ import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/live_price_provider.dart';
 import '../services/exchange_service.dart';
+import '../services/market_service.dart';
+import '../services/auto_save_service.dart';
 import '../theme/app_themes.dart';
 import '../widgets/tradingview_widget.dart';
 import '../widgets/crypto_icon.dart';
+import '../widgets/coin_logos.dart';
 import '../widgets/quantum_coin_tile.dart';
 import '../services/websocket_service.dart';
 
@@ -37,8 +41,8 @@ class _MarketScreenState extends State<MarketScreen>
   String _searchQuery = '';
   bool _showSearch = false;
 
-  // Watchlist
-  final Set<String> _watchlist = {'BTC', 'ETH', 'SOL', 'AVAX', 'BNB'};
+  // Watchlist — backed by MarketService (persistent), fallback local set
+  final Set<String> _localWatchlist = {'BTC', 'ETH', 'SOL', 'AVAX', 'BNB'};
 
   // Flash animation for price changes
   final Map<String, Color> _flashColors = {};
@@ -56,10 +60,18 @@ class _MarketScreenState extends State<MarketScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final ex = context.read<ExchangeService>();
       await ex.initialize();
-      // LivePriceProvider als Sekundär-Quelle für Market-Metadaten (rank, sparkline, mcap)
+      // LivePriceProvider als Sekundär-Quelle für Market-Metadaten
       if (mounted) {
         final lp = context.read<LivePriceProvider>();
         await lp.initialize();
+        // Sync local watchlist from MarketService
+        final ms = context.read<MarketService>();
+        if (ms.watchlist.isNotEmpty && mounted) {
+          setState(() {
+            _localWatchlist.clear();
+            for (final e in ms.watchlist) { _localWatchlist.add(e.symbol); }
+          });
+        }
       }
     });
 
@@ -97,10 +109,9 @@ class _MarketScreenState extends State<MarketScreen>
   @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
-    // ExchangeService als primäre Preisquelle (Binance WS + CoinGecko)
     final ex = context.watch<ExchangeService>();
     final lp = context.watch<LivePriceProvider>();
-    // ExchangeService live Ticks → Flash-Animation + LivePriceProvider-Override
+    context.watch<MarketService>(); // reactive rebuild on watchlist changes
     ex.ticks.forEach((sym, tick) {
       if (tick.price > 0) _onNewPrice(sym, tick.price);
     });
@@ -460,7 +471,7 @@ class _MarketScreenState extends State<MarketScreen>
       case 1: coins = lp.topGainers; break;
       case 2: coins = lp.topLosers; break;
       case 3: coins = lp.topByVolume; break;
-      case 4: coins = lp.sortedByRank.where((q) => _watchlist.contains(q.symbol)).toList(); break;
+      case 4: coins = lp.sortedByRank.where((q) => _localWatchlist.contains(q.symbol)).toList(); break;
       default: coins = lp.sortedByRank; break;
     }
 
@@ -567,7 +578,7 @@ class _MarketScreenState extends State<MarketScreen>
   Widget _buildCoinRow(QuantumPalette p, LivePriceProvider lp, LiveQuote q, int idx) {
     _onNewPrice(q.symbol, q.price);
     final flash = _flashColors[q.symbol];
-    final isWatched = _watchlist.contains(q.symbol);
+    final isWatched = _localWatchlist.contains(q.symbol);
     final pctColor = q.isPositive ? p.positive : p.negative;
 
     return GestureDetector(
@@ -663,9 +674,19 @@ class _MarketScreenState extends State<MarketScreen>
               onTap: () {
                 HapticFeedback.lightImpact();
                 setState(() {
-                  if (isWatched) _watchlist.remove(q.symbol);
-                  else _watchlist.add(q.symbol);
+                  if (isWatched) _localWatchlist.remove(q.symbol);
+                  else _localWatchlist.add(q.symbol);
                 });
+                // Persist to MarketService
+                final ms = context.read<MarketService>();
+                final as2 = context.read<AutoSaveService>();
+                if (isWatched) {
+                  ms.removeFromWatchlist(q.symbol);
+                  as2.onWatchlistChanged(q.symbol, false);
+                } else {
+                  ms.addToWatchlist(q.symbol, q.name);
+                  as2.onWatchlistChanged(q.symbol, true);
+                }
               },
               child: SizedBox(
                 width: 24,

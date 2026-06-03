@@ -9,6 +9,10 @@ import 'services/secure_vault_service.dart';
 import 'services/auth_service.dart';
 import 'services/exchange_service.dart';
 import 'services/persistence_service.dart';
+import 'services/wallet_service.dart';
+import 'services/payment_service.dart';
+import 'services/market_service.dart';
+import 'services/auto_save_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/main_scaffold.dart';
@@ -20,11 +24,32 @@ void main() async {
     statusBarIconBrightness: Brightness.light,
   ));
 
-  // Initialize services
-  final authService = AuthService();
-  final exchangeService = ExchangeService();
+  // ── Initialize core services ─────────────────────────────
+  final authService        = AuthService();
+  final exchangeService    = ExchangeService();
+  final persistenceService = PersistenceService();
+  final walletService      = WalletService();
+  final paymentService     = PaymentService();
+  final marketService      = MarketService();
+  final autoSaveService    = AutoSaveService();
+
   await authService.initialize();
   await exchangeService.initialize();
+
+  // ── Boot AutoSaveService with all linked services ────────
+  await autoSaveService.initialize(
+    persistenceService: persistenceService,
+    walletService: walletService,
+    paymentService: paymentService,
+    marketService: marketService,
+  );
+
+  // ── Log app startup ──────────────────────────────────────
+  persistenceService.addSystemLog(
+    'SYSTEM',
+    'HQMLL Quantum Trader v41 gestartet — AutoSave aktiv (${autoSaveService.intervalLabel})',
+    level: SysLogLevel.quantum,
+  );
 
   runApp(
     MultiProvider(
@@ -34,9 +59,13 @@ void main() async {
         ChangeNotifierProvider(create: (_) => LiveMarketService()),
         ChangeNotifierProvider(create: (_) => CoinMarketCapService()),
         ChangeNotifierProvider(create: (_) => SecureVaultService()),
-        ChangeNotifierProvider(create: (_) => PersistenceService()),
+        ChangeNotifierProvider.value(value: persistenceService),
         ChangeNotifierProvider.value(value: authService),
         ChangeNotifierProvider.value(value: exchangeService),
+        ChangeNotifierProvider.value(value: walletService),
+        ChangeNotifierProvider.value(value: paymentService),
+        ChangeNotifierProvider.value(value: marketService),
+        ChangeNotifierProvider.value(value: autoSaveService),
       ],
       child: const HQMLLApp(),
     ),
@@ -48,7 +77,7 @@ class HQMLLApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tp = context.watch<ThemeProvider>();
+    final tp   = context.watch<ThemeProvider>();
     final auth = context.watch<AuthService>();
     return MaterialApp(
       title: 'HQMLL Quantum Trader',
@@ -62,4 +91,3 @@ class HQMLLApp extends StatelessWidget {
     );
   }
 }
-
