@@ -6,6 +6,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/theme_provider.dart';
 import '../services/exchange_service.dart';
+import '../services/wallet_service.dart';
+import '../services/auto_save_service.dart';
+import '../widgets/coin_logos.dart';
 import 'oracle_screen.dart';
 import '../widgets/crypto_icon.dart';
 
@@ -97,11 +100,19 @@ class _PortfolioScreenState extends State<PortfolioScreen>
     _chatCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 300));
 
-    // v33.0: Sofort beim ersten Frame live Preise laden
+    // v42: Sofort beim ersten Frame live Preise + WalletService laden
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final ex = context.read<ExchangeService>();
       setState(() => _syncPortfolioFromExchange(ex));
+      // Sync WalletService balances with current exchange prices
+      final ws = context.read<WalletService>();
+      final prices = <String, double>{};
+      for (final sym in ['BTC','ETH','SOL','BNB','USDT','ADA','AVAX','MATIC']) {
+        final p2 = ex.getPrice(sym);
+        if (p2 > 0) prices[sym] = p2;
+      }
+      if (prices.isNotEmpty) ws.updateAllBalancesFromPrices(prices);
     });
 
     // Prüfe live Preise aus ExchangeService (alle 3s aktualisieren)

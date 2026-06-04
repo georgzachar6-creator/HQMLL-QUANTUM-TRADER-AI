@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/theme_provider.dart';
 import '../services/persistence_service.dart';
+import '../services/auto_save_service.dart';
 import '../theme/app_themes.dart';
 import '../widgets/quantum_eye_widget.dart';
 import 'quantum_monitor_screen.dart';
@@ -12,8 +13,10 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tp = context.watch<ThemeProvider>();
-    final p = tp.palette;
+    final tp  = context.watch<ThemeProvider>();
+    final p   = tp.palette;
+    final as2 = context.watch<AutoSaveService>();
+    final ps  = context.read<PersistenceService>();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(12),
@@ -29,9 +32,9 @@ class SettingsScreen extends StatelessWidget {
           _buildThemeSelector(context, tp, p),
           const SizedBox(height: 8),
           _buildCard(p, children: [
-            _SwitchTile(label: 'Quantum-Animationen', subtitle: 'Pulsierende Auge & Wellen-Effekte', value: tp.quantumAnimations, onChanged: tp.setQuantumAnimations, icon: Icons.auto_awesome, palette: p),
+            _SwitchTile(label: 'Quantum-Animationen', subtitle: 'Pulsierende Auge & Wellen-Effekte', value: tp.quantumAnimations, onChanged: (v) { tp.setQuantumAnimations(v); as2.onSettingChanged('Quantum-Animationen', v); ps.addSystemLog('SETTINGS', 'Quantum-Animationen: \$v', level: SysLogLevel.info); }, icon: Icons.auto_awesome, palette: p),
             _DividerLine(p: p),
-            _SwitchTile(label: 'Dark Charts', subtitle: 'Dunkler Hintergrund für Charts', value: tp.darkCharts, onChanged: tp.setDarkCharts, icon: Icons.bar_chart, palette: p),
+            _SwitchTile(label: 'Dark Charts', subtitle: 'Dunkler Hintergrund für Charts', value: tp.darkCharts, onChanged: (v) { tp.setDarkCharts(v); as2.onSettingChanged('Dark-Charts', v); ps.addSystemLog('SETTINGS', 'Dark-Charts: \$v', level: SysLogLevel.info); }, icon: Icons.bar_chart, palette: p),
             _DividerLine(p: p),
             _SliderTile(label: 'Schriftgröße', value: tp.fontSize, min: 0.8, max: 1.4, divisions: 6, onChanged: tp.setFontSize, icon: Icons.text_fields, palette: p, displayValue: '${(tp.fontSize * 100).toInt()}%'),
           ]),
@@ -45,14 +48,14 @@ class SettingsScreen extends StatelessWidget {
               label: 'Sprache', icon: Icons.language, palette: p,
               value: tp.language,
               items: const ['Deutsch', 'English', 'Русский', 'Español', '中文'],
-              onChanged: tp.setLanguage,
+              onChanged: (v) { tp.setLanguage(v); as2.onSettingChanged('Sprache', v); ps.addSystemLog('SETTINGS', 'Sprache geaendert: \$v', level: SysLogLevel.info); },
             ),
             _DividerLine(p: p),
             _DropdownTile(
               label: 'Währung', icon: Icons.attach_money, palette: p,
               value: tp.currency,
               items: const ['USD', 'EUR', 'GBP', 'BTC', 'ETH'],
-              onChanged: tp.setCurrency,
+              onChanged: (v) { tp.setCurrency(v); as2.onSettingChanged('Waehrung', v); ps.addSystemLog('SETTINGS', 'Waehrung: \$v', level: SysLogLevel.info); },
             ),
           ]),
           const SizedBox(height: 16),
@@ -61,9 +64,9 @@ class SettingsScreen extends StatelessWidget {
           _SectionTitle(title: 'DATEN & TRADING', icon: Icons.data_usage, palette: p),
           const SizedBox(height: 8),
           _buildCard(p, children: [
-            _SwitchTile(label: 'Live-Daten', subtitle: 'Echtzeit-Kurse & Quantum-Signale', value: tp.liveDataEnabled, onChanged: tp.setLiveDataEnabled, icon: Icons.stream, palette: p),
+            _SwitchTile(label: 'Live-Daten', subtitle: 'Echtzeit-Kurse & Quantum-Signale', value: tp.liveDataEnabled, onChanged: (v) { tp.setLiveDataEnabled(v); as2.onSettingChanged('Live-Daten', v); ps.addSystemLog('SETTINGS', 'Live-Daten: \$v', level: SysLogLevel.info); }, icon: Icons.stream, palette: p),
             _DividerLine(p: p),
-            _SwitchTile(label: 'Auto-Trading', subtitle: 'Emma führt Signale automatisch aus', value: tp.autoTrade, onChanged: tp.setAutoTrade, icon: Icons.smart_toy_outlined, palette: p),
+            _SwitchTile(label: 'Auto-Trading', subtitle: 'Emma führt Signale automatisch aus', value: tp.autoTrade, onChanged: (v) { tp.setAutoTrade(v); as2.onSettingChanged('Auto-Trading', v); ps.addSystemLog('SETTINGS', 'Auto-Trading: \$v', level: SysLogLevel.warning); }, icon: Icons.smart_toy_outlined, palette: p),
             _DividerLine(p: p),
             _SliderTile(label: 'Risiko-Level', value: tp.riskLevel, min: 0.1, max: 1.0, divisions: 9, onChanged: tp.setRiskLevel, icon: Icons.warning_amber_outlined, palette: p, displayValue: _riskLabel(tp.riskLevel)),
           ]),
@@ -73,9 +76,9 @@ class SettingsScreen extends StatelessWidget {
           _SectionTitle(title: 'SICHERHEIT', icon: Icons.security, palette: p),
           const SizedBox(height: 8),
           _buildCard(p, children: [
-            _SwitchTile(label: 'Biometrische Authentifizierung', subtitle: 'Face-ID / Fingerabdruck', value: tp.biometricAuth, onChanged: tp.setBiometricAuth, icon: Icons.fingerprint, palette: p),
+            _SwitchTile(label: 'Biometrische Authentifizierung', subtitle: 'Face-ID / Fingerabdruck', value: tp.biometricAuth, onChanged: (v) { tp.setBiometricAuth(v); as2.onSettingChanged('Biometrie', v); ps.addSystemLog('SETTINGS', 'Biometrie: \$v', level: SysLogLevel.info); }, icon: Icons.fingerprint, palette: p),
             _DividerLine(p: p),
-            _SwitchTile(label: 'Zwei-Faktor-Auth (2FA)', subtitle: 'TOTP Authenticator App', value: tp.twoFactorAuth, onChanged: tp.setTwoFactorAuth, icon: Icons.lock_outlined, palette: p),
+            _SwitchTile(label: 'Zwei-Faktor-Auth (2FA)', subtitle: 'TOTP Authenticator App', value: tp.twoFactorAuth, onChanged: (v) { tp.setTwoFactorAuth(v); as2.onSettingChanged('2FA', v); ps.addSystemLog('SETTINGS', '2FA: \$v', level: SysLogLevel.info); }, icon: Icons.lock_outlined, palette: p),
             _DividerLine(p: p),
             _InfoTile(label: 'PIN ändern', subtitle: 'Eigentümer-PIN aktualisieren', icon: Icons.pin_outlined, palette: p, onTap: () => _showPinDialog(context, p)),
             _DividerLine(p: p),
@@ -87,9 +90,9 @@ class SettingsScreen extends StatelessWidget {
           _SectionTitle(title: 'BENACHRICHTIGUNGEN', icon: Icons.notifications_outlined, palette: p),
           const SizedBox(height: 8),
           _buildCard(p, children: [
-            _SwitchTile(label: 'Push-Benachrichtigungen', subtitle: 'Signale & System-Updates', value: tp.notificationsEnabled, onChanged: tp.setNotificationsEnabled, icon: Icons.notifications, palette: p),
+            _SwitchTile(label: 'Push-Benachrichtigungen', subtitle: 'Signale & System-Updates', value: tp.notificationsEnabled, onChanged: (v) { tp.setNotificationsEnabled(v); as2.onSettingChanged('Benachrichtigungen', v); ps.addSystemLog('SETTINGS', 'Push-Notifications: \$v', level: SysLogLevel.info); }, icon: Icons.notifications, palette: p),
             _DividerLine(p: p),
-            _SwitchTile(label: 'Sound & Vibration', subtitle: 'Audio-Feedback bei Signalen', value: tp.soundEnabled, onChanged: tp.setSoundEnabled, icon: Icons.volume_up_outlined, palette: p),
+            _SwitchTile(label: 'Sound & Vibration', subtitle: 'Audio-Feedback bei Signalen', value: tp.soundEnabled, onChanged: (v) { tp.setSoundEnabled(v); as2.onSettingChanged('Sound', v); ps.addSystemLog('SETTINGS', 'Sound: \$v', level: SysLogLevel.info); }, icon: Icons.volume_up_outlined, palette: p),
             _DividerLine(p: p),
             _InfoTile(label: 'Benachrichtigungstypen', subtitle: 'Emma-Signale, Mining, Portfolio', icon: Icons.tune, palette: p, onTap: () {}),
           ]),
@@ -141,11 +144,17 @@ class SettingsScreen extends StatelessWidget {
           _buildKrealogikCard(context, p, tp),
           const SizedBox(height: 16),
 
+          // ══════ AUTO-SAVE STATUS ══════
+          _SectionTitle(title: 'AUTO-SAVE · DATENPERSISTENZ', icon: Icons.save_outlined, palette: p),
+          const SizedBox(height: 8),
+          _buildAutoSaveCard(context, p, as2, ps),
+          const SizedBox(height: 16),
+
           // SECTION: Über
           _SectionTitle(title: 'ÜBER HQMLL', icon: Icons.info_outline, palette: p),
           const SizedBox(height: 8),
           _buildCard(p, children: [
-            _InfoTile(label: 'Version', subtitle: 'HQMLL Quantum v1.0.0 · Enterprise', icon: Icons.new_releases_outlined, palette: p, onTap: () {}),
+            _InfoTile(label: 'Version', subtitle: 'HQMLL Quantum v41.0 · Enterprise', icon: Icons.new_releases_outlined, palette: p, onTap: () {}),
             _DividerLine(p: p),
             _InfoTile(label: 'Eigentümer', subtitle: 'Grigori Saks · Ultra-Vertraulich', icon: Icons.person_outline, palette: p, onTap: () {}),
             _DividerLine(p: p),
@@ -302,6 +311,147 @@ class SettingsScreen extends StatelessWidget {
         border: Border.all(color: p.primary.withValues(alpha: 0.15)),
       ),
       child: Column(children: children),
+    );
+  }
+
+  // ══ AUTO-SAVE STATUS CARD ══
+  Widget _buildAutoSaveCard(BuildContext context, dynamic p, AutoSaveService as2, PersistenceService ps) {
+    final intervals = [10, 30, 60, 120, 300];
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            as2.autoSaveOn
+                ? const Color(0xFF00FF88).withValues(alpha: 0.08)
+                : p.surface,
+            p.surface,
+          ],
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: as2.autoSaveOn
+              ? const Color(0xFF00FF88).withValues(alpha: 0.3)
+              : p.primary.withValues(alpha: 0.15),
+        ),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Status header
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
+          child: Row(children: [
+            Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: (as2.autoSaveOn ? const Color(0xFF00FF88) : p.textSecondary).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                as2.state.isSaving ? Icons.save_alt : Icons.cloud_done_outlined,
+                color: as2.autoSaveOn ? const Color(0xFF00FF88) : p.textSecondary,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(
+                as2.state.isSaving ? 'SPEICHERN...' : as2.statusText,
+                style: GoogleFonts.spaceMono(
+                  color: as2.autoSaveOn ? const Color(0xFF00FF88) : p.textSecondary,
+                  fontSize: 12, fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                'Saves: ${as2.state.saveCount} | Zuletzt: ${as2.state.lastSavedAgo}',
+                style: TextStyle(color: p.textSecondary, fontSize: 10),
+              ),
+            ])),
+            // Manual save button
+            GestureDetector(
+              onTap: () {
+                as2.saveAll(trigger: 'manual');
+                ps.addSystemLog('AUTOSAVE', 'Manueller Save ausgeloest', level: SysLogLevel.info);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('💾 Alle Daten gespeichert'),
+                    duration: const Duration(seconds: 2),
+                    backgroundColor: const Color(0xFF00AA55),
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00FF88).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFF00FF88).withValues(alpha: 0.3)),
+                ),
+                child: Text('JETZT SPEICHERN',
+                  style: GoogleFonts.spaceMono(color: const Color(0xFF00FF88), fontSize: 8, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ]),
+        ),
+        Divider(color: p.primary.withValues(alpha: 0.08), height: 1),
+        // Auto-Save toggle
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(children: [
+            Container(width: 34, height: 34,
+              decoration: BoxDecoration(color: p.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+              child: Icon(Icons.autorenew, color: p.primary, size: 17)),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Auto-Save aktiv', style: TextStyle(color: p.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+              Text('Alle ${as2.intervalLabel} automatisch speichern', style: TextStyle(color: p.textSecondary, fontSize: 10)),
+            ])),
+            Switch(
+              value: as2.autoSaveOn,
+              onChanged: (v) {
+                as2.setAutoSaveEnabled(v);
+                ps.addSystemLog('SETTINGS', 'Auto-Save ${v ? "aktiviert" : "deaktiviert"}', level: SysLogLevel.info);
+              },
+            ),
+          ]),
+        ),
+        Divider(color: p.primary.withValues(alpha: 0.08), height: 1),
+        // Interval selector
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Save-Intervall', style: TextStyle(color: p.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8, runSpacing: 8,
+              children: intervals.map((sec) {
+                final label = sec < 60 ? '${sec}s' : '${sec ~/ 60}m';
+                final selected = as2.intervalSec == sec;
+                return GestureDetector(
+                  onTap: () {
+                    as2.setInterval(sec);
+                    ps.addSystemLog('SETTINGS', 'Save-Intervall geaendert: ${label}', level: SysLogLevel.info);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: selected ? p.primary.withValues(alpha: 0.2) : p.primary.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: selected ? p.primary : p.primary.withValues(alpha: 0.15),
+                        width: selected ? 1.5 : 0.5,
+                      ),
+                    ),
+                    child: Text(label, style: TextStyle(
+                      color: selected ? p.primary : p.textSecondary,
+                      fontSize: 12, fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                    )),
+                  ),
+                );
+              }).toList(),
+            ),
+          ]),
+        ),
+      ]),
     );
   }
 

@@ -365,8 +365,8 @@ class _WalletScreenState extends State<WalletScreen>
         ),
         child: Row(
           children: [
-            // Token Icon – Original CoinGecko
-            AssetIconWidget(symbol: a.symbol, palette: p, size: 44),
+            // Token Icon – SVG CoinLogo (v42)
+            CoinLogo(symbol: a.symbol, size: 44, showShadow: isSelected),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

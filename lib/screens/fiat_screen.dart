@@ -1,6 +1,6 @@
-/// HQMLL Quantum Trader – Fiat Transaction Screen v3
+/// HQMLL Quantum Trader – Fiat Transaction Screen v42
 /// EUR/USD Live Broker API · Bank Transfer · SEPA · SWIFT
-/// v38.0: Secure Bank Account Integration (local encrypted storage)
+/// v42: PaymentService integration — alle TX auto-saved persistent
 /// Grigori Saks · 2025
 library;
 
@@ -14,6 +14,8 @@ import '../providers/theme_provider.dart';
 import '../theme/app_themes.dart';
 import '../services/exchange_service.dart';
 import '../services/persistence_service.dart';
+import '../services/payment_service.dart';
+import '../services/auto_save_service.dart';
 
 // ── Fiat Transaction Model ─────────────────────────────
 class FiatTransaction {
@@ -153,6 +155,15 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
       if (!mounted) return;
       final ex = context.read<ExchangeService>();
       setState(() => _syncCryptoRatesFromExchange(ex));
+      // v42: Restore last-used currency/amount from PaymentService
+      final ps2 = context.read<PaymentService>();
+      if (ps2.lastCurrency.isNotEmpty && _fiatCurrencies.contains(ps2.lastCurrency)) {
+        setState(() => _fromCurrency = ps2.lastCurrency);
+      }
+      if (ps2.lastAmount > 0) {
+        _fromCtrl.text = ps2.lastAmount.toStringAsFixed(2);
+        _updateConvertedAmount();
+      }
     });
   }
 
@@ -793,10 +804,13 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
     final amt = double.tryParse(_fromCtrl.text) ?? 0;
     final converted = double.tryParse(_toCtrl.text) ?? 0;
     final rate = _getRate(_fromCurrency, _toCurrency);
+    final txId = 'FX${DateTime.now().millisecondsSinceEpoch % 100000}';
+    final ref   = 'REF${DateTime.now().millisecondsSinceEpoch % 1000000}';
+
     setState(() {
       _isProcessing = false;
       _transactions.insert(0, FiatTransaction(
-        id: 'FX${DateTime.now().millisecondsSinceEpoch % 100000}',
+        id: txId,
         type: _txType,
         fromCurrency: _fromCurrency,
         toCurrency: _toCurrency,
@@ -806,11 +820,43 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
         fee: amt * 0.001,
         status: 'completed',
         createdAt: DateTime.now(),
-        reference: 'REF${DateTime.now().millisecondsSinceEpoch % 1000000}',
+        reference: ref,
       ));
-      if (_balances.containsKey(_fromCurrency)) _balances[_fromCurrency] = (_balances[_fromCurrency]! - amt).clamp(0, double.infinity);
-      if (_balances.containsKey(_toCurrency)) _balances[_toCurrency] = (_balances[_toCurrency]! + converted);
+      if (_balances.containsKey(_fromCurrency)) {
+        _balances[_fromCurrency] = (_balances[_fromCurrency]! - amt).clamp(0, double.infinity);
+      }
+      if (_balances.containsKey(_toCurrency)) {
+        _balances[_toCurrency] = (_balances[_toCurrency]! + converted);
+      }
     });
+
+    // ── v42: Persist to PaymentService + AutoSave ───────────
+    try {
+      final ps2 = context.read<PaymentService>();
+      final as2 = context.read<AutoSaveService>();
+      final isCrypto = _cryptoCurrencies.contains(_fromCurrency) || _cryptoCurrencies.contains(_toCurrency);
+      await ps2.createPayment(
+        type: isCrypto ? PaymentType.cryptoTransfer : PaymentType.internalTransfer,
+        fromAccount: _fromCurrency,
+        toAccount: _toCurrency,
+        toName: '${_toCurrency} Konto',
+        amount: amt,
+        currency: _fromCurrency,
+        amountUsd: isCrypto ? (amt * (_cryptoToUsd[_fromCurrency] ?? 1.0)) : amt,
+        fee: amt * 0.001,
+        reference: ref,
+        note: '$_txType: ${amt.toStringAsFixed(4)} $_fromCurrency → ${converted.toStringAsFixed(4)} $_toCurrency',
+      );
+      as2.onTransferInitiated(_fromCurrency, _toCurrency, amt, _fromCurrency);
+      // Persist last-used currency/amount for next time
+      await ps2.saveTransferDefaults(currency: _fromCurrency, amount: amt);
+      // SystemLog
+      context.read<PersistenceService>().addSystemLog(
+        'TX', '$_txType: $amt $_fromCurrency → ${converted.toStringAsFixed(2)} $_toCurrency | Ref: $ref',
+        level: SysLogLevel.quantum,
+      );
+    } catch (_) {}
+
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text('✅ $_txType: $amt $_fromCurrency → ${converted.toStringAsFixed(2)} $_toCurrency'),
