@@ -13,6 +13,7 @@ import 'services/wallet_service.dart';
 import 'services/payment_service.dart';
 import 'services/market_service.dart';
 import 'services/auto_save_service.dart';
+import 'services/time_crystal_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/main_scaffold.dart';
@@ -31,7 +32,8 @@ void main() async {
   final walletService      = WalletService();
   final paymentService     = PaymentService();
   final marketService      = MarketService();
-  final autoSaveService    = AutoSaveService();
+  final autoSaveService      = AutoSaveService();
+  final timeCrystalService   = TimeCrystalService();
 
   await authService.initialize();
   await exchangeService.initialize();
@@ -42,12 +44,13 @@ void main() async {
     walletService: walletService,
     paymentService: paymentService,
     marketService: marketService,
+    timeCrystalService: timeCrystalService,
   );
 
   // ── Log app startup ──────────────────────────────────────
   persistenceService.addSystemLog(
     'SYSTEM',
-    'HQMLL Quantum Trader v41 gestartet — AutoSave aktiv (${autoSaveService.intervalLabel})',
+    'HQMLL Quantum Trader v44 gestartet — AutoSave aktiv (${autoSaveService.intervalLabel}) — TimeCrystal Deep Reasoning bereit',
     level: SysLogLevel.quantum,
   );
 
@@ -66,6 +69,7 @@ void main() async {
         ChangeNotifierProvider.value(value: paymentService),
         ChangeNotifierProvider.value(value: marketService),
         ChangeNotifierProvider.value(value: autoSaveService),
+        ChangeNotifierProvider.value(value: timeCrystalService),
       ],
       child: const HQMLLApp(),
     ),

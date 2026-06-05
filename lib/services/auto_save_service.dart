@@ -12,6 +12,7 @@ import 'persistence_service.dart';
 import 'wallet_service.dart';
 import 'payment_service.dart';
 import 'market_service.dart';
+import 'time_crystal_service.dart';
 
 // ══════════════════════════════════════════════════════════════
 // AUTO-SAVE STATE MODEL
@@ -63,6 +64,7 @@ class AutoSaveService extends ChangeNotifier {
   WalletService?      _walletService;
   PaymentService?     _paymentService;
   MarketService?      _marketService;
+  TimeCrystalService? _timeCrystalService;
 
   // Internal state
   Timer?  _periodicTimer;
@@ -91,11 +93,13 @@ class AutoSaveService extends ChangeNotifier {
     required WalletService walletService,
     required PaymentService paymentService,
     required MarketService marketService,
+    TimeCrystalService? timeCrystalService,
   }) async {
-    _persistenceService = persistenceService;
-    _walletService      = walletService;
-    _paymentService     = paymentService;
-    _marketService      = marketService;
+    _persistenceService  = persistenceService;
+    _walletService       = walletService;
+    _paymentService      = paymentService;
+    _marketService       = marketService;
+    _timeCrystalService  = timeCrystalService;
 
     final prefs = await SharedPreferences.getInstance();
     final savedCount  = prefs.getInt(_kSaveCount) ?? 0;
@@ -190,6 +194,11 @@ class AutoSaveService extends ChangeNotifier {
       // Save market watchlist + alerts + settings
       if (_marketService != null) {
         futures.add(_marketService!.forceSave());
+      }
+
+      // Save TimeCrystal experiments + model results + hypotheses
+      if (_timeCrystalService != null) {
+        futures.add(_timeCrystalService!.forceSave());
       }
 
       await Future.wait(futures);

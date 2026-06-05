@@ -46,6 +46,7 @@ import 'enterprise_wallet_screen.dart';
 import 'ai_orchestrator_screen.dart';
 import 'oms_risk_screen.dart';
 import 'quantum_research_screen.dart';
+import 'qml_research_screen.dart';
 import 'auth_screen.dart';
 import '../services/auth_service.dart';
 import '../services/exchange_service.dart';
@@ -102,6 +103,7 @@ class _MainScaffoldState extends State<MainScaffold>
     _NavItem(icon: Icons.notifications_active_outlined, activeIcon: Icons.notifications_active, label: 'ALARMS'),
     _NavItem(icon: Icons.auto_awesome, activeIcon: Icons.auto_awesome, label: 'BUCHHALTER'),
     _NavItem(icon: Icons.science_outlined, activeIcon: Icons.science, label: 'QUANTUM'),
+    _NavItem(icon: Icons.biotech_outlined, activeIcon: Icons.biotech, label: 'QML LAB'),
   ];
 
   @override
@@ -164,6 +166,7 @@ class _MainScaffoldState extends State<MainScaffold>
       const AlertsScreen(),
       const AccountingScreen(),
       const QuantumResearchScreen(),
+      const QMLResearchScreen(),
     ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
