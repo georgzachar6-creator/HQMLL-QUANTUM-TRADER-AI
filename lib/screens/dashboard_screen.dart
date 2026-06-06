@@ -10,6 +10,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/exchange_service.dart';
+import '../services/auto_save_service.dart';
+import '../services/time_crystal_service.dart';
+import '../services/persistence_service.dart';
 import '../widgets/crypto_icon.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -97,6 +100,11 @@ class _DashboardScreenState extends State<DashboardScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final ex = context.read<ExchangeService>();
       await ex.initialize();
+      // Initialize TimeCrystal if not already done
+      if (mounted) {
+        final tc = context.read<TimeCrystalService>();
+        if (tc.totalExperiments == 0) await tc.initialize();
+      }
     });
 
     // Init P&L history
@@ -188,6 +196,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     final p = context.watch<ThemeProvider>().palette;
     // ExchangeService als einzige primäre Preisquelle (Binance WS + CoinGecko)
     final ex = context.watch<ExchangeService>();
+    final tc = context.watch<TimeCrystalService>();
+    final as2 = context.watch<AutoSaveService>();
 
     // Portfolio live berechnen
     _syncPortfolioFromExchange(ex);
@@ -222,6 +232,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             _buildPortfolioCard(p),
             _buildAllocationRow(p),
             _buildAISignalBanner(p),
+            _buildQuantumResearchPanel(p, tc, as2),
             _buildPnLChart(p),
             _buildWatchlist(p),
             _buildRecentTx(p),
@@ -606,6 +617,132 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
+  // ── QUANTUM RESEARCH PANEL ──
+  Widget _buildQuantumResearchPanel(dynamic p, TimeCrystalService tc, AutoSaveService as2) {
+    final ins = tc.getTradingInsights();
+    final dtcRate   = (ins['dtcStabilityRate'] as double) * 100;
+    final bestAcc   = (ins['bestModelAccuracy'] as double) * 100;
+    final isQAdv    = ins['quantumAdvantage'] as bool;
+    final regime    = ins['regimeInsight'] as String;
+
+    // AutoSave status
+    final saveState = as2.state;
+    final saveAgo   = saveState.lastSavedAgo;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [const Color(0xFF0A0020), const Color(0xFF150030)],
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF9945FF).withValues(alpha: 0.3)),
+        boxShadow: [BoxShadow(
+          color: const Color(0xFF9945FF).withValues(alpha: 0.08),
+          blurRadius: 16, spreadRadius: 1,
+        )],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Header
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+          child: Row(children: [
+            Container(
+              width: 28, height: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const RadialGradient(colors: [Color(0xFF9945FF), Color(0xFF14F195)]),
+              ),
+              child: const Icon(Icons.science_outlined, color: Colors.white, size: 14),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('QUANTUM DEEP REASONING', style: GoogleFonts.spaceMono(
+                color: const Color(0xFF9945FF), fontSize: 10,
+                fontWeight: FontWeight.bold, letterSpacing: 1,
+              )),
+              Text('TimeCrystal · Floquet · QML · Trading Bridge',
+                style: GoogleFonts.rajdhani(color: const Color(0xFF9945FF).withValues(alpha: 0.6), fontSize: 9)),
+            ])),
+            // AutoSave badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFF14F195).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(5),
+                border: Border.all(color: const Color(0xFF14F195).withValues(alpha: 0.3)),
+              ),
+              child: Text('💾 $saveAgo',
+                style: GoogleFonts.rajdhani(color: const Color(0xFF14F195), fontSize: 8, fontWeight: FontWeight.w600)),
+            ),
+          ]),
+        ),
+        // Stats row
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+          child: Row(children: [
+            _qStatBox('EXP', '${tc.totalExperiments}', const Color(0xFF00F0FF)),
+            const SizedBox(width: 10),
+            _qStatBox('DTC', '${tc.dtcCount}', const Color(0xFF14F195)),
+            const SizedBox(width: 10),
+            _qStatBox('ORDER', '${(tc.avgDtcOrder * 100).toStringAsFixed(0)}%', const Color(0xFFF7931A)),
+            const SizedBox(width: 10),
+            _qStatBox('QML', bestAcc > 0 ? '${bestAcc.toStringAsFixed(0)}%' : '--', const Color(0xFF9945FF)),
+            if (isQAdv) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF9945FF).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text('QML⟨ψ⟩', style: GoogleFonts.rajdhani(
+                  color: const Color(0xFF9945FF), fontSize: 8, fontWeight: FontWeight.w700)),
+              ),
+            ],
+            const Spacer(),
+            Container(
+              constraints: const BoxConstraints(maxWidth: 160),
+              child: Text(regime,
+                style: GoogleFonts.rajdhani(
+                  color: const Color(0xFF14F195).withValues(alpha: 0.8), fontSize: 8),
+                maxLines: 2, overflow: TextOverflow.ellipsis),
+            ),
+          ]),
+        ),
+        // Mini phase diagram
+        if (tc.experiments.isNotEmpty) ...[
+          Container(
+            margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            height: 70,
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: CustomPaint(
+                size: const Size(double.infinity, 70),
+                painter: _DashboardPhaseMiniPainter(
+                  experiments: tc.experiments,
+                  animValue: _glowCtrl.value,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ]),
+    );
+  }
+
+  Widget _qStatBox(String label, String value, Color c) {
+    return Column(children: [
+      Text(value, style: GoogleFonts.spaceMono(color: c, fontSize: 12, fontWeight: FontWeight.bold)),
+      Text(label, style: GoogleFonts.rajdhani(color: c.withValues(alpha: 0.5), fontSize: 8)),
+    ]);
+  }
+
   // ── NEWS ──
   Widget _buildNewsSection(dynamic p) {
     return Container(
@@ -767,4 +904,80 @@ class _SparklinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_SparklinePainter old) => old.data.length != data.length;
+}
+
+// ══════════════════════════════════════════════════════════════
+// DASHBOARD — Mini Phase Diagram Painter
+// ══════════════════════════════════════════════════════════════
+class _DashboardPhaseMiniPainter extends CustomPainter {
+  final List<TCExperiment> experiments;
+  final double animValue;
+  const _DashboardPhaseMiniPainter({required this.experiments, required this.animValue});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+    canvas.drawRect(Rect.fromLTWH(0, 0, w, h), Paint()..color = const Color(0xFF050010));
+
+    // Grid
+    final gridP = Paint()..color = const Color(0xFF1A1A2E)..strokeWidth = 0.5;
+    for (int i = 1; i < 4; i++) {
+      canvas.drawLine(Offset(w * i / 4, 0), Offset(w * i / 4, h), gridP);
+      canvas.drawLine(Offset(0, h * i / 4), Offset(w, h * i / 4), gridP);
+    }
+
+    // Phase region shading
+    double xOf(double o) => o / 2.0 * w;
+    double yOf(double d) => h - d * h;
+
+    // DTC region
+    canvas.drawRect(
+      Rect.fromLTRB(xOf(0.5), yOf(0.6), xOf(1.4), yOf(0.1)),
+      Paint()..color = const Color(0xFF14F195).withValues(alpha: 0.1),
+    );
+
+    // Experiment dots
+    for (final e in experiments) {
+      final col = _c(e.detectedPhase);
+      final px = xOf(e.driveAmplitude);
+      final py = yOf(e.disorderW);
+      canvas.drawCircle(Offset(px, py), 4,
+          Paint()..color = col.withValues(alpha: 0.9));
+    }
+
+    // Labels
+    final tp = TextPainter(textDirection: TextDirection.ltr);
+    void lbl(String t, double x, double y, Color c) {
+      tp.text = TextSpan(text: t, style: TextStyle(
+        color: c.withValues(alpha: 0.6), fontSize: 7, fontFamily: 'monospace'));
+      tp.layout();
+      tp.paint(canvas, Offset(x - tp.width / 2, y - tp.height / 2));
+    }
+    lbl('DTC', xOf(0.95), yOf(0.35), const Color(0xFF14F195));
+    lbl('MBL', xOf(1.0), yOf(0.8), const Color(0xFFF7931A));
+    lbl('CHAOS', xOf(1.75), yOf(0.3), const Color(0xFFFF4444));
+
+    // X/Y axis labels
+    void axLbl(String t, Offset o) {
+      tp.text = TextSpan(text: t, style: const TextStyle(
+        color: Color(0xFF445566), fontSize: 6, fontFamily: 'monospace'));
+      tp.layout();
+      tp.paint(canvas, o);
+    }
+    axLbl('Ω→', Offset(w - 18, h - 10));
+    axLbl('W↑', const Offset(2, 2));
+  }
+
+  Color _c(TCPhase ph) => const {
+    TCPhase.dtcOrdered: Color(0xFF14F195),
+    TCPhase.mbl:        Color(0xFFF7931A),
+    TCPhase.chaotic:    Color(0xFFFF4444),
+    TCPhase.trivial:    Color(0xFF627EEA),
+    TCPhase.unknown:    Color(0xFF888888),
+  }[ph]!;
+
+  @override
+  bool shouldRepaint(covariant _DashboardPhaseMiniPainter old) =>
+      old.experiments.length != experiments.length || old.animValue != animValue;
 }

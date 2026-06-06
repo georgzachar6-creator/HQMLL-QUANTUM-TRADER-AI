@@ -327,7 +327,12 @@ class _QMLResearchScreenState extends State<QMLResearchScreen>
         _buildPhasePredictionBadge(p),
 
         const SizedBox(height: 12),
-        // Run button
+        // Phase Diagram
+        _sectionHeader(p, 'FLOQUET-PHASENDIAGRAMM', Icons.scatter_plot_outlined),
+        const SizedBox(height: 8),
+        _buildPhaseDiagram(p, tc),
+
+        const SizedBox(height: 12),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
@@ -1145,6 +1150,35 @@ class _QMLResearchScreenState extends State<QMLResearchScreen>
   }
 
   // ══════════════════════════════════════════════════════════
+  // PHASE DIAGRAM — Floquet Parameter Space Visualizer
+  // ══════════════════════════════════════════════════════════
+  Widget _buildPhaseDiagram(QuantumPalette p, TimeCrystalService tc) {
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF9945FF).withValues(alpha: 0.3)),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedBuilder(
+          animation: _waveCtrl,
+          builder: (_, __) => CustomPaint(
+            size: const Size(double.infinity, 200),
+            painter: _PhaseDiagramPainter(
+              experiments: tc.experiments,
+              currentDrive: _driveAmp,
+              currentDisorder: _disorderW,
+              animValue: _waveCtrl.value,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════
   // SHARED HELPERS
   // ══════════════════════════════════════════════════════════
   Widget _sectionHeader(QuantumPalette p, String title, IconData icon) {
@@ -1244,6 +1278,177 @@ class _QMLResearchScreenState extends State<QMLResearchScreen>
       ));
     });
   }
+}
+
+// ══════════════════════════════════════════════════════════════
+// CUSTOM PAINTER — Floquet Phase Diagram (Ω vs W parameter space)
+// ══════════════════════════════════════════════════════════════
+class _PhaseDiagramPainter extends CustomPainter {
+  final List<TCExperiment> experiments;
+  final double currentDrive;
+  final double currentDisorder;
+  final double animValue;
+
+  const _PhaseDiagramPainter({
+    required this.experiments,
+    required this.currentDrive,
+    required this.currentDisorder,
+    required this.animValue,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    // Background
+    canvas.drawRect(Rect.fromLTWH(0, 0, w, h),
+        Paint()..color = const Color(0xFF050012));
+
+    // Axis labels
+    final axisPaint = Paint()..color = const Color(0xFF334455)..strokeWidth = 0.5;
+    // Grid lines
+    for (int i = 0; i <= 4; i++) {
+      final x = w * i / 4;
+      canvas.drawLine(Offset(x, 0), Offset(x, h), axisPaint);
+      final y = h * i / 4;
+      canvas.drawLine(Offset(0, y), Offset(w, y), axisPaint);
+    }
+
+    // Phase regions — paint background zones
+    // x-axis = Drive Amplitude Ω (0..2)
+    // y-axis = Disorder W (0..1), inverted (bottom=0, top=1)
+    final xScale = w / 2.0;   // 0..2 → 0..w
+    final yScale = h / 1.0;   // 0..1 → 0..h, inverted
+
+    double xOf(double omega) => omega * xScale;
+    double yOf(double disorder) => h - disorder * yScale;
+
+    // DTC region (Ω ∈ [0.5,1.4], W ∈ [0.1,0.6])
+    final dtcPath = Path()
+      ..moveTo(xOf(0.5), yOf(0.1))
+      ..lineTo(xOf(1.4), yOf(0.1))
+      ..lineTo(xOf(1.4), yOf(0.6))
+      ..lineTo(xOf(0.5), yOf(0.6))
+      ..close();
+    canvas.drawPath(dtcPath, Paint()
+      ..color = const Color(0xFF14F195).withValues(alpha: 0.12)
+      ..style = PaintingStyle.fill);
+    canvas.drawPath(dtcPath, Paint()
+      ..color = const Color(0xFF14F195).withValues(alpha: 0.4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0);
+
+    // MBL region (W > 0.6)
+    final mblPath = Path()
+      ..moveTo(0, yOf(0.6))
+      ..lineTo(w, yOf(0.6))
+      ..lineTo(w, yOf(1.0))
+      ..lineTo(0, yOf(1.0))
+      ..close();
+    canvas.drawPath(mblPath, Paint()
+      ..color = const Color(0xFFF7931A).withValues(alpha: 0.08)
+      ..style = PaintingStyle.fill);
+
+    // Chaotic region (Ω > 1.5)
+    final chaosPath = Path()
+      ..moveTo(xOf(1.5), 0)
+      ..lineTo(w, 0)
+      ..lineTo(w, yOf(0.6))
+      ..lineTo(xOf(1.5), yOf(0.6))
+      ..close();
+    canvas.drawPath(chaosPath, Paint()
+      ..color = const Color(0xFFFF4444).withValues(alpha: 0.08)
+      ..style = PaintingStyle.fill);
+
+    // Phase region labels
+    final tp = TextPainter(textDirection: TextDirection.ltr);
+
+    void drawLabel(String text, double omega, double disorder, Color color) {
+      tp.text = TextSpan(text: text, style: TextStyle(
+        color: color.withValues(alpha: 0.7),
+        fontSize: 9,
+        fontWeight: FontWeight.bold,
+        fontFamily: 'monospace',
+      ));
+      tp.layout();
+      tp.paint(canvas, Offset(xOf(omega) - tp.width / 2, yOf(disorder) - tp.height / 2));
+    }
+
+    drawLabel('DTC', 0.95, 0.35, const Color(0xFF14F195));
+    drawLabel('MBL', 1.0, 0.8, const Color(0xFFF7931A));
+    drawLabel('CHAOTISCH', 1.75, 0.3, const Color(0xFFFF4444));
+    drawLabel('TRIVIAL', 0.25, 0.3, const Color(0xFF627EEA));
+
+    // Axis labels
+    void drawAxisLabel(String text, Offset pos) {
+      tp.text = TextSpan(text: text, style: const TextStyle(
+        color: Color(0xFF556677), fontSize: 7, fontFamily: 'monospace',
+      ));
+      tp.layout();
+      tp.paint(canvas, pos);
+    }
+    drawAxisLabel('Ω=0', Offset(2, h - 12));
+    drawAxisLabel('Ω=1', Offset(xOf(1.0) - 8, h - 12));
+    drawAxisLabel('Ω=2', Offset(w - 20, h - 12));
+    drawAxisLabel('W=0', Offset(2, h - 14));
+    drawAxisLabel('W=1', const Offset(2, 2));
+
+    // Experiment data points
+    for (final exp in experiments) {
+      final px = xOf(exp.driveAmplitude);
+      final py = yOf(exp.disorderW);
+      final col = _phaseColor(exp.detectedPhase);
+      canvas.drawCircle(Offset(px, py), 5,
+          Paint()..color = col.withValues(alpha: 0.85)..style = PaintingStyle.fill);
+      canvas.drawCircle(Offset(px, py), 5,
+          Paint()..color = col..style = PaintingStyle.stroke..strokeWidth = 1.0);
+    }
+
+    // Current parameter crosshair (animated pulse)
+    final cx = xOf(currentDrive);
+    final cy = yOf(currentDisorder);
+    final pulse = 0.5 + animValue * 0.5;
+
+    // Crosshair lines
+    canvas.drawLine(Offset(cx, 0), Offset(cx, h),
+        Paint()..color = Colors.white.withValues(alpha: 0.15)..strokeWidth = 0.5);
+    canvas.drawLine(Offset(0, cy), Offset(w, cy),
+        Paint()..color = Colors.white.withValues(alpha: 0.15)..strokeWidth = 0.5);
+
+    // Pulsing dot
+    canvas.drawCircle(Offset(cx, cy), 8 + pulse * 4,
+        Paint()..color = Colors.white.withValues(alpha: 0.06 * pulse)..style = PaintingStyle.fill);
+    canvas.drawCircle(Offset(cx, cy), 6,
+        Paint()..color = Colors.white.withValues(alpha: 0.9)..style = PaintingStyle.fill);
+    canvas.drawCircle(Offset(cx, cy), 6,
+        Paint()..color = const Color(0xFF9945FF)..style = PaintingStyle.stroke..strokeWidth = 1.5);
+
+    // Param label near dot
+    tp.text = TextSpan(
+      text: 'Ω=${currentDrive.toStringAsFixed(2)}\nW=${currentDisorder.toStringAsFixed(2)}',
+      style: const TextStyle(color: Colors.white, fontSize: 7, fontFamily: 'monospace'),
+    );
+    tp.layout();
+    final labelX = (cx + 10).clamp(0.0, w - tp.width - 2);
+    final labelY = (cy - 20).clamp(2.0, h - tp.height - 2);
+    tp.paint(canvas, Offset(labelX, labelY));
+  }
+
+  Color _phaseColor(TCPhase phase) => const {
+    TCPhase.dtcOrdered: Color(0xFF14F195),
+    TCPhase.mbl:        Color(0xFFF7931A),
+    TCPhase.chaotic:    Color(0xFFFF4444),
+    TCPhase.trivial:    Color(0xFF627EEA),
+    TCPhase.unknown:    Color(0xFF888888),
+  }[phase]!;
+
+  @override
+  bool shouldRepaint(covariant _PhaseDiagramPainter old) =>
+      old.currentDrive != currentDrive ||
+      old.currentDisorder != currentDisorder ||
+      old.animValue != animValue ||
+      old.experiments.length != experiments.length;
 }
 
 // ══════════════════════════════════════════════════════════════
