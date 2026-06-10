@@ -1,0 +1,97 @@
+/* HQMLL Quantum Trader AI — Global Styles */
+:root {
+  --bg-deep: #0a0e1a;
+  --bg-surface: #111827;
+  --bg-card: #1a2035;
+  --bg-card-hover: #1e2540;
+  --accent-cyan: #00d4ff;
+  --accent-purple: #8b5cf6;
+  --accent-green: #10b981;
+  --accent-red: #ef4444;
+  --accent-yellow: #f59e0b;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border: rgba(255,255,255,0.08);
+  --border-accent: rgba(0,212,255,0.3);
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: var(--font);
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root { height: 100%; display: flex; flex-direction: column; }
+
+a { color: var(--accent-cyan); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-surface); }
+::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+
+/* Utility classes */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.card:hover { background: var(--bg-card-hover); }
+
+.badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.badge-green { background: rgba(16,185,129,0.15); color: var(--accent-green); }
+.badge-red { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+.badge-cyan { background: rgba(0,212,255,0.15); color: var(--accent-cyan); }
+.badge-purple { background: rgba(139,92,246,0.15); color: var(--accent-purple); }
+.badge-yellow { background: rgba(245,158,11,0.15); color: var(--accent-yellow); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-primary { background: var(--accent-cyan); color: #0a0e1a; }
+.btn-primary:hover { background: #33ddff; transform: translateY(-1px); }
+.btn-secondary { background: var(--border); color: var(--text-primary); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--bg-card-hover); }
+.btn-danger { background: rgba(239,68,68,0.15); color: var(--accent-red); border: 1px solid rgba(239,68,68,0.3); }
+.btn-danger:hover { background: rgba(239,68,68,0.25); }
+
+.divider { height: 1px; background: var(--border); margin: 12px 0; }
+
+/* Animation */
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.animate-pulse { animation: pulse 2s infinite; }
+.animate-fadein { animation: fadeIn 0.3s ease; }
+
+/* Glow effect */
+.glow-cyan { box-shadow: 0 0 20px rgba(0,212,255,0.2); }
+.glow-purple { box-shadow: 0 0 20px rgba(139,92,246,0.2); }

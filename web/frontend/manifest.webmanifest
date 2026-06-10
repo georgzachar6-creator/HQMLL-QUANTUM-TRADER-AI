@@ -1,0 +1,27 @@
+{
+  "short_name": "HQMLL",
+  "name": "HQMLL Quantum Trader AI",
+  "description": "Enterprise AI Trading Platform mit Quantum Deep Reasoning",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0a0e1a",
+  "background_color": "#0a0e1a",
+  "categories": ["finance", "productivity"],
+  "screenshots": [],
+  "lang": "de"
+}
