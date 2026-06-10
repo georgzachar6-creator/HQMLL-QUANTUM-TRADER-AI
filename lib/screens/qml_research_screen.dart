@@ -18,6 +18,7 @@ import '../providers/theme_provider.dart';
 import '../services/time_crystal_service.dart';
 import '../services/persistence_service.dart';
 import '../services/auto_save_service.dart';
+import '../services/trading_signal_service.dart';
 import '../theme/app_themes.dart';
 
 // ══════════════════════════════════════════════════════════════
@@ -80,9 +81,10 @@ class _QMLResearchScreenState extends State<QMLResearchScreen>
 
   @override
   Widget build(BuildContext context) {
-    final tp = context.watch<ThemeProvider>();
-    final p  = tp.palette;
-    final tc = context.watch<TimeCrystalService>();
+    final tp  = context.watch<ThemeProvider>();
+    final p   = tp.palette;
+    final tc  = context.watch<TimeCrystalService>();
+    final tss = context.watch<TradingSignalService>();
 
     return Column(children: [
       // ── Header ─────────────────────────────────────────────
@@ -101,7 +103,7 @@ class _QMLResearchScreenState extends State<QMLResearchScreen>
             _buildModelTrainer(p, tc),
             _buildSymbolicAI(p, tc),
             _buildExperimentDesigner(p, tc),
-            _buildTradingBridge(p, tc),
+            _buildTradingBridge(p, tc, tss),
           ],
         ),
       ),
@@ -927,7 +929,7 @@ class _QMLResearchScreenState extends State<QMLResearchScreen>
   // ══════════════════════════════════════════════════════════
   // TAB 5 — TRADING BRIDGE
   // ══════════════════════════════════════════════════════════
-  Widget _buildTradingBridge(QuantumPalette p, TimeCrystalService tc) {
+  Widget _buildTradingBridge(QuantumPalette p, TimeCrystalService tc, TradingSignalService tss) {
     final ins = tc.getTradingInsights();
     final dtcRate   = (ins['dtcStabilityRate'] as double) * 100;
     final avgOrder  = (ins['avgDtcOrder'] as double) * 100;
@@ -1038,8 +1040,173 @@ class _QMLResearchScreenState extends State<QMLResearchScreen>
             ]),
           ]),
         ),
+
+        const SizedBox(height: 16),
+        // ── LIVE SIGNAL OUTPUT — v47 TradingSignalService ────
+        _sectionHeader(p, 'LIVE SIGNAL OUTPUT v47', Icons.bolt_rounded),
+        const SizedBox(height: 8),
+        _buildLiveSignalPanel(p, tss),
       ]),
     );
+  }
+
+  // Live Signal Panel (nutzt TradingSignalService direkt)
+  Widget _buildLiveSignalPanel(QuantumPalette p, TradingSignalService tss) {
+    final signals = tss.activeSignals.take(6).toList();
+    final m       = tss.metrics;
+
+    return Column(children: [
+      // Metrics Summary
+      if (m != null)
+        Container(
+          padding: const EdgeInsets.all(12),
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [const Color(0xFF14F195).withValues(alpha: 0.06), const Color(0xFF00F0FF).withValues(alpha: 0.06)],
+            ),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFF14F195).withValues(alpha: 0.25)),
+          ),
+          child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            _tsMetric(p, 'WIN RATE', '${(m.winRate * 100).toStringAsFixed(0)}%', const Color(0xFF14F195)),
+            _tsMetric(p, 'SHARPE',  m.sharpe.toStringAsFixed(2),               const Color(0xFF00F0FF)),
+            _tsMetric(p, 'SIGNALE', '${m.totalSignals}',                        const Color(0xFFF7931A)),
+            _tsMetric(p, 'P&L 24H', m.pnl24h >= 0
+              ? '+\$${m.pnl24h.toStringAsFixed(0)}'
+              : '-\$${m.pnl24h.abs().toStringAsFixed(0)}',
+              m.pnl24h >= 0 ? const Color(0xFF14F195) : const Color(0xFFFF3358)),
+          ]),
+        ),
+
+      // Signal Cards
+      ...signals.map((s) {
+        final col = s.action.isBullish
+          ? const Color(0xFF14F195)
+          : s.action.isBearish
+            ? const Color(0xFFFF3358)
+            : const Color(0xFFFFD700);
+        return Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: col.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: col.withValues(alpha: 0.2)),
+          ),
+          child: Row(children: [
+            // Action Badge
+            Container(
+              width: 60,
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              decoration: BoxDecoration(
+                color: col.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Column(children: [
+                Text(s.action.emoji, style: const TextStyle(fontSize: 14)),
+                Text(s.action.label, style: GoogleFonts.spaceMono(color: col, fontSize: 6, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center),
+              ]),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Text(s.pair, style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 10, fontWeight: FontWeight.bold)),
+                const SizedBox(width: 6),
+                // TC Phase Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF9945FF).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                  child: Text(s.tcPhase.label, style: GoogleFonts.rajdhani(
+                    color: const Color(0xFF9945FF), fontSize: 7, fontWeight: FontWeight.w700)),
+                ),
+              ]),
+              Text(s.reasoning, style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 8),
+                maxLines: 1, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 4),
+              // Confidence bar
+              Row(children: [
+                Text('CONF ${(s.confidence * 100).toStringAsFixed(0)}%',
+                  style: GoogleFonts.spaceMono(color: col, fontSize: 7)),
+                const SizedBox(width: 6),
+                Expanded(child: ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: LinearProgressIndicator(
+                    value: s.confidence,
+                    backgroundColor: col.withValues(alpha: 0.12),
+                    valueColor: AlwaysStoppedAnimation<Color>(col),
+                    minHeight: 3,
+                  ),
+                )),
+                const SizedBox(width: 6),
+                Text('R/R ${s.rr.toStringAsFixed(1)}',
+                  style: GoogleFonts.spaceMono(color: const Color(0xFF9945FF), fontSize: 7)),
+              ]),
+            ])),
+            const SizedBox(width: 8),
+            // Price targets
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text('IN:  \$${_tsFmt(s.entryPrice)}',
+                style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 7)),
+              Text('TP:  \$${_tsFmt(s.targetPrice)}',
+                style: GoogleFonts.spaceMono(color: const Color(0xFF14F195), fontSize: 7)),
+              Text('SL:  \$${_tsFmt(s.stopLoss)}',
+                style: GoogleFonts.spaceMono(color: const Color(0xFFFF3358), fontSize: 7)),
+              const SizedBox(height: 2),
+              Text(s.ageLabel,
+                style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 7)),
+            ]),
+          ]),
+        );
+      }),
+
+      // Signal Log (letzte 5 Einträge)
+      if (tss.signalLog.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: p.surfaceVariant.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('SIGNAL LOG', style: GoogleFonts.spaceMono(
+                color: p.textSecondary, fontSize: 8, letterSpacing: 1)),
+              const SizedBox(height: 6),
+              ...tss.signalLog.take(4).map((log) => Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(log,
+                  style: GoogleFonts.spaceMono(
+                    color: log.contains('✅')
+                      ? const Color(0xFF14F195).withValues(alpha: 0.7)
+                      : p.textSecondary,
+                    fontSize: 7),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              )),
+            ],
+          ),
+        ),
+      ],
+    ]);
+  }
+
+  Widget _tsMetric(QuantumPalette p, String label, String value, Color c) {
+    return Column(children: [
+      Text(value, style: GoogleFonts.spaceMono(color: c, fontSize: 11, fontWeight: FontWeight.bold)),
+      Text(label, style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 7)),
+    ]);
+  }
+
+  String _tsFmt(double price) {
+    if (price >= 1000) return '${(price / 1000).toStringAsFixed(1)}K';
+    if (price >= 1)    return price.toStringAsFixed(2);
+    return price.toStringAsFixed(4);
   }
 
   List<Widget> _buildStrategyMapping(QuantumPalette p, double dtcRate) {

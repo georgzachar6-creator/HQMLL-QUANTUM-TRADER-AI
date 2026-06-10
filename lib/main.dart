@@ -50,7 +50,7 @@ void main() async {
   // ── Log app startup ──────────────────────────────────────
   persistenceService.addSystemLog(
     'SYSTEM',
-    'HQMLL Quantum Trader v44 gestartet — AutoSave aktiv (${autoSaveService.intervalLabel}) — TimeCrystal Deep Reasoning bereit',
+    'HQMLL Quantum Trader v47 gestartet — AutoSave aktiv (${autoSaveService.intervalLabel}) — TradingSignalEngine + TimeCrystal aktiv',
     level: SysLogLevel.quantum,
   );
 

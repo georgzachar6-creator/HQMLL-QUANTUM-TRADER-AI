@@ -1,6 +1,6 @@
 // ============================================================
-// DASHBOARD v3 – HQMLL Quantum Trader
-// Live Portfolio, P&L Timeline, AI Signals, News, Watchlist
+// DASHBOARD v4 – HQMLL Quantum Trader
+// Live Portfolio, P&L, TradingSignalStream, AI Engine, News
 // ============================================================
 import 'dart:async';
 import 'dart:math';
@@ -14,6 +14,7 @@ import '../services/auto_save_service.dart';
 import '../services/time_crystal_service.dart';
 import '../services/persistence_service.dart';
 import '../widgets/crypto_icon.dart';
+import '../services/trading_signal_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -195,9 +196,10 @@ class _DashboardScreenState extends State<DashboardScreen>
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
     // ExchangeService als einzige primäre Preisquelle (Binance WS + CoinGecko)
-    final ex = context.watch<ExchangeService>();
-    final tc = context.watch<TimeCrystalService>();
+    final ex  = context.watch<ExchangeService>();
+    final tc  = context.watch<TimeCrystalService>();
     final as2 = context.watch<AutoSaveService>();
+    final tss = context.watch<TradingSignalService>();
 
     // Portfolio live berechnen
     _syncPortfolioFromExchange(ex);
@@ -231,7 +233,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             _buildHeader(p, ex),
             _buildPortfolioCard(p),
             _buildAllocationRow(p),
-            _buildAISignalBanner(p),
+            _buildSignalStream(p, tss),
             _buildQuantumResearchPanel(p, tc, as2),
             _buildPnLChart(p),
             _buildWatchlist(p),
@@ -416,53 +418,273 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   // ── AI SIGNAL BANNER ──
-  Widget _buildAISignalBanner(dynamic p) {
-    final topSignal = _signals.first;
-    final color = topSignal['color'] as Color;
-    return AnimatedBuilder(
-      animation: _glowCtrl,
-      builder: (_, __) => Container(
-        margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [color.withValues(alpha: 0.12), color.withValues(alpha: 0.04)]),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.3 + _glowCtrl.value * 0.15)),
+  // ==========================================================
+  // SIGNAL STREAM v4 — Live TradingSignalService Ausgabe
+  // ==========================================================
+  Widget _buildSignalStream(dynamic p, TradingSignalService tss) {
+    final top    = tss.topSignal;
+    final active = tss.activeSignals.take(5).toList();
+    final bullCnt  = tss.bullishCount;
+    final bearCnt  = tss.bearishCount;
+    final avgConf  = tss.avgConf;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00041A), Color(0xFF00081F)],
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
         ),
-        child: Row(children: [
-          AnimatedBuilder(
-            animation: _pulseCtrl,
-            builder: (_, __) => Container(
-              width: 36, height: 36,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [BoxShadow(color: color.withValues(alpha: 0.3 + _pulseCtrl.value * 0.25), blurRadius: 10)],
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: (top?.action.isBullish ?? true)
+            ? const Color(0xFF00FF88).withValues(alpha: 0.3)
+            : const Color(0xFFFF3358).withValues(alpha: 0.3),
+        ),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Header Row
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+          child: Row(children: [
+            AnimatedBuilder(
+              animation: _pulseCtrl,
+              builder: (_, __) => Container(
+                width: 32, height: 32,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF00FF88).withValues(alpha: 0.12),
+                  boxShadow: [BoxShadow(
+                    color: const Color(0xFF00FF88).withValues(alpha: 0.25 + _pulseCtrl.value * 0.2),
+                    blurRadius: 10,
+                  )],
+                ),
+                child: const Icon(Icons.bolt_rounded, color: Color(0xFF00FF88), size: 18),
               ),
-              child: Icon(Icons.psychology_rounded, color: color, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('TRADING SIGNAL ENGINE v47', style: GoogleFonts.spaceMono(
+                color: const Color(0xFF00FF88), fontSize: 9, letterSpacing: 1.5,
+              )),
+              Text('TC-Phase + RSI + MACD + Volume Spike', style: GoogleFonts.rajdhani(
+                color: const Color(0xFF00FF88).withValues(alpha: 0.5), fontSize: 9,
+              )),
+            ])),
+            if (tss.isGenerating)
+              const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(
+                strokeWidth: 1.5, color: Color(0xFF00FF88),
+              ))
+            else
+              Row(children: [
+                Container(width: 6, height: 6,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle, color: Color(0xFF00FF88),
+                  )),
+                const SizedBox(width: 4),
+                Text(tss.lastUpdate.isNotEmpty ? tss.lastUpdate : 'LIVE',
+                  style: GoogleFonts.spaceMono(
+                    color: const Color(0xFF00FF88), fontSize: 8, letterSpacing: 0.5,
+                  )),
+              ]),
+          ]),
+        ),
+
+        // Summary Stats
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+          child: Row(children: [
+            _sigStatChip('\u2191 $bullCnt BULL', const Color(0xFF00FF88)),
+            const SizedBox(width: 8),
+            _sigStatChip('\u2193 $bearCnt BEAR', const Color(0xFFFF3358)),
+            const SizedBox(width: 8),
+            _sigStatChip('CONF \u00d8${(avgConf * 100).toStringAsFixed(0)}%', const Color(0xFF00AAFF)),
+            const Spacer(),
+            Text('${active.length} aktiv', style: GoogleFonts.rajdhani(
+              color: p.textSecondary, fontSize: 9,
+            )),
+          ]),
+        ),
+
+        // Top Signal Highlight
+        if (top != null) ...[
+          AnimatedBuilder(
+            animation: _glowCtrl,
+            builder: (_, __) {
+              final sigColor = top.action.isBullish
+                ? const Color(0xFF00FF88)
+                : top.action.isBearish
+                  ? const Color(0xFFFF3358)
+                  : const Color(0xFFFFD700);
+              final confPct  = (top.confidence * 100).toStringAsFixed(0);
+              return Container(
+                margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: sigColor.withValues(alpha: 0.07),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: sigColor.withValues(
+                    alpha: 0.2 + _glowCtrl.value * 0.15)),
+                ),
+                child: Row(children: [
+                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(top.pair, style: GoogleFonts.spaceMono(
+                      color: sigColor, fontSize: 12, fontWeight: FontWeight.bold,
+                    )),
+                    Text(top.action.label, style: GoogleFonts.rajdhani(
+                      color: sigColor, fontSize: 10, fontWeight: FontWeight.w700,
+                    )),
+                    Text('${top.action.emoji} ${_priceFmt(top.entryPrice)}\u2192${_priceFmt(top.targetPrice)}',
+                      style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
+                  ]),
+                  const Spacer(),
+                  Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                    Text('$confPct%', style: GoogleFonts.spaceMono(
+                      color: sigColor, fontSize: 20, fontWeight: FontWeight.bold,
+                    )),
+                    Text('KONFIDENZ', style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 7)),
+                    const SizedBox(height: 4),
+                    SizedBox(
+                      width: 60,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          value: top.confidence,
+                          backgroundColor: sigColor.withValues(alpha: 0.15),
+                          valueColor: AlwaysStoppedAnimation<Color>(sigColor),
+                          minHeight: 4,
+                        ),
+                      ),
+                    ),
+                  ]),
+                ]),
+              );
+            },
+          ),
+        ],
+
+        // Signal List (max 4 weitere)
+        if (active.length > 1) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+            child: Column(
+              children: active.skip(1).take(4).toList().asMap().entries.map((e) {
+                final i = e.key;
+                final s = e.value;
+                final col = s.action.isBullish
+                  ? const Color(0xFF00FF88)
+                  : s.action.isBearish
+                    ? const Color(0xFFFF3358)
+                    : const Color(0xFFFFD700);
+                return Container(
+                  margin: EdgeInsets.only(top: i > 0 ? 4 : 0),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: col.withValues(alpha: 0.04),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: col.withValues(alpha: 0.15)),
+                  ),
+                  child: Row(children: [
+                    CryptoIcon(s.symbol, size: 24, showShadow: false),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(s.pair,
+                      style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 9))),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: col.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(s.action.label,
+                        style: GoogleFonts.spaceMono(color: col, fontSize: 7, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 40,
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                        Text('${(s.confidence * 100).toStringAsFixed(0)}%',
+                          style: GoogleFonts.spaceMono(color: col, fontSize: 8)),
+                        const SizedBox(height: 2),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: LinearProgressIndicator(
+                            value: s.confidence,
+                            backgroundColor: col.withValues(alpha: 0.12),
+                            valueColor: AlwaysStoppedAnimation<Color>(col),
+                            minHeight: 2,
+                          ),
+                        ),
+                      ]),
+                    ),
+                  ]),
+                );
+              }).toList(),
             ),
           ),
-          const SizedBox(width: 10),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Text('TR2 AI SIGNAL', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9, letterSpacing: 1)),
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(3)),
-                child: Text(topSignal['tf'] as String, style: GoogleFonts.spaceMono(color: color, fontSize: 8)),
+        ],
+
+        // Regime Badge + R/R Row
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+          child: Wrap(spacing: 6, children: [
+            _regimeBadge(p, tss.globalRegime),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFF9945FF).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(4),
               ),
-            ]),
-            Text('${topSignal['pair']} — ${topSignal['action']}', style: GoogleFonts.spaceMono(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
-            Text(topSignal['reason'] as String, style: GoogleFonts.inter(color: p.textSecondary, fontSize: 10)),
-          ])),
-          Column(children: [
-            Text('${topSignal['conf']}%', style: GoogleFonts.spaceMono(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
-            Text('CONF', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 8)),
+              child: Text(
+                'R/R \u00d8${tss.activeSignals.isEmpty ? '--' : (tss.activeSignals.map((s) => s.rr).reduce((a, b) => a + b) / tss.activeSignals.length).toStringAsFixed(1)}',
+                style: GoogleFonts.spaceMono(color: const Color(0xFF9945FF), fontSize: 8)),
+            ),
           ]),
-        ]),
-      ),
+        ),
+      ]),
     );
+  }
+
+  Widget _sigStatChip(String label, Color c) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+    decoration: BoxDecoration(
+      color: c.withValues(alpha: 0.1),
+      borderRadius: BorderRadius.circular(5),
+      border: Border.all(color: c.withValues(alpha: 0.25)),
+    ),
+    child: Text(label, style: GoogleFonts.spaceMono(color: c, fontSize: 8, fontWeight: FontWeight.bold)),
+  );
+
+  Widget _regimeBadge(dynamic p, MarketRegime regime) {
+    final label = switch (regime) {
+      MarketRegime.trending      => 'TREND',
+      MarketRegime.ranging       => 'RANGING',
+      MarketRegime.volatile      => 'VOLATILE',
+      MarketRegime.breakout      => 'BREAKOUT',
+      MarketRegime.consolidation => 'CONSOL.',
+    };
+    final color = switch (regime) {
+      MarketRegime.trending      => const Color(0xFF00FF88),
+      MarketRegime.ranging       => const Color(0xFF00AAFF),
+      MarketRegime.volatile      => const Color(0xFFFF3358),
+      MarketRegime.breakout      => const Color(0xFFFFD700),
+      MarketRegime.consolidation => const Color(0xFFF7931A),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Text('REGIME: $label',
+        style: GoogleFonts.spaceMono(color: color, fontSize: 8, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  String _priceFmt(double price) {
+    if (price >= 1000) return '\$${(price / 1000).toStringAsFixed(1)}K';
+    if (price >= 1)    return '\$${price.toStringAsFixed(2)}';
+    return '\$${price.toStringAsFixed(4)}';
   }
 
   // ── P&L CHART ──
