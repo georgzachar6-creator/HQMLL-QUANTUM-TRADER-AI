@@ -14,6 +14,9 @@ import 'services/payment_service.dart';
 import 'services/market_service.dart';
 import 'services/auto_save_service.dart';
 import 'services/time_crystal_service.dart';
+import 'services/trading_signal_service.dart';
+import 'services/error_handler_service.dart';
+import 'services/live_data_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/main_scaffold.dart';
@@ -25,32 +28,62 @@ void main() async {
     statusBarIconBrightness: Brightness.light,
   ));
 
-  // ── Initialize core services ─────────────────────────────
-  final authService        = AuthService();
-  final exchangeService    = ExchangeService();
-  final persistenceService = PersistenceService();
-  final walletService      = WalletService();
-  final paymentService     = PaymentService();
-  final marketService      = MarketService();
+  // ── Error Handler — FIRST (catches startup errors) ────────
+  final errorHandler = ErrorHandlerService();
+
+  // ── Initialize core services ──────────────────────────────
+  final authService          = AuthService();
+  final exchangeService      = ExchangeService();
+  final persistenceService   = PersistenceService();
+  final walletService        = WalletService();
+  final paymentService       = PaymentService();
+  final marketService        = MarketService();
   final autoSaveService      = AutoSaveService();
   final timeCrystalService   = TimeCrystalService();
+  final tradingSignalService = TradingSignalService();
+  final liveDataService      = LiveDataService();
 
-  await authService.initialize();
-  await exchangeService.initialize();
-
-  // ── Boot AutoSaveService with all linked services ────────
-  await autoSaveService.initialize(
-    persistenceService: persistenceService,
-    walletService: walletService,
-    paymentService: paymentService,
-    marketService: marketService,
-    timeCrystalService: timeCrystalService,
+  // ── Safe initialization with error capture ────────────────
+  await errorHandler.runSafe(
+    () => authService.initialize(),
+    source: 'AuthService',
+  );
+  await errorHandler.runSafe(
+    () => exchangeService.initialize(),
+    source: 'ExchangeService',
   );
 
-  // ── Log app startup ──────────────────────────────────────
+  // ── Boot AutoSave Service ──────────────────────────────────
+  await errorHandler.runSafe(
+    () => autoSaveService.initialize(
+      persistenceService: persistenceService,
+      walletService:      walletService,
+      paymentService:     paymentService,
+      marketService:      marketService,
+      timeCrystalService: timeCrystalService,
+    ),
+    source: 'AutoSaveService',
+  );
+
+  // ── Start Realtime Services ────────────────────────────────
+  await errorHandler.runSafe(
+    () => tradingSignalService.initialize(
+      timeCrystalService: timeCrystalService,
+      exchangeService:    exchangeService,
+    ),
+    source: 'TradingSignalService',
+  );
+  await errorHandler.runSafe(
+    () => liveDataService.initialize(),
+    source: 'LiveDataService',
+  );
+
+  // ── Startup Log ───────────────────────────────────────────
   persistenceService.addSystemLog(
     'SYSTEM',
-    'HQMLL Quantum Trader v47 gestartet — AutoSave aktiv (${autoSaveService.intervalLabel}) — TradingSignalEngine + TimeCrystal aktiv',
+    'HQMLL Quantum Trader v49 gestartet — '
+    'AutoSave (${autoSaveService.intervalLabel}) · '
+    'TradingSignals · TimeCrystal · LiveData · ErrorHandler aktiv',
     level: SysLogLevel.quantum,
   );
 
@@ -70,6 +103,9 @@ void main() async {
         ChangeNotifierProvider.value(value: marketService),
         ChangeNotifierProvider.value(value: autoSaveService),
         ChangeNotifierProvider.value(value: timeCrystalService),
+        ChangeNotifierProvider.value(value: tradingSignalService),
+        ChangeNotifierProvider.value(value: errorHandler),
+        ChangeNotifierProvider.value(value: liveDataService),
       ],
       child: const HQMLLApp(),
     ),
@@ -83,10 +119,18 @@ class HQMLLApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final tp   = context.watch<ThemeProvider>();
     final auth = context.watch<AuthService>();
+
     return MaterialApp(
       title: 'HQMLL Quantum Trader',
       debugShowCheckedModeBanner: false,
       theme: tp.themeData,
+      // ── Global Error Overlay wraps everything ──────────────
+      builder: (context, child) => GlobalErrorOverlay(
+        child: QuantumErrorBoundary(
+          boundaryName: 'Root',
+          child: child ?? const SizedBox.shrink(),
+        ),
+      ),
       home: SplashScreen(
         nextScreen: auth.isLoggedIn
             ? const MainScaffold()

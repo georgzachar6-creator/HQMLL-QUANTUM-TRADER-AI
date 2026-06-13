@@ -4,6 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../providers/theme_provider.dart';
 import '../services/persistence_service.dart';
 import '../services/auto_save_service.dart';
+import '../services/live_data_service.dart';
+import '../services/error_handler_service.dart'
+    show ErrorHandlerService, AppError;
 import '../theme/app_themes.dart';
 import '../widgets/quantum_eye_widget.dart';
 import 'quantum_monitor_screen.dart';
@@ -13,10 +16,12 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tp  = context.watch<ThemeProvider>();
-    final p   = tp.palette;
-    final as2 = context.watch<AutoSaveService>();
-    final ps  = context.read<PersistenceService>();
+    final tp   = context.watch<ThemeProvider>();
+    final p    = tp.palette;
+    final as2  = context.watch<AutoSaveService>();
+    final ps   = context.read<PersistenceService>();
+    final lds  = context.watch<LiveDataService>();
+    final errs = context.watch<ErrorHandlerService>();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(12),
@@ -150,11 +155,23 @@ class SettingsScreen extends StatelessWidget {
           _buildAutoSaveCard(context, p, as2, ps),
           const SizedBox(height: 16),
 
+          // ══════ PERFORMANCE & REALTIME ══════
+          _SectionTitle(title: 'PERFORMANCE & REALTIME', icon: Icons.speed_outlined, palette: p),
+          const SizedBox(height: 8),
+          _buildPerformanceCard(context, p, tp, lds, as2, ps),
+          const SizedBox(height: 16),
+
+          // ══════ ERROR LOG & DIAGNOSE ══════
+          _SectionTitle(title: 'FEHLER-LOG & DIAGNOSE', icon: Icons.bug_report_outlined, palette: p),
+          const SizedBox(height: 8),
+          _buildErrorLogCard(context, p, errs),
+          const SizedBox(height: 16),
+
           // SECTION: Über
           _SectionTitle(title: 'ÜBER HQMLL', icon: Icons.info_outline, palette: p),
           const SizedBox(height: 8),
           _buildCard(p, children: [
-            _InfoTile(label: 'Version', subtitle: 'HQMLL Quantum v41.0 · Enterprise', icon: Icons.new_releases_outlined, palette: p, onTap: () {}),
+            _InfoTile(label: 'Version', subtitle: 'HQMLL Quantum v49.0 · Enterprise Edition', icon: Icons.new_releases_outlined, palette: p, onTap: () {}),
             _DividerLine(p: p),
             _InfoTile(label: 'Eigentümer', subtitle: 'Grigori Saks · Ultra-Vertraulich', icon: Icons.person_outline, palette: p, onTap: () {}),
             _DividerLine(p: p),
@@ -179,8 +196,378 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildOwnerCard(dynamic p, ThemeProvider tp) {
+  // ══════════════════════════════════════════════════════════
+  // PERFORMANCE & REALTIME CARD
+  // ══════════════════════════════════════════════════════════
+  Widget _buildPerformanceCard(
+    BuildContext context,
+    dynamic p,
+    ThemeProvider tp,
+    LiveDataService lds,
+    AutoSaveService as2,
+    PersistenceService ps,
+  ) {
+    final isRunning = lds.isRunning;
+    final status    = lds.systemStatus;
+
     return Container(
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: p.surfaceVariant),
+      ),
+      child: Column(children: [
+        // Realtime Toggle
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+          child: Row(children: [
+            Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: (isRunning ? const Color(0xFF14F195) : const Color(0xFFF7931A)).withValues(alpha: 0.15),
+              ),
+              child: Icon(
+                isRunning ? Icons.stream : Icons.stream_outlined,
+                color: isRunning ? const Color(0xFF14F195) : const Color(0xFFF7931A),
+                size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Realtime-Datenfeed',
+                style: GoogleFonts.rajdhani(
+                  color: p.textPrimary, fontWeight: FontWeight.w700, fontSize: 13)),
+              Text(isRunning ? 'Live — 2s Ticker-Intervall' : 'Deaktiviert',
+                style: GoogleFonts.rajdhani(
+                  color: isRunning ? const Color(0xFF14F195) : p.textSecondary, fontSize: 10)),
+            ])),
+            Switch(
+              value: isRunning,
+              onChanged: (v) {
+                if (v) {
+                  lds.initialize();
+                  ps.addSystemLog('SETTINGS', 'Realtime-Feed gestartet', level: SysLogLevel.info);
+                } else {
+                  lds.stop();
+                  ps.addSystemLog('SETTINGS', 'Realtime-Feed gestoppt', level: SysLogLevel.warning);
+                }
+              },
+              activeColor: const Color(0xFF14F195),
+              inactiveThumbColor: const Color(0xFFF7931A),
+            ),
+          ]),
+        ),
+
+        if (status != null) ...[
+          Divider(color: p.surfaceVariant, height: 1),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+            child: Row(children: [
+              _statBox(p, 'EXCHANGE', status.exchangeOnline ? 'ONLINE' : 'OFFLINE',
+                  status.exchangeOnline ? const Color(0xFF14F195) : const Color(0xFFFF4444)),
+              const SizedBox(width: 8),
+              _statBox(p, 'AI-ENGINE', status.aiEngineRunning ? 'AKTIV' : 'GESTOPPT',
+                  status.aiEngineRunning ? const Color(0xFF9945FF) : const Color(0xFFF7931A)),
+              const SizedBox(width: 8),
+              _statBox(p, 'LOAD', '${(status.systemLoad * 100).toStringAsFixed(0)}%',
+                  status.systemLoad > 0.7 ? const Color(0xFFFF4444) : const Color(0xFF00F0FF)),
+              const SizedBox(width: 8),
+              _statBox(p, 'SIGNALE', '${status.activeSignals}', const Color(0xFFF7931A)),
+            ]),
+          ),
+        ],
+
+        Divider(color: p.surfaceVariant, height: 1),
+
+        // Update-Intervall
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Icon(Icons.timer_outlined, color: p.textSecondary, size: 14),
+              const SizedBox(width: 6),
+              Text('Ticker-Intervall (Realtime)',
+                style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 10)),
+              const Spacer(),
+              Text('2 Sekunden',
+                style: GoogleFonts.rajdhani(
+                  color: const Color(0xFF00F0FF), fontSize: 10, fontWeight: FontWeight.w700)),
+            ]),
+            const SizedBox(height: 6),
+            Row(children: [
+              Icon(Icons.memory_outlined, color: p.textSecondary, size: 14),
+              const SizedBox(width: 6),
+              Text('RepaintBoundary Optimierung',
+                style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 10)),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF14F195).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text('AKTIV',
+                  style: GoogleFonts.rajdhani(
+                    color: const Color(0xFF14F195), fontSize: 9, fontWeight: FontWeight.w700)),
+              ),
+            ]),
+            const SizedBox(height: 6),
+            Row(children: [
+              Icon(Icons.compress_outlined, color: p.textSecondary, size: 14),
+              const SizedBox(width: 6),
+              Text('Stream-basierte Widget-Updates',
+                style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 10)),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF14F195).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text('StreamBuilder',
+                  style: GoogleFonts.rajdhani(
+                    color: const Color(0xFF14F195), fontSize: 9, fontWeight: FontWeight.w700)),
+              ),
+            ]),
+          ]),
+        ),
+
+        // Recent Events
+        if (lds.recentEvents.isNotEmpty) ...[
+          Divider(color: p.surfaceVariant, height: 1),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('LIVE-EREIGNISSE',
+                style: GoogleFonts.rajdhani(
+                  color: p.textSecondary, fontSize: 9,
+                  fontWeight: FontWeight.w700, letterSpacing: 1)),
+              const SizedBox(height: 6),
+              ...lds.recentEvents.take(3).map((ev) {
+                final evColor = ev.type == 'signal' ? const Color(0xFF14F195)
+                    : ev.type == 'alert'  ? const Color(0xFFF7931A)
+                    : ev.type == 'trade'  ? const Color(0xFF00F0FF)
+                    : p.textSecondary;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(children: [
+                    Container(
+                      width: 6, height: 6,
+                      decoration: BoxDecoration(shape: BoxShape.circle, color: evColor),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(ev.detail,
+                      style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 9.5),
+                      maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    Text(
+                      '${DateTime.now().difference(ev.timestamp).inMinutes}m',
+                      style: GoogleFonts.rajdhani(color: p.textSecondary.withValues(alpha: 0.5), fontSize: 8)),
+                  ]),
+                );
+              }),
+            ]),
+          ),
+        ],
+      ]),
+    );
+  }
+
+  Widget _statBox(dynamic p, String label, String value, Color color) {
+    return Expanded(child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Column(children: [
+        Text(value, style: GoogleFonts.rajdhani(
+          color: color, fontSize: 11, fontWeight: FontWeight.w800)),
+        Text(label, style: GoogleFonts.rajdhani(
+          color: p.textSecondary, fontSize: 7, letterSpacing: 0.5)),
+      ]),
+    ));
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // ERROR LOG & DIAGNOSE CARD
+  // ══════════════════════════════════════════════════════════
+  Widget _buildErrorLogCard(
+    BuildContext context,
+    dynamic p,
+    ErrorHandlerService errs,
+  ) {
+    final errors = errs.errors.take(8).toList();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: errs.hasActiveErrors
+              ? const Color(0xFFFF4444).withValues(alpha: 0.3)
+              : p.surfaceVariant),
+      ),
+      child: Column(children: [
+        // Header
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+          child: Row(children: [
+            Icon(
+              errs.hasActiveErrors ? Icons.error_outline : Icons.check_circle_outline,
+              color: errs.hasActiveErrors ? const Color(0xFFFF4444) : const Color(0xFF14F195),
+              size: 18),
+            const SizedBox(width: 10),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(
+                errs.hasActiveErrors
+                    ? '${errs.activeErrors.length} AKTIVE FEHLER'
+                    : 'KEINE AKTIVEN FEHLER',
+                style: GoogleFonts.rajdhani(
+                  color: errs.hasActiveErrors ? const Color(0xFFFF4444) : const Color(0xFF14F195),
+                  fontWeight: FontWeight.w800, fontSize: 12, letterSpacing: 0.5)),
+              Text('Gesamt erfasst: ${errs.errorCount} · Fehlergrenze: Global + Route',
+                style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 9.5)),
+            ])),
+            if (errs.hasActiveErrors)
+              GestureDetector(
+                onTap: errs.dismissAll,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF4444).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFFFF4444).withValues(alpha: 0.3)),
+                  ),
+                  child: Text('ALLE SCHLIESSEN',
+                    style: GoogleFonts.rajdhani(
+                      color: const Color(0xFFFF4444), fontSize: 8, fontWeight: FontWeight.w700)),
+                ),
+              ),
+          ]),
+        ),
+
+        // Error List
+        if (errors.isEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
+            child: Row(children: [
+              Icon(Icons.shield_outlined, color: const Color(0xFF14F195).withValues(alpha: 0.5), size: 14),
+              const SizedBox(width: 8),
+              Text('System stabil — Alle Services laufen fehlerfrei',
+                style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 10)),
+            ]),
+          )
+        else ...[
+          Divider(color: p.surfaceVariant, height: 1),
+          ...errors.map((err) => _buildErrorRow(p, err, errs)),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
+            child: Row(children: [
+              OutlinedButton.icon(
+                onPressed: errs.clearAll,
+                icon: const Icon(Icons.delete_outline, size: 13),
+                label: Text('Log leeren',
+                  style: GoogleFonts.rajdhani(fontSize: 10, fontWeight: FontWeight.w600)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: p.textSecondary,
+                  side: BorderSide(color: p.surfaceVariant),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                ),
+              ),
+            ]),
+          ),
+        ],
+
+        // Error Boundary Info
+        Divider(color: p.surfaceVariant, height: 1),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('FEHLER-GRENZEN (ERROR BOUNDARIES)',
+              style: GoogleFonts.rajdhani(
+                color: p.textSecondary, fontSize: 9,
+                fontWeight: FontWeight.w700, letterSpacing: 1)),
+            const SizedBox(height: 6),
+            _boundaryRow(p, 'Root', 'Globaler Fallback — gesamte App', Icons.public_outlined, const Color(0xFF9945FF)),
+            _boundaryRow(p, 'Screen', 'Pro-Screen Widget-Boundary', Icons.phone_android_outlined, const Color(0xFF00F0FF)),
+            _boundaryRow(p, 'Route', 'Navigation-Fehler Handling', Icons.route_outlined, const Color(0xFF14F195)),
+            _boundaryRow(p, 'Banner', 'Live Fehler-Banner (oben)', Icons.notifications_active_outlined, const Color(0xFFF7931A)),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  Widget _buildErrorRow(dynamic p, AppError err, ErrorHandlerService errs) {
+    final color = err.severityColor;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: p.surfaceVariant, width: 0.5)),
+      ),
+      child: Row(children: [
+        Icon(err.icon, color: color, size: 14),
+        const SizedBox(width: 8),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(3),
+              ),
+              child: Text(err.typeLabel,
+                style: GoogleFonts.rajdhani(color: color, fontSize: 7, fontWeight: FontWeight.w800)),
+            ),
+            if (err.source != null) ...[
+              const SizedBox(width: 6),
+              Text(err.source!,
+                style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 8)),
+            ],
+          ]),
+          const SizedBox(height: 2),
+          Text(err.message,
+            style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 10),
+            maxLines: 1, overflow: TextOverflow.ellipsis),
+        ])),
+        const SizedBox(width: 8),
+        Text(
+          '${DateTime.now().difference(err.timestamp).inMinutes}m',
+          style: GoogleFonts.rajdhani(color: p.textSecondary.withValues(alpha: 0.5), fontSize: 8)),
+        const SizedBox(width: 6),
+        if (!err.dismissed)
+          GestureDetector(
+            onTap: () => errs.dismiss(err.id),
+            child: Icon(Icons.close, color: p.textSecondary, size: 14),
+          ),
+      ]),
+    );
+  }
+
+  Widget _boundaryRow(dynamic p, String name, String desc, IconData icon, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 5),
+      child: Row(children: [
+        Icon(icon, color: color, size: 13),
+        const SizedBox(width: 8),
+        Text('$name  ', style: GoogleFonts.rajdhani(
+          color: color, fontSize: 10, fontWeight: FontWeight.w700)),
+        Expanded(child: Text(desc,
+          style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 9.5))),
+        Container(
+          width: 7, height: 7,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle, color: const Color(0xFF14F195),
+            boxShadow: [BoxShadow(color: const Color(0xFF14F195).withValues(alpha: 0.5), blurRadius: 4)],
+          ),
+        ),
+      ]),
+    );
+  }
+
+  Widget _buildOwnerCard(dynamic p, ThemeProvider tp) {    return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(colors: [p.surfaceVariant, p.surface], begin: Alignment.topLeft, end: Alignment.bottomRight),

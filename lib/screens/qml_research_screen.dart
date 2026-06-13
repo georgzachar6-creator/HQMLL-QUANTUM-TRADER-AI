@@ -1,10 +1,11 @@
-/// HQMLL Quantum Trader — QML Research Screen v44.0
-/// TimeCrystal Deep Reasoning: 5 Tabs
-///   TAB 1 — DATA LAB      : Floquet-Experimente + Zeitreihen-Visualisierung
-///   TAB 2 — MODEL TRAINER : QML / Deep Learning Training + Metriken
-///   TAB 3 — SYMBOLIC AI   : Symbolische Regression + Theorembeweise
-///   TAB 4 — EXPERIMENT AI : Adaptive Experiment-Designer (RL-Agent)
-///   TAB 5 — TRADING BRIDGE: TimeCrystal → Market Intelligence
+/// HQMLL Quantum Trader — QML Research Screen v48.0
+/// TimeCrystal Deep Reasoning: 6 Tabs
+///   TAB 1 — PIPELINE      : Deep Reasoning Full Pipeline (NEU v48)
+///   TAB 2 — DATA LAB      : Floquet-Experimente + Zeitreihen-Visualisierung
+///   TAB 3 — MODEL TRAINER : QML / Deep Learning Training + Metriken
+///   TAB 4 — SYMBOLIC AI   : Symbolische Regression + Theorembeweise
+///   TAB 5 — EXPERIMENT AI : Adaptive Experiment-Designer (RL-Agent)
+///   TAB 6 — TRADING BRIDGE: TimeCrystal → Market Intelligence
 /// Grigori Saks · 2025
 library;
 
@@ -34,6 +35,9 @@ class _QMLResearchScreenState extends State<QMLResearchScreen>
     with TickerProviderStateMixin {
 
   late TabController  _tabCtrl;
+  // Pipeline state
+  TCPlatform  _pipePlatform = TCPlatform.nvCenter;
+  TCModelType _pipeModel    = TCModelType.pennylane;
   late AnimationController _pulseCtrl;
   late AnimationController _waveCtrl;
 
@@ -55,7 +59,7 @@ class _QMLResearchScreenState extends State<QMLResearchScreen>
   @override
   void initState() {
     super.initState();
-    _tabCtrl   = TabController(length: 5, vsync: this);
+    _tabCtrl   = TabController(length: 6, vsync: this);
     _pulseCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600))..repeat(reverse: true);
     _waveCtrl  = AnimationController(vsync: this, duration: const Duration(seconds: 5))..repeat();
 
@@ -99,6 +103,7 @@ class _QMLResearchScreenState extends State<QMLResearchScreen>
           controller: _tabCtrl,
           physics: const NeverScrollableScrollPhysics(),
           children: [
+            _buildDeepReasoningPipeline(p, tc),
             _buildDataLab(p, tc),
             _buildModelTrainer(p, tc),
             _buildSymbolicAI(p, tc),
@@ -239,6 +244,7 @@ class _QMLResearchScreenState extends State<QMLResearchScreen>
   // ══════════════════════════════════════════════════════════
   Widget _buildTabBar(QuantumPalette p) {
     final tabs = [
+      (Icons.account_tree_outlined,  'PIPELINE'),
       (Icons.biotech_outlined,       'DATA LAB'),
       (Icons.psychology_outlined,    'MODEL'),
       (Icons.functions_outlined,     'SYMBOLIK'),
@@ -274,7 +280,499 @@ class _QMLResearchScreenState extends State<QMLResearchScreen>
   }
 
   // ══════════════════════════════════════════════════════════
-  // TAB 1 — DATA LAB
+  // TAB 1 — DEEP REASONING PIPELINE v48
+  // ══════════════════════════════════════════════════════════
+  Widget _buildDeepReasoningPipeline(QuantumPalette p, TimeCrystalService tc) {
+    final run    = tc.currentPipelineRun;
+    final isRunning = tc.isPipelineRunning;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(12),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+        // ── Intro Banner ──────────────────────────────────────
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFF9945FF).withValues(alpha: 0.12),
+                const Color(0xFF14F195).withValues(alpha: 0.06),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF9945FF).withValues(alpha: 0.25)),
+          ),
+          child: Row(children: [
+            Container(
+              width: 44, height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const RadialGradient(colors: [Color(0xFF9945FF), Color(0xFF14F195)]),
+              ),
+              child: const Icon(Icons.account_tree_outlined, color: Colors.white, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('DEEP REASONING PIPELINE v48',
+                style: GoogleFonts.rajdhani(
+                  color: const Color(0xFF9945FF), fontSize: 13,
+                  fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+              Text(
+                'Vollautomatischer 7-Stufen-Workflow: Datenerfassung → KI → Symbolik → Hypothesen → Adaptive Experimente → Trading',
+                style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 9.5),
+                maxLines: 2, overflow: TextOverflow.ellipsis,
+              ),
+            ])),
+            if (tc.pipelineRunCount > 0)
+              Column(children: [
+                Text('${tc.pipelineRunCount}',
+                  style: GoogleFonts.rajdhani(color: const Color(0xFF14F195), fontSize: 18, fontWeight: FontWeight.w800)),
+                Text('RUNS', style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 8)),
+              ]),
+          ]),
+        ),
+
+        const SizedBox(height: 14),
+
+        // ── Konfiguration ─────────────────────────────────────
+        _sectionHeader(p, 'PIPELINE-KONFIGURATION', Icons.settings_outlined),
+        const SizedBox(height: 8),
+        Row(children: [
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Plattform', style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 9)),
+            const SizedBox(height: 4),
+            Wrap(spacing: 6, children: TCPlatform.values.map((pl) {
+              final sel = _pipePlatform == pl;
+              return GestureDetector(
+                onTap: () => setState(() => _pipePlatform = pl),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: sel ? const Color(0xFF9945FF).withValues(alpha: 0.2) : p.surface,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: sel ? const Color(0xFF9945FF) : p.surfaceVariant),
+                  ),
+                  child: Text(pl.short, style: GoogleFonts.rajdhani(
+                    color: sel ? const Color(0xFF9945FF) : p.textSecondary,
+                    fontWeight: FontWeight.w700, fontSize: 10)),
+                ),
+              );
+            }).toList()),
+          ])),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('DL-Modell', style: GoogleFonts.rajdhani(color: p.textSecondary, fontSize: 9)),
+            const SizedBox(height: 4),
+            Wrap(spacing: 6, children: [
+              TCModelType.pennylane, TCModelType.lstm, TCModelType.tfq, TCModelType.cnn,
+            ].map((m) {
+              final sel = _pipeModel == m;
+              final isQml = m == TCModelType.pennylane || m == TCModelType.tfq;
+              return GestureDetector(
+                onTap: () => setState(() => _pipeModel = m),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: sel ? (isQml ? const Color(0xFF9945FF) : const Color(0xFF627EEA)).withValues(alpha: 0.2) : p.surface,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: sel ? (isQml ? const Color(0xFF9945FF) : const Color(0xFF627EEA)) : p.surfaceVariant),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text(m.name.toUpperCase(), style: GoogleFonts.rajdhani(
+                      color: sel ? (isQml ? const Color(0xFF9945FF) : const Color(0xFF627EEA)) : p.textSecondary,
+                      fontWeight: FontWeight.w700, fontSize: 9)),
+                    if (isQml) ...[
+                      const SizedBox(width: 3),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF9945FF).withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                        child: Text('Q', style: GoogleFonts.rajdhani(
+                          color: const Color(0xFF9945FF), fontSize: 7, fontWeight: FontWeight.w800)),
+                      ),
+                    ],
+                  ]),
+                ),
+              );
+            }).toList()),
+          ])),
+        ]),
+
+        const SizedBox(height: 14),
+
+        // ── Start Button ──────────────────────────────────────
+        SizedBox(
+          width: double.infinity,
+          child: AnimatedBuilder(
+            animation: _pulseCtrl,
+            builder: (_, __) {
+              final glow = 0.6 + _pulseCtrl.value * 0.4;
+              return ElevatedButton.icon(
+                onPressed: isRunning ? null : () => _runPipeline(tc),
+                icon: isRunning
+                    ? SizedBox(
+                        width: 18, height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: const Color(0xFF14F195),
+                          value: run?.overallProgress,
+                        ),
+                      )
+                    : const Icon(Icons.play_arrow_rounded, size: 20),
+                label: Text(
+                  isRunning
+                      ? 'PIPELINE LÄUFT... ${run != null ? "${(run.overallProgress * 100).toStringAsFixed(0)}%" : ""}'
+                      : 'DEEP REASONING PIPELINE STARTEN',
+                  style: GoogleFonts.rajdhani(
+                    fontWeight: FontWeight.w800, letterSpacing: 1.5, fontSize: 13)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isRunning
+                      ? const Color(0xFF9945FF).withValues(alpha: 0.4)
+                      : const Color(0xFF9945FF).withValues(alpha: 0.8 + glow * 0.2),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: isRunning ? 0 : 4,
+                  shadowColor: const Color(0xFF9945FF).withValues(alpha: 0.5),
+                ),
+              );
+            },
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // ── Pipeline-Stufen Visualizer ────────────────────────
+        _sectionHeader(p, '7-STUFEN PIPELINE', Icons.account_tree_outlined),
+        const SizedBox(height: 8),
+        ...DRPipelineStage.values.map((stage) =>
+          _buildPipelineStageCard(p, tc, stage, run)),
+
+        const SizedBox(height: 16),
+
+        // ── Trading Features (wenn Pipeline gelaufen) ─────────
+        if (tc.tradingFeatures.isNotEmpty) ...[
+          _sectionHeader(p, 'QUANTEN-TRADING-FEATURES', Icons.insights_outlined),
+          const SizedBox(height: 8),
+          ...tc.tradingFeatures.map((f) => _buildTradingFeatureCard(p, f)),
+          const SizedBox(height: 16),
+        ],
+
+        // ── Pipeline History ───────────────────────────────────
+        if (tc.pipelineHistory.isNotEmpty) ...[
+          _sectionHeader(p, 'PIPELINE-HISTORY', Icons.history_outlined),
+          const SizedBox(height: 8),
+          ...tc.pipelineHistory.take(3).map((r) => _buildPipelineHistoryCard(p, r)),
+        ],
+
+        const SizedBox(height: 16),
+
+        // ── Research-Log ──────────────────────────────────────
+        _sectionHeader(p, 'DEEP REASONING LOG', Icons.terminal_outlined),
+        const SizedBox(height: 8),
+        Container(
+          height: 160,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: p.surfaceVariant),
+          ),
+          child: ListView.builder(
+            controller: _logScroll,
+            reverse: false,
+            itemCount: tc.log.length.clamp(0, 30),
+            itemBuilder: (_, i) {
+              final line = tc.log[i];
+              final color = line.contains('✅') || line.contains('✓')
+                  ? const Color(0xFF14F195)
+                  : line.contains('⚠') || line.contains('ERROR')
+                  ? const Color(0xFFFF4444)
+                  : line.contains('⟨ψ⟩') || line.contains('🔬')
+                  ? const Color(0xFF9945FF)
+                  : line.contains('📡') || line.contains('🧠') || line.contains('📈')
+                  ? const Color(0xFF00F0FF)
+                  : p.textSecondary;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(line,
+                  style: GoogleFonts.robotoMono(color: color, fontSize: 9),
+                  maxLines: 2, overflow: TextOverflow.ellipsis),
+              );
+            },
+          ),
+        ),
+      ]),
+    );
+  }
+
+  Widget _buildPipelineStageCard(
+    QuantumPalette p,
+    TimeCrystalService tc,
+    DRPipelineStage stage,
+    DRPipelineRun? run,
+  ) {
+    final status   = run?.stageStatus[stage] ?? DRStageStatus.idle;
+    final progress = run?.stageProgress[stage] ?? 0.0;
+    final output   = run?.stageOutput[stage];
+    final isCurrent = tc.currentStage == stage && tc.isPipelineRunning;
+
+    Color stageColor;
+    IconData stageIcon;
+    switch (status) {
+      case DRStageStatus.completed:
+        stageColor = const Color(0xFF14F195);
+        stageIcon  = Icons.check_circle_outline;
+        break;
+      case DRStageStatus.running:
+        stageColor = const Color(0xFFF7931A);
+        stageIcon  = Icons.sync_outlined;
+        break;
+      case DRStageStatus.failed:
+        stageColor = const Color(0xFFFF4444);
+        stageIcon  = Icons.error_outline;
+        break;
+      default:
+        stageColor = p.textSecondary.withValues(alpha: 0.5);
+        stageIcon  = Icons.radio_button_unchecked;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      decoration: BoxDecoration(
+        color: isCurrent
+            ? const Color(0xFFF7931A).withValues(alpha: 0.06)
+            : status == DRStageStatus.completed
+            ? const Color(0xFF14F195).withValues(alpha: 0.04)
+            : p.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isCurrent
+              ? const Color(0xFFF7931A).withValues(alpha: 0.5)
+              : status == DRStageStatus.completed
+              ? const Color(0xFF14F195).withValues(alpha: 0.3)
+              : p.surfaceVariant,
+          width: isCurrent ? 1.5 : 1,
+        ),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          dense: true,
+          tilePadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+          childrenPadding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+          leading: SizedBox(
+            width: 28, height: 28,
+            child: status == DRStageStatus.running
+                ? CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: stageColor,
+                    value: progress > 0 ? progress : null,
+                  )
+                : Icon(stageIcon, color: stageColor, size: 20),
+          ),
+          title: Row(children: [
+            Text(stage.icon, style: const TextStyle(fontSize: 13)),
+            const SizedBox(width: 6),
+            Expanded(child: Text(stage.label,
+              style: GoogleFonts.rajdhani(
+                color: status == DRStageStatus.idle ? p.textSecondary : p.textPrimary,
+                fontWeight: FontWeight.w700, fontSize: 12, letterSpacing: 0.5))),
+          ]),
+          subtitle: status == DRStageStatus.running
+              ? LinearProgressIndicator(
+                  value: progress > 0 ? progress : null,
+                  backgroundColor: p.surfaceVariant,
+                  valueColor: AlwaysStoppedAnimation(stageColor),
+                  minHeight: 2,
+                )
+              : null,
+          trailing: status == DRStageStatus.completed
+              ? Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF14F195).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text('✓ OK', style: GoogleFonts.rajdhani(
+                    color: const Color(0xFF14F195), fontSize: 9, fontWeight: FontWeight.w700)),
+                )
+              : null,
+          children: [
+            // Description
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Text('Framework: ', style: GoogleFonts.rajdhani(
+                    color: p.textSecondary, fontSize: 9)),
+                  Text(stage.framework, style: GoogleFonts.rajdhani(
+                    color: const Color(0xFF00F0FF), fontSize: 9, fontWeight: FontWeight.w600)),
+                ]),
+                const SizedBox(height: 4),
+                Text(stage.description, style: GoogleFonts.rajdhani(
+                  color: p.textSecondary, fontSize: 9.5)),
+                if (output != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: stageColor.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: stageColor.withValues(alpha: 0.2)),
+                    ),
+                    child: Text(output, style: GoogleFonts.robotoMono(
+                      color: stageColor, fontSize: 8.5)),
+                  ),
+                ],
+              ]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTradingFeatureCard(QuantumPalette p, DRTradingFeature f) {
+    final phaseColor = _phaseColor(f.sourcePhase);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: p.surfaceVariant),
+      ),
+      child: Row(children: [
+        // Value gauge
+        SizedBox(
+          width: 44, height: 44,
+          child: Stack(alignment: Alignment.center, children: [
+            CircularProgressIndicator(
+              value: f.value.clamp(0.0, 1.0),
+              backgroundColor: p.surfaceVariant,
+              valueColor: AlwaysStoppedAnimation(phaseColor),
+              strokeWidth: 4,
+            ),
+            Text('${(f.value * 100).toStringAsFixed(0)}',
+              style: GoogleFonts.rajdhani(
+                color: phaseColor, fontSize: 10, fontWeight: FontWeight.w800)),
+          ]),
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(f.name, style: GoogleFonts.rajdhani(
+            color: p.textPrimary, fontSize: 11, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 2),
+          Text(f.description, style: GoogleFonts.rajdhani(
+            color: p.textSecondary, fontSize: 9), maxLines: 1, overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: phaseColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(f.tradingImplication, style: GoogleFonts.rajdhani(
+              color: phaseColor, fontSize: 9, fontWeight: FontWeight.w600),
+              maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
+        ])),
+        const SizedBox(width: 8),
+        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text('${(f.confidence * 100).toStringAsFixed(0)}%',
+            style: GoogleFonts.rajdhani(
+              color: const Color(0xFF14F195), fontSize: 13, fontWeight: FontWeight.w800)),
+          Text('KONFIDENZ', style: GoogleFonts.rajdhani(
+            color: p.textSecondary, fontSize: 7)),
+        ]),
+      ]),
+    );
+  }
+
+  Widget _buildPipelineHistoryCard(QuantumPalette p, DRPipelineRun run) {
+    final completed = run.completedAt != null
+        ? run.completedAt!.difference(run.startedAt).inSeconds
+        : null;
+    final completedStages = run.stageStatus.values
+        .where((s) => s == DRStageStatus.completed).length;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: run.isCompleted
+            ? const Color(0xFF14F195).withValues(alpha: 0.25)
+            : p.surfaceVariant),
+      ),
+      child: Row(children: [
+        Icon(
+          run.isCompleted ? Icons.check_circle_outline : Icons.error_outline,
+          color: run.isCompleted ? const Color(0xFF14F195) : const Color(0xFFFF4444),
+          size: 18,
+        ),
+        const SizedBox(width: 8),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(run.id, style: GoogleFonts.robotoMono(
+            color: p.textSecondary, fontSize: 8)),
+          Text(
+            '${run.startedAt.hour.toString().padLeft(2,"0")}:'
+            '${run.startedAt.minute.toString().padLeft(2,"0")} — '
+            '$completedStages/${DRPipelineStage.values.length} Stufen',
+            style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 10)),
+        ])),
+        if (completed != null)
+          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            Text('${completed}s', style: GoogleFonts.rajdhani(
+              color: const Color(0xFF00F0FF), fontSize: 12, fontWeight: FontWeight.w700)),
+            Text('DAUER', style: GoogleFonts.rajdhani(
+              color: p.textSecondary, fontSize: 7)),
+          ]),
+      ]),
+    );
+  }
+
+  // Actions
+  Future<void> _runPipeline(TimeCrystalService tc) async {
+    HapticFeedback.mediumImpact();
+    try {
+      await tc.runDeepReasoningPipeline(
+        platform:  _pipePlatform,
+        modelType: _pipeModel,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('✅ Deep Reasoning Pipeline abgeschlossen!',
+            style: GoogleFonts.rajdhani(color: Colors.white)),
+          backgroundColor: const Color(0xFF14F195).withValues(alpha: 0.8),
+          duration: const Duration(seconds: 3),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('⚠ Pipeline-Fehler: $e',
+            style: GoogleFonts.rajdhani(color: Colors.white)),
+          backgroundColor: const Color(0xFFFF4444).withValues(alpha: 0.8),
+        ));
+      }
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════
+  // TAB 2 — DATA LAB
   // ══════════════════════════════════════════════════════════
   Widget _buildDataLab(QuantumPalette p, TimeCrystalService tc) {
     return SingleChildScrollView(

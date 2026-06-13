@@ -1,6 +1,7 @@
 // ============================================================
-// DASHBOARD v4 – HQMLL Quantum Trader
+// DASHBOARD v49 – HQMLL Quantum Trader
 // Live Portfolio, P&L, TradingSignalStream, AI Engine, News
+// Realtime StreamBuilder + Error Handling + LiveDataService
 // ============================================================
 import 'dart:async';
 import 'dart:math';
@@ -15,6 +16,8 @@ import '../services/time_crystal_service.dart';
 import '../services/persistence_service.dart';
 import '../widgets/crypto_icon.dart';
 import '../services/trading_signal_service.dart';
+import '../services/live_data_service.dart';
+import '../services/error_handler_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -196,27 +199,45 @@ class _DashboardScreenState extends State<DashboardScreen>
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>().palette;
     // ExchangeService als einzige primäre Preisquelle (Binance WS + CoinGecko)
-    final ex  = context.watch<ExchangeService>();
-    final tc  = context.watch<TimeCrystalService>();
-    final as2 = context.watch<AutoSaveService>();
-    final tss = context.watch<TradingSignalService>();
+    final ex   = context.watch<ExchangeService>();
+    final tc   = context.watch<TimeCrystalService>();
+    final as2  = context.watch<AutoSaveService>();
+    final tss  = context.watch<TradingSignalService>();
+    final lds  = context.watch<LiveDataService>();
+    final errs = context.watch<ErrorHandlerService>();
 
     // Portfolio live berechnen
     _syncPortfolioFromExchange(ex);
 
-    // Watchlist-Preise aus ExchangeService synchronisieren
+    // Watchlist-Preise aus ExchangeService + LiveDataService synchronisieren
     for (var w in _watchlist) {
       final sym = w['sym'] as String;
-      final exTick = ex.getTick(sym);
+      final exTick  = ex.getTick(sym);
+      final ldsTick = lds.ticker(sym);
       final prev = w['price'] as double;
-      if (exTick != null && exTick.price > 0) {
-        w['price'] = exTick.price;
-        w['change'] = exTick.change24h;
-        if ((prev - exTick.price).abs() > prev * 0.0001) {
-          (w['hist'] as List<double>).add(exTick.price);
+
+      // Prefer ExchangeService, fallback to LiveDataService
+      double? livePrice  = exTick?.price ?? ldsTick?.price;
+      double? liveChange = exTick?.change24h ?? ldsTick?.change24h;
+
+      if (livePrice != null && livePrice > 0) {
+        w['price']  = livePrice;
+        w['change'] = liveChange ?? w['change'];
+        if ((prev - livePrice).abs() > prev * 0.0001) {
+          (w['hist'] as List<double>).add(livePrice);
           if ((w['hist'] as List<double>).length > 20) (w['hist'] as List<double>).removeAt(0);
         }
       }
+    }
+
+    // Sync portfolio from LiveDataService if ExchangeService values aren't available
+    final ldsPortfolio = lds.portfolio;
+    if (ldsPortfolio != null && _totalValue < 1000) {
+      _totalValue    = ldsPortfolio.totalValue;
+      _pnlDay        = ldsPortfolio.pnlDay;
+      _pnlDayPct     = ldsPortfolio.pnlDayPct;
+      _pnlAllTime    = ldsPortfolio.pnlAllTime;
+      _pnlAllTimePct = ldsPortfolio.pnlAllTimePct;
     }
 
     return Scaffold(
@@ -225,12 +246,15 @@ class _DashboardScreenState extends State<DashboardScreen>
         color: p.primary,
         backgroundColor: p.surface,
         onRefresh: () async {
+          lds.forceRefresh();
           await ex.initialize();
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           child: Column(children: [
-            _buildHeader(p, ex),
+            _buildHeader(p, ex, lds),
+            // Live-Status Banner (Realtime)
+            _buildLiveStatusBanner(p, lds, errs),
             _buildPortfolioCard(p),
             _buildAllocationRow(p),
             _buildSignalStream(p, tss),
@@ -246,12 +270,125 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
+  // ── LIVE STATUS BANNER (Realtime StreamBuilder) ──
+  Widget _buildLiveStatusBanner(dynamic p, LiveDataService lds, ErrorHandlerService errs) {
+    return RepaintBoundary(
+      child: StreamBuilder<LiveSystemStatus>(
+        stream: lds.statusStream,
+        builder: (context, snap) {
+          final status = lds.systemStatus;
+          final activeErrors = errs.activeErrors;
+
+          // Error state
+          if (activeErrors.isNotEmpty) {
+            final err = activeErrors.first;
+            return Container(
+              margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: err.severityColor.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: err.severityColor.withValues(alpha: 0.35)),
+              ),
+              child: Row(children: [
+                Icon(err.icon, color: err.severityColor, size: 14),
+                const SizedBox(width: 8),
+                Expanded(child: Text(
+                  '${err.typeLabel}: ${err.message}',
+                  style: GoogleFonts.rajdhani(
+                    color: err.severityColor, fontSize: 10,
+                    fontWeight: FontWeight.w600),
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                )),
+                GestureDetector(
+                  onTap: () => errs.dismiss(err.id),
+                  child: Icon(Icons.close, color: err.severityColor.withValues(alpha: 0.7), size: 14),
+                ),
+              ]),
+            );
+          }
+
+          // Live status
+          if (status == null) return const SizedBox.shrink();
+          final allOk  = status.exchangeOnline && status.dataFeedActive;
+          final color  = allOk ? const Color(0xFF14F195) : const Color(0xFFF7931A);
+          final btcLds = lds.ticker('BTC');
+
+          return Container(
+            margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [
+                color.withValues(alpha: 0.07),
+                Colors.transparent,
+              ]),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: color.withValues(alpha: 0.22)),
+            ),
+            child: Row(children: [
+              // Pulsing dot
+              AnimatedBuilder(
+                animation: _pulseCtrl,
+                builder: (_, __) => Container(
+                  width: 7, height: 7,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: color,
+                    boxShadow: [BoxShadow(
+                      color: color.withValues(alpha: 0.4 + _pulseCtrl.value * 0.4),
+                      blurRadius: 6, spreadRadius: 1,
+                    )],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                allOk ? '● REALTIME AKTIV' : '◐ EINGESCHRÄNKT',
+                style: GoogleFonts.rajdhani(
+                  color: color, fontSize: 9,
+                  fontWeight: FontWeight.w800, letterSpacing: 1),
+              ),
+              const SizedBox(width: 12),
+              // BTC Live-Preis aus LiveDataService
+              if (btcLds != null) ...[
+                Text('BTC ', style: GoogleFonts.rajdhani(
+                  color: p.textSecondary, fontSize: 9)),
+                Text('\$${(btcLds.price / 1000).toStringAsFixed(1)}K',
+                  style: GoogleFonts.rajdhani(
+                    color: btcLds.isUp ? const Color(0xFF14F195) : const Color(0xFFFF4444),
+                    fontSize: 10, fontWeight: FontWeight.w700)),
+                const SizedBox(width: 4),
+                Text(
+                  '${btcLds.change24h >= 0 ? "+" : ""}${btcLds.change24h.toStringAsFixed(2)}%',
+                  style: GoogleFonts.rajdhani(
+                    color: btcLds.isUp
+                        ? const Color(0xFF14F195).withValues(alpha: 0.8)
+                        : const Color(0xFFFF4444).withValues(alpha: 0.8),
+                    fontSize: 9),
+                ),
+              ],
+              const Spacer(),
+              Text(
+                '${status.activeSignals} SIGNALE · ${(status.systemLoad * 100).toStringAsFixed(0)}% LOAD',
+                style: GoogleFonts.rajdhani(
+                  color: p.textSecondary, fontSize: 8),
+              ),
+            ]),
+          );
+        },
+      ),
+    );
+  }
+
   // ── HEADER ──
-  Widget _buildHeader(dynamic p, ExchangeService ex) {
+  Widget _buildHeader(dynamic p, ExchangeService ex, LiveDataService lds) {
     final now = DateTime.now();
     final greeting = now.hour < 12 ? 'Guten Morgen' : now.hour < 18 ? 'Guten Tag' : 'Guten Abend';
     final btcPrice = ex.getPrice('BTC');
-    final btcTick = ex.getTick('BTC');
+    final btcLds   = lds.ticker('BTC');
+    // Prefer exchange price, fallback to LiveDataService
+    final displayPrice = btcPrice > 0 ? btcPrice : (btcLds?.price ?? 0.0);
+    final btcTick  = ex.getTick('BTC');
     final isWsLive = btcTick?.isLive ?? false;
     final liveColor = isWsLive ? const Color(0xFF00FF88) : const Color(0xFFFFAA00);
     return AnimatedBuilder(
@@ -266,8 +403,8 @@ class _DashboardScreenState extends State<DashboardScreen>
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(greeting, style: GoogleFonts.inter(color: p.textSecondary, fontSize: 12)),
             Text('QUANTUM TRADER', style: GoogleFonts.spaceMono(color: p.primary, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 2)),
-            if (btcPrice > 0)
-              Text('BTC \$${btcPrice >= 1000 ? (btcPrice / 1000).toStringAsFixed(1) + 'K' : btcPrice.toStringAsFixed(0)}', style: GoogleFonts.spaceMono(
+            if (displayPrice > 0)
+              Text('BTC \$${displayPrice >= 1000 ? '${(displayPrice / 1000).toStringAsFixed(1)}K' : displayPrice.toStringAsFixed(0)}', style: GoogleFonts.spaceMono(
                 color: liveColor.withValues(alpha: 0.7), fontSize: 9, letterSpacing: 0.5,
               )),
           ])),
