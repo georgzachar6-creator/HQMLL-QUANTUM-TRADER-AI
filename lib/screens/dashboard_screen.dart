@@ -1334,7 +1334,7 @@ class _DashboardPhaseMiniPainter extends CustomPainter {
     TCPhase.chaotic:    Color(0xFFFF4444),
     TCPhase.trivial:    Color(0xFF627EEA),
     TCPhase.unknown:    Color(0xFF888888),
-  }[ph]!;
+  }[ph] ?? const Color(0xFF888888);
 
   @override
   bool shouldRepaint(covariant _DashboardPhaseMiniPainter old) =>

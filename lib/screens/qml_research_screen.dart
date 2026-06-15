@@ -880,7 +880,7 @@ class _QMLResearchScreenState extends State<QMLResearchScreen>
       TCPhase.chaotic:    Color(0xFFFF4444),
       TCPhase.trivial:    Color(0xFF627EEA),
       TCPhase.unknown:    Color(0xFF888888),
-    }[phase]!;
+    }[phase] ?? const Color(0xFF888888);
 
     return Container(
       padding: const EdgeInsets.all(10),

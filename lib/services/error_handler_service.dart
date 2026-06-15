@@ -55,14 +55,14 @@ class AppError {
     AppErrorType.service:  'SERVICE',
     AppErrorType.ui:       'UI',
     AppErrorType.unknown:  'UNBEKANNT',
-  }[type]!;
+  }[type] ?? 'UNBEKANNT';
 
   Color get severityColor => const {
     AppErrorSeverity.info:     Color(0xFF00F0FF),
     AppErrorSeverity.warning:  Color(0xFFF7931A),
     AppErrorSeverity.error:    Color(0xFFFF4444),
     AppErrorSeverity.critical: Color(0xFFFF0055),
-  }[severity]!;
+  }[severity] ?? const Color(0xFFFF4444);
 
   IconData get icon => const {
     AppErrorType.network:  Icons.wifi_off_outlined,
@@ -71,7 +71,7 @@ class AppError {
     AppErrorType.service:  Icons.settings_outlined,
     AppErrorType.ui:       Icons.broken_image_outlined,
     AppErrorType.unknown:  Icons.error_outline,
-  }[type]!;
+  }[type] ?? Icons.error_outline;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -270,20 +270,34 @@ class _QuantumErrorBoundaryState extends State<QuantumErrorBoundary> {
   Object? _error;
   StackTrace? _stack;
 
+  // Stream-Subscription zum ErrorHandlerService (kein FlutterError.onError Override!)
+  StreamSubscription<AppError>? _errorSub;
+
   @override
   void initState() {
     super.initState();
-    // Listen to FlutterError
-    final oldHandler = FlutterError.onError;
-    FlutterError.onError = (details) {
-      if (mounted) {
-        setState(() {
-          _error = details.exception;
-          _stack = details.stack;
-        });
+    // ── KORREKTES Flutter Error Boundary Pattern ──────────────
+    // KEIN FlutterError.onError Override hier — das macht bereits
+    // ErrorHandlerService._setupFlutterErrorHandler() einmalig global.
+    // Stattdessen: Lausche auf den errorStream des Services.
+    _errorSub = ErrorHandlerService().errorStream.listen((appErr) {
+      // Nur UI-kritische Fehler anzeigen (severity >= error)
+      if (appErr.severity.index >= AppErrorSeverity.error.index &&
+          appErr.type == AppErrorType.ui) {
+        if (mounted) {
+          setState(() {
+            _error = appErr.originalError ?? appErr.message;
+            _stack = appErr.stackTrace;
+          });
+        }
       }
-      oldHandler?.call(details);
-    };
+    });
+  }
+
+  @override
+  void dispose() {
+    _errorSub?.cancel();
+    super.dispose();
   }
 
   void _reset() => setState(() { _error = null; _stack = null; });
@@ -372,16 +386,17 @@ class _GlobalErrorOverlayState extends State<GlobalErrorOverlay>
 
   @override
   Widget build(BuildContext context) {
+    final shownErr = _shownError; // lokale nicht-nullable Kopie
     return Stack(children: [
       widget.child,
-      if (_shownError != null)
+      if (shownErr != null)
         Positioned(
           top: 0, left: 0, right: 0,
           child: SlideTransition(
             position: _slideAnim,
             child: _ErrorBanner(
-              error: _shownError!,
-              onDismiss: () => _hideBanner(_shownError!.id),
+              error: shownErr,
+              onDismiss: () => _hideBanner(shownErr.id),
             ),
           ),
         ),

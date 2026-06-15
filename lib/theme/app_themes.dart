@@ -120,7 +120,8 @@ class AppThemes {
     ),
   };
 
-  static QuantumPalette getPalette(QuantumTheme theme) => palettes[theme]!;
+  static QuantumPalette getPalette(QuantumTheme theme) =>
+      palettes[theme] ?? palettes[QuantumTheme.enterprise]!;
 
   static ThemeData buildTheme(QuantumTheme quantumTheme) {
     final p = getPalette(quantumTheme);

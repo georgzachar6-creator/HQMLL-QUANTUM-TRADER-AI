@@ -81,7 +81,7 @@ void main() async {
   // ── Startup Log ───────────────────────────────────────────
   persistenceService.addSystemLog(
     'SYSTEM',
-    'HQMLL Quantum Trader v49 gestartet — '
+    'HQMLL Quantum Trader v50 gestartet — '
     'AutoSave (${autoSaveService.intervalLabel}) · '
     'TradingSignals · TimeCrystal · LiveData · ErrorHandler aktiv',
     level: SysLogLevel.quantum,
