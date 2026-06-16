@@ -28,14 +28,14 @@ extension SignalActionX on SignalAction {
     SignalAction.hold:       'HOLD',
     SignalAction.sell:       'SELL',
     SignalAction.strongSell: 'STRONG SELL',
-  }[this]!;
+  }[this] ?? 'HOLD';
   String get emoji => const {
     SignalAction.strongBuy:  '🚀',
     SignalAction.buy:        '📈',
     SignalAction.hold:       '⏸️',
     SignalAction.sell:       '📉',
     SignalAction.strongSell: '🔴',
-  }[this]!;
+  }[this] ?? '⏸️';
   bool get isBullish => this == SignalAction.strongBuy || this == SignalAction.buy;
   bool get isBearish => this == SignalAction.sell || this == SignalAction.strongSell;
 }
@@ -47,7 +47,7 @@ extension RiskLevelX on RiskLevel {
     RiskLevel.medium:   'Medium',
     RiskLevel.high:     'High',
     RiskLevel.veryHigh: 'Very High',
-  }[this]!;
+  }[this] ?? 'Medium';
 }
 
 class TradingSignal {

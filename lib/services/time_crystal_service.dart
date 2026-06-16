@@ -29,13 +29,13 @@ extension TCPlatformX on TCPlatform {
     TCPlatform.ionTrap:          'Ionenfalle',
     TCPlatform.nvCenter:         'Diamant NV-Zentrum',
     TCPlatform.superconducting:  'Supraleitender Qubit',
-  }[this]!;
+  }[this] ?? 'Quantenplattform';
   String get short => const {
     TCPlatform.bec:             'BEC',
     TCPlatform.ionTrap:         'ION',
     TCPlatform.nvCenter:        'NV',
     TCPlatform.superconducting: 'SC',
-  }[this]!;
+  }[this] ?? '??';
 }
 
 extension TCPhaseX on TCPhase {
@@ -45,7 +45,7 @@ extension TCPhaseX on TCPhase {
     TCPhase.chaotic:    'Chaotic',
     TCPhase.mbl:        'MBL',
     TCPhase.unknown:    'Unknown',
-  }[this]!;
+  }[this] ?? 'Unknown';
 }
 
 /// One experimental data point (Floquet-Periode)
@@ -225,7 +225,7 @@ extension DRPipelineStageX on DRPipelineStage {
     DRPipelineStage.hypothesisGen:       '5. Hypothesengenerierung',
     DRPipelineStage.adaptiveExperiment:  '6. Adaptive Experimente',
     DRPipelineStage.tradingIntegration:  '7. Trading-Integration',
-  }[this]!;
+  }[this] ?? 'Pipeline-Stufe';
   String get icon => const {
     DRPipelineStage.dataIngestion:       '📡',
     DRPipelineStage.preprocessing:       '🧹',
@@ -234,7 +234,7 @@ extension DRPipelineStageX on DRPipelineStage {
     DRPipelineStage.hypothesisGen:       '💡',
     DRPipelineStage.adaptiveExperiment:  '🔬',
     DRPipelineStage.tradingIntegration:  '📈',
-  }[this]!;
+  }[this] ?? '⚙';
   String get description => const {
     DRPipelineStage.dataIngestion:
         'BEC · Ionenfallen · NV-Zentren · Supraleitende Qubits — Oszillationen, Kohärenzzeiten, Fehlerraten',
@@ -250,7 +250,7 @@ extension DRPipelineStageX on DRPipelineStage {
         'RL-Agent optimiert Parameterraum · Active Learning · Maximaler Informationsgewinn',
     DRPipelineStage.tradingIntegration:
         'Zeitkristall-Regime → Market-Regime · DTC-Order → Trend-Stärke · Quanten-Meta-Features',
-  }[this]!;
+  }[this] ?? '';
   String get framework => const {
     DRPipelineStage.dataIngestion:      'QuTiP · Cirq · Sim-Backend',
     DRPipelineStage.preprocessing:      'Denoising-Autoencoder · FFT',
@@ -259,7 +259,7 @@ extension DRPipelineStageX on DRPipelineStage {
     DRPipelineStage.hypothesisGen:      'LLM + Symbolic Fusion',
     DRPipelineStage.adaptiveExperiment: 'RL Agent · Bayesian Opt.',
     DRPipelineStage.tradingIntegration: 'HQMLL Oracle Bridge v48',
-  }[this]!;
+  }[this] ?? '';
 }
 
 enum DRStageStatus { idle, running, completed, failed }
@@ -519,7 +519,7 @@ class TimeCrystalService extends ChangeNotifier {
       TCModelType.randomForest:'Random Forest Baseline',
       TCModelType.pennylane:   'PennyLane QML (VQC)',
       TCModelType.tfq:         'TensorFlow Quantum',
-    }[modelType]!;
+    }[modelType] ?? 'QML-Modell';
 
     _addLog('⟨ψ⟩ Training gestartet: $modelLabel — $epochs Epochen');
 
@@ -1078,7 +1078,7 @@ class TimeCrystalService extends ChangeNotifier {
       TCPlatform.ionTrap:         150.0,
       TCPlatform.superconducting: 20.0,
       TCPlatform.bec:             500.0,
-    }[p]!;
+    }[p] ?? 80.0;
     return (base * (1.0 - disorder * 0.5) / (size / 8.0)).clamp(5.0, 600.0);
   }
 
@@ -1110,7 +1110,7 @@ class TimeCrystalService extends ChangeNotifier {
       TCModelType.randomForest: 0.18,
       TCModelType.pennylane:    0.06,
       TCModelType.tfq:          0.05,
-    }[type]!;
+    }[type] ?? 0.12;
     return finalLoss + (1.0 - finalLoss) * exp(-t * 5.0) + (_rnd.nextDouble() - 0.5) * 0.02;
   }
 
@@ -1122,7 +1122,7 @@ class TimeCrystalService extends ChangeNotifier {
       TCModelType.randomForest: 0.81,
       TCModelType.pennylane:    0.95,
       TCModelType.tfq:          0.97,
-    }[type]!;
+    }[type] ?? 0.89;
     return (finalAcc * (1.0 - exp(-t * 4.0)) + _rnd.nextDouble() * 0.03).clamp(0.0, 1.0);
   }
 

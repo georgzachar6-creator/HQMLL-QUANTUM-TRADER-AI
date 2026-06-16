@@ -1902,16 +1902,19 @@ class _QMLResearchScreenState extends State<QMLResearchScreen>
     TCPhase.chaotic:    Color(0xFFFF4444),
     TCPhase.trivial:    Color(0xFF627EEA),
     TCPhase.unknown:    Color(0xFF888888),
-  }[phase]!;
+  }[phase] ?? const Color(0xFF888888);
 
-  (IconData, String, Color) _modelInfo(TCModelType t) => const {
-    TCModelType.cnn:          (Icons.layers_outlined, 'CNN 1D', Color(0xFF00F0FF)),
-    TCModelType.lstm:         (Icons.timeline_outlined, 'LSTM', Color(0xFF627EEA)),
-    TCModelType.svm:          (Icons.scatter_plot_outlined, 'SVM', Color(0xFFF7931A)),
-    TCModelType.randomForest: (Icons.park_outlined, 'RandomForest', Color(0xFF14F195)),
-    TCModelType.pennylane:    (Icons.blur_circular_outlined, 'PennyLane', Color(0xFF9945FF)),
-    TCModelType.tfq:          (Icons.waves_outlined, 'TFQ', Color(0xFFFF6B35)),
-  }[t]!;
+  (IconData, String, Color) _modelInfo(TCModelType t) {
+    const map = <TCModelType, (IconData, String, Color)>{
+      TCModelType.cnn:          (Icons.layers_outlined, 'CNN 1D', Color(0xFF00F0FF)),
+      TCModelType.lstm:         (Icons.timeline_outlined, 'LSTM', Color(0xFF627EEA)),
+      TCModelType.svm:          (Icons.scatter_plot_outlined, 'SVM', Color(0xFFF7931A)),
+      TCModelType.randomForest: (Icons.park_outlined, 'RandomForest', Color(0xFF14F195)),
+      TCModelType.pennylane:    (Icons.blur_circular_outlined, 'PennyLane', Color(0xFF9945FF)),
+      TCModelType.tfq:          (Icons.waves_outlined, 'TFQ', Color(0xFFFF6B35)),
+    };
+    return map[t] ?? (Icons.blur_circular_outlined, 'QML', const Color(0xFF9945FF));
+  }
 
   // ── Actions ───────────────────────────────────────────────
   void _runExperiment(TimeCrystalService tc) {
@@ -2106,7 +2109,7 @@ class _PhaseDiagramPainter extends CustomPainter {
     TCPhase.chaotic:    Color(0xFFFF4444),
     TCPhase.trivial:    Color(0xFF627EEA),
     TCPhase.unknown:    Color(0xFF888888),
-  }[phase]!;
+  }[phase] ?? const Color(0xFF888888);
 
   @override
   bool shouldRepaint(covariant _PhaseDiagramPainter old) =>
