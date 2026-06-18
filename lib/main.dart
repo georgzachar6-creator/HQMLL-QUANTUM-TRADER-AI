@@ -1,3 +1,6 @@
+/// HQMLL Quantum Trader — main.dart v50.2
+/// Root-Fix: MultiProvider innerhalb HQMLLApp — kein ProviderNotFoundException möglich
+/// Grigori Saks · 2025
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -21,6 +24,19 @@ import 'screens/splash_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/main_scaffold.dart';
 
+// ── Singleton-Services (einmalig erstellt, vor runApp) ────────────────────────
+final _errorHandler        = ErrorHandlerService();
+final _authService         = AuthService();
+final _exchangeService     = ExchangeService();
+final _persistenceService  = PersistenceService();
+final _walletService       = WalletService();
+final _paymentService      = PaymentService();
+final _marketService       = MarketService();
+final _autoSaveService     = AutoSaveService();
+final _timeCrystalService  = TimeCrystalService();
+final _tradingSignalService = TradingSignalService();
+final _liveDataService     = LiveDataService();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
@@ -28,92 +44,86 @@ void main() async {
     statusBarIconBrightness: Brightness.light,
   ));
 
-  // ── Error Handler — FIRST (catches startup errors) ────────
-  final errorHandler = ErrorHandlerService();
-
-  // ── Initialize core services ──────────────────────────────
-  final authService          = AuthService();
-  final exchangeService      = ExchangeService();
-  final persistenceService   = PersistenceService();
-  final walletService        = WalletService();
-  final paymentService       = PaymentService();
-  final marketService        = MarketService();
-  final autoSaveService      = AutoSaveService();
-  final timeCrystalService   = TimeCrystalService();
-  final tradingSignalService = TradingSignalService();
-  final liveDataService      = LiveDataService();
-
-  // ── Safe initialization with error capture ────────────────
-  await errorHandler.runSafe(
-    () => authService.initialize(),
-    source: 'AuthService',
-  );
-  await errorHandler.runSafe(
-    () => exchangeService.initialize(),
-    source: 'ExchangeService',
-  );
-
-  // ── Boot AutoSave Service ──────────────────────────────────
-  await errorHandler.runSafe(
-    () => autoSaveService.initialize(
-      persistenceService: persistenceService,
-      walletService:      walletService,
-      paymentService:     paymentService,
-      marketService:      marketService,
-      timeCrystalService: timeCrystalService,
+  // ── Safe initialization — alle Fehler werden gecaptured ───────────────────
+  await _errorHandler.runSafe(() => _authService.initialize(),
+      source: 'AuthService');
+  await _errorHandler.runSafe(() => _exchangeService.initialize(),
+      source: 'ExchangeService');
+  await _errorHandler.runSafe(
+    () => _autoSaveService.initialize(
+      persistenceService: _persistenceService,
+      walletService:      _walletService,
+      paymentService:     _paymentService,
+      marketService:      _marketService,
+      timeCrystalService: _timeCrystalService,
     ),
     source: 'AutoSaveService',
   );
-
-  // ── Start Realtime Services ────────────────────────────────
-  await errorHandler.runSafe(
-    () => tradingSignalService.initialize(
-      timeCrystalService: timeCrystalService,
-      exchangeService:    exchangeService,
+  await _errorHandler.runSafe(
+    () => _tradingSignalService.initialize(
+      timeCrystalService: _timeCrystalService,
+      exchangeService:    _exchangeService,
     ),
     source: 'TradingSignalService',
   );
-  await errorHandler.runSafe(
-    () => liveDataService.initialize(),
-    source: 'LiveDataService',
-  );
+  await _errorHandler.runSafe(() => _liveDataService.initialize(),
+      source: 'LiveDataService');
 
-  // ── Startup Log ───────────────────────────────────────────
-  persistenceService.addSystemLog(
+  // ── Startup-Log ───────────────────────────────────────────────────────────
+  _persistenceService.addSystemLog(
     'SYSTEM',
-    'HQMLL Quantum Trader v50 gestartet — '
-    'AutoSave (${autoSaveService.intervalLabel}) · '
+    'HQMLL Quantum Trader v50.2 gestartet — '
+    'AutoSave (${_autoSaveService.intervalLabel}) · '
     'TradingSignals · TimeCrystal · LiveData · ErrorHandler aktiv',
     level: SysLogLevel.quantum,
   );
 
-  runApp(
-    MultiProvider(
+  runApp(const HQMLLApp());
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ROOT APP WIDGET
+// MultiProvider ist der äußerste Wrapper — KEIN ProviderNotFoundException
+// möglich weil alle Provider-Zugriffe garantiert unter MultiProvider liegen.
+// ══════════════════════════════════════════════════════════════════════════════
+class HQMLLApp extends StatelessWidget {
+  const HQMLLApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
       providers: [
+        // ── Providers die KEINE Instanz von außen brauchen ──────────────────
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => LivePriceProvider()),
         ChangeNotifierProvider(create: (_) => LiveMarketService()),
         ChangeNotifierProvider(create: (_) => CoinMarketCapService()),
         ChangeNotifierProvider(create: (_) => SecureVaultService()),
-        ChangeNotifierProvider.value(value: persistenceService),
-        ChangeNotifierProvider.value(value: authService),
-        ChangeNotifierProvider.value(value: exchangeService),
-        ChangeNotifierProvider.value(value: walletService),
-        ChangeNotifierProvider.value(value: paymentService),
-        ChangeNotifierProvider.value(value: marketService),
-        ChangeNotifierProvider.value(value: autoSaveService),
-        ChangeNotifierProvider.value(value: timeCrystalService),
-        ChangeNotifierProvider.value(value: tradingSignalService),
-        ChangeNotifierProvider.value(value: errorHandler),
-        ChangeNotifierProvider.value(value: liveDataService),
+        // ── Singleton-Services (bereits initialisiert in main()) ─────────────
+        ChangeNotifierProvider.value(value: _persistenceService),
+        ChangeNotifierProvider.value(value: _authService),
+        ChangeNotifierProvider.value(value: _exchangeService),
+        ChangeNotifierProvider.value(value: _walletService),
+        ChangeNotifierProvider.value(value: _paymentService),
+        ChangeNotifierProvider.value(value: _marketService),
+        ChangeNotifierProvider.value(value: _autoSaveService),
+        ChangeNotifierProvider.value(value: _timeCrystalService),
+        ChangeNotifierProvider.value(value: _tradingSignalService),
+        ChangeNotifierProvider.value(value: _errorHandler),
+        ChangeNotifierProvider.value(value: _liveDataService),
       ],
-      child: const HQMLLApp(),
-    ),
-  );
+      // _AppShell liegt INNERHALB MultiProvider → alle context.watch() sicher
+      child: const _AppShell(),
+    );
+  }
 }
 
-class HQMLLApp extends StatelessWidget {
-  const HQMLLApp({super.key});
+// ══════════════════════════════════════════════════════════════════════════════
+// APP SHELL — MaterialApp + Global Overlays
+// Liegt garantiert unter MultiProvider → context.watch() ist immer sicher
+// ══════════════════════════════════════════════════════════════════════════════
+class _AppShell extends StatelessWidget {
+  const _AppShell();
 
   @override
   Widget build(BuildContext context) {
@@ -124,8 +134,8 @@ class HQMLLApp extends StatelessWidget {
       title: 'HQMLL Quantum Trader',
       debugShowCheckedModeBanner: false,
       theme: tp.themeData,
-      // ── Global Error Overlay wraps everything ──────────────
-      builder: (context, child) => GlobalErrorOverlay(
+      // ── Global Error Overlay wraps den gesamten Navigator ─────────────────
+      builder: (ctx, child) => GlobalErrorOverlay(
         child: QuantumErrorBoundary(
           boundaryName: 'Root',
           child: child ?? const SizedBox.shrink(),
