@@ -1,4 +1,4 @@
-/// HQMLL Quantum Trader — main.dart v50.2
+/// HQMLL Quantum Trader — main.dart v51.0
 /// Root-Fix: MultiProvider innerhalb HQMLLApp — kein ProviderNotFoundException möglich
 /// Grigori Saks · 2025
 import 'package:flutter/material.dart';
@@ -20,6 +20,9 @@ import 'services/time_crystal_service.dart';
 import 'services/trading_signal_service.dart';
 import 'services/error_handler_service.dart';
 import 'services/live_data_service.dart';
+import 'services/risk_engine_service.dart';
+import 'services/kyc_aml_service.dart';
+import 'services/market_data_ingestion_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/main_scaffold.dart';
@@ -35,7 +38,10 @@ final _marketService       = MarketService();
 final _autoSaveService     = AutoSaveService();
 final _timeCrystalService  = TimeCrystalService();
 final _tradingSignalService = TradingSignalService();
-final _liveDataService     = LiveDataService();
+final _liveDataService            = LiveDataService();
+final _riskEngineService          = RiskEngineService();
+final _kycAmlService              = KycAmlService();
+final _marketDataIngestionService = MarketDataIngestionService();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -68,13 +74,16 @@ void main() async {
   );
   await _errorHandler.runSafe(() => _liveDataService.initialize(),
       source: 'LiveDataService');
+  // v51.0 neue Services — RiskEngine + MarketData starten
+  // KycAmlService initialisiert sich selbst im Konstruktor (_load())
+  _marketDataIngestionService.start();
 
   // ── Startup-Log ───────────────────────────────────────────────────────────
   _persistenceService.addSystemLog(
     'SYSTEM',
-    'HQMLL Quantum Trader v50.2 gestartet — '
+    'HQMLL Quantum Trader v51.0 gestartet — '
     'AutoSave (${_autoSaveService.intervalLabel}) · '
-    'TradingSignals · TimeCrystal · LiveData · ErrorHandler aktiv',
+    'TradingSignals · TimeCrystal · LiveData · RiskEngine · KYC/AML · MarketData · ErrorHandler aktiv',  
     level: SysLogLevel.quantum,
   );
 
@@ -82,7 +91,7 @@ void main() async {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// ROOT APP WIDGET
+// ROOT APP WIDGET v51.0
 // MultiProvider ist der äußerste Wrapper — KEIN ProviderNotFoundException
 // möglich weil alle Provider-Zugriffe garantiert unter MultiProvider liegen.
 // ══════════════════════════════════════════════════════════════════════════════
@@ -111,6 +120,10 @@ class HQMLLApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: _tradingSignalService),
         ChangeNotifierProvider.value(value: _errorHandler),
         ChangeNotifierProvider.value(value: _liveDataService),
+        // ── v51.0 — Neue Services (Perplexity Architecture) ─────────────────
+        ChangeNotifierProvider.value(value: _riskEngineService),
+        ChangeNotifierProvider.value(value: _kycAmlService),
+        ChangeNotifierProvider.value(value: _marketDataIngestionService),
       ],
       // _AppShell liegt INNERHALB MultiProvider → alle context.watch() sicher
       child: const _AppShell(),

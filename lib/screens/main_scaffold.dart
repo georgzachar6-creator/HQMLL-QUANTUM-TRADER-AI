@@ -47,6 +47,8 @@ import 'ai_orchestrator_screen.dart';
 import 'oms_risk_screen.dart';
 import 'quantum_research_screen.dart';
 import 'qml_research_screen.dart';
+import 'kyc_aml_screen.dart';
+import 'market_data_ingestion_screen.dart';
 import 'auth_screen.dart';
 import '../services/auth_service.dart';
 import '../services/exchange_service.dart';
@@ -104,6 +106,8 @@ class _MainScaffoldState extends State<MainScaffold>
     _NavItem(icon: Icons.auto_awesome, activeIcon: Icons.auto_awesome, label: 'BUCHHALTER'),
     _NavItem(icon: Icons.science_outlined, activeIcon: Icons.science, label: 'QUANTUM'),
     _NavItem(icon: Icons.biotech_outlined, activeIcon: Icons.biotech, label: 'QML LAB'),
+    _NavItem(icon: Icons.verified_user_outlined, activeIcon: Icons.verified_user, label: 'KYC/AML'),
+    _NavItem(icon: Icons.sensors_outlined, activeIcon: Icons.sensors, label: 'MKTDATA'),
   ];
 
   @override
@@ -167,6 +171,8 @@ class _MainScaffoldState extends State<MainScaffold>
       const AccountingScreen(),
       const QuantumResearchScreen(),
       const QMLResearchScreen(),
+      const KycAmlScreen(),
+      const MarketDataIngestionScreen(),
     ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
