@@ -49,6 +49,8 @@ import 'quantum_research_screen.dart';
 import 'qml_research_screen.dart';
 import 'kyc_aml_screen.dart';
 import 'market_data_ingestion_screen.dart';
+import 'performance_screen.dart';
+import 'auto_workflow_screen.dart';
 import 'auth_screen.dart';
 import '../services/auth_service.dart';
 import '../services/exchange_service.dart';
@@ -108,6 +110,8 @@ class _MainScaffoldState extends State<MainScaffold>
     _NavItem(icon: Icons.biotech_outlined, activeIcon: Icons.biotech, label: 'QML LAB'),
     _NavItem(icon: Icons.verified_user_outlined, activeIcon: Icons.verified_user, label: 'KYC/AML'),
     _NavItem(icon: Icons.sensors_outlined, activeIcon: Icons.sensors, label: 'MKTDATA'),
+    _NavItem(icon: Icons.speed_outlined, activeIcon: Icons.speed, label: 'PERF'),
+    _NavItem(icon: Icons.account_tree_outlined, activeIcon: Icons.account_tree, label: 'WORKFLOW'),
   ];
 
   @override
@@ -173,6 +177,8 @@ class _MainScaffoldState extends State<MainScaffold>
       const QMLResearchScreen(),
       const KycAmlScreen(),
       const MarketDataIngestionScreen(),
+      const PerformanceScreen(),
+      const AutoWorkflowScreen(),
     ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(

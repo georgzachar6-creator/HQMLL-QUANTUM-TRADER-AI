@@ -100,16 +100,16 @@ class _AlertsScreenState extends State<AlertsScreen>
     );
 
     _alerts = [
-      _Alert('BTC', 'Preis >', 45000, 'Push', true, Colors.orange, _prices['BTC']!),
-      _Alert('BTC', 'Preis <', 38000, 'Email + Push', true, Colors.orange, _prices['BTC']!),
-      _Alert('ETH', 'Preis >', 3200, 'Push', true, const Color(0xFF627EEA), _prices['ETH']!),
-      _Alert('ETH', '% Änderung >', 10, 'Telegram', false, const Color(0xFF627EEA), _prices['ETH']!),
-      _Alert('SOL', 'Preis >', 200, 'Push', true, const Color(0xFF9945FF), _prices['SOL']!),
-      _Alert('SOL', 'RSI >', 75, 'Email', false, const Color(0xFF9945FF), _prices['SOL']!),
-      _Alert('BNB', 'MA Kreuzung', 420, 'Push', true, const Color(0xFFF3BA2F), _prices['BNB']!),
-      _Alert('ADA', 'Preis <', 0.50, 'Push', true, const Color(0xFF0033AD), _prices['ADA']!),
-      _Alert('AVAX', '% Änderung >', 15, 'Push + Email', false, const Color(0xFFE84142), _prices['AVAX']!),
-      _Alert('LINK', 'Preis >', 20, 'Push', true, const Color(0xFF2A5ADA), _prices['LINK']!),
+      _Alert('BTC', 'Preis >', 45000, 'Push', true, Colors.orange, (_prices['BTC'] ?? 0)),
+      _Alert('BTC', 'Preis <', 38000, 'Email + Push', true, Colors.orange, (_prices['BTC'] ?? 0)),
+      _Alert('ETH', 'Preis >', 3200, 'Push', true, const Color(0xFF627EEA), (_prices['ETH'] ?? 0)),
+      _Alert('ETH', '% Änderung >', 10, 'Telegram', false, const Color(0xFF627EEA), (_prices['ETH'] ?? 0)),
+      _Alert('SOL', 'Preis >', 200, 'Push', true, const Color(0xFF9945FF), (_prices['SOL'] ?? 0)),
+      _Alert('SOL', 'RSI >', 75, 'Email', false, const Color(0xFF9945FF), (_prices['SOL'] ?? 0)),
+      _Alert('BNB', 'MA Kreuzung', 420, 'Push', true, const Color(0xFFF3BA2F), (_prices['BNB'] ?? 0)),
+      _Alert('ADA', 'Preis <', 0.50, 'Push', true, const Color(0xFF0033AD), (_prices['ADA'] ?? 0)),
+      _Alert('AVAX', '% Änderung >', 15, 'Push + Email', false, const Color(0xFFE84142), (_prices['AVAX'] ?? 0)),
+      _Alert('LINK', 'Preis >', 20, 'Push', true, const Color(0xFF2A5ADA), (_prices['LINK'] ?? 0)),
     ];
     _activeAlerts = _alerts.where((a) => a.enabled).length;
 
@@ -120,7 +120,7 @@ class _AlertsScreenState extends State<AlertsScreen>
         // Micro drift around ExchangeService anchor
         for (final key in _prices.keys) {
           final change = (_rand.nextDouble() - 0.5) * 0.0008;
-          _prices[key] = _prices[key]! * (1 + change);
+          _prices[key] = (_prices[key] ?? 0) * (1 + change);
         }
         _syncAlertsAndCheck();
       });
@@ -379,7 +379,7 @@ class _AlertsScreenState extends State<AlertsScreen>
           _statPill(pal, Icons.precision_manufacturing, '${_accuracy.toStringAsFixed(0)}%',
               'GENAUIGKEIT', const Color(0xFF00D4FF)),
           _divider(),
-          _statPill(pal, Icons.currency_bitcoin, '${_prices['BTC']! < 42180 ? '▼' : '▲'}\$${(_prices['BTC']! / 1000).toStringAsFixed(1)}K',
+          _statPill(pal, Icons.currency_bitcoin, '${(_prices['BTC'] ?? 0) < 42180 ? '▼' : '▲'}\$${((_prices['BTC'] ?? 0) / 1000).toStringAsFixed(1)}K',
               'BTC LIVE', Colors.orange),
         ],
       ),
@@ -706,7 +706,7 @@ class _AlertsScreenState extends State<AlertsScreen>
                               fontSize: 11,
                               fontWeight: FontWeight.bold)),
                       Text(
-                          '\$${_prices[s]! > 1000 ? (_prices[s]! / 1000).toStringAsFixed(1) + 'K' : _prices[s]!.toStringAsFixed(2)}',
+                          '\$${(_prices[s] ?? 0) > 1000 ? ((_prices[s] ?? 0) / 1000).toStringAsFixed(1) + 'K' : (_prices[s] ?? 0).toStringAsFixed(2)}',
                           style: GoogleFonts.spaceMono(
                               color: pal.textSecondary, fontSize: 8)),
                     ],
@@ -792,7 +792,7 @@ class _AlertsScreenState extends State<AlertsScreen>
                         color: pal.text, fontSize: 18,
                         fontWeight: FontWeight.bold),
                     decoration: InputDecoration(
-                      hintText: _prices[_newSymbol]!.toStringAsFixed(0),
+                      hintText: (_prices[_newSymbol] ?? 0).toStringAsFixed(0),
                       hintStyle: GoogleFonts.spaceMono(
                           color: pal.textSecondary),
                       border: InputBorder.none,
@@ -898,7 +898,7 @@ class _AlertsScreenState extends State<AlertsScreen>
                 setState(() {
                   _alerts.add(_Alert(
                     qa.$2, qa.$3, qa.$4, 'Push', true, qa.$5,
-                    _prices[qa.$2]!,
+                    (_prices[qa.$2] ?? 0),
                   ));
                   _activeAlerts = _alerts.where((a) => a.enabled).length;
                   _tabCtrl.animateTo(0);
@@ -974,7 +974,7 @@ class _AlertsScreenState extends State<AlertsScreen>
         _newChannel,
         true,
         colorMap[_newSymbol] ?? const Color(0xFF00D4FF),
-        _prices[_newSymbol]!,
+        (_prices[_newSymbol] ?? 0),
       ));
       _activeAlerts = _alerts.where((a) => a.enabled).length;
       _newValue = '';

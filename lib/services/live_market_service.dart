@@ -330,8 +330,8 @@ class LiveMarketService extends ChangeNotifier {
           change24h: q.change24h + chgNoise,
         );
         // Append candle tick
-        if (_candles.containsKey(sym) && _candles[sym]!.isNotEmpty) {
-          final last = _candles[sym]!.last;
+        if (_candles.containsKey(sym) && (_candles[sym]?.isNotEmpty ?? false)) {
+          final last = _candles[sym]?.last; if (last == null) return;
           final updatedLast = Candle(
             last.time,
             last.open,
@@ -340,7 +340,7 @@ class LiveMarketService extends ChangeNotifier {
             newPrice,
             last.volume + q.volume24h * 0.0001,
           );
-          _candles[sym]!.last = updatedLast;
+          if (_candles[sym]?.isNotEmpty ?? false) { _candles[sym]!.last = updatedLast; }
         }
         changed = true;
       }

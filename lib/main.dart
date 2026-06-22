@@ -1,4 +1,4 @@
-/// HQMLL Quantum Trader — main.dart v51.0
+/// HQMLL Quantum Trader — main.dart v52.0
 /// Root-Fix: MultiProvider innerhalb HQMLLApp — kein ProviderNotFoundException möglich
 /// Grigori Saks · 2025
 import 'package:flutter/material.dart';
@@ -23,6 +23,8 @@ import 'services/live_data_service.dart';
 import 'services/risk_engine_service.dart';
 import 'services/kyc_aml_service.dart';
 import 'services/market_data_ingestion_service.dart';
+import 'services/performance_optimizer_service.dart';
+import 'services/auto_workflow_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/main_scaffold.dart';
@@ -42,6 +44,8 @@ final _liveDataService            = LiveDataService();
 final _riskEngineService          = RiskEngineService();
 final _kycAmlService              = KycAmlService();
 final _marketDataIngestionService = MarketDataIngestionService();
+final _performanceOptimizerService = PerformanceOptimizerService();
+final _autoWorkflowService        = AutoWorkflowService();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -74,16 +78,18 @@ void main() async {
   );
   await _errorHandler.runSafe(() => _liveDataService.initialize(),
       source: 'LiveDataService');
-  // v51.0 neue Services — RiskEngine + MarketData starten
+  // v51.0/v52.0 neue Services — RiskEngine + MarketData + PerfOpt + AutoWorkflow starten
   // KycAmlService initialisiert sich selbst im Konstruktor (_load())
   _marketDataIngestionService.start();
+  _performanceOptimizerService.startMonitoring();
+  _autoWorkflowService.startAutoSave();
 
   // ── Startup-Log ───────────────────────────────────────────────────────────
   _persistenceService.addSystemLog(
     'SYSTEM',
-    'HQMLL Quantum Trader v51.0 gestartet — '
+    'HQMLL Quantum Trader v52.0 gestartet — '
     'AutoSave (${_autoSaveService.intervalLabel}) · '
-    'TradingSignals · TimeCrystal · LiveData · RiskEngine · KYC/AML · MarketData · ErrorHandler aktiv',  
+    'TradingSignals · TimeCrystal · LiveData · RiskEngine · KYC/AML · MarketData · PerfOpt · AutoWorkflow · ErrorHandler aktiv',  
     level: SysLogLevel.quantum,
   );
 
@@ -91,7 +97,7 @@ void main() async {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// ROOT APP WIDGET v51.0
+// ROOT APP WIDGET v52.0
 // MultiProvider ist der äußerste Wrapper — KEIN ProviderNotFoundException
 // möglich weil alle Provider-Zugriffe garantiert unter MultiProvider liegen.
 // ══════════════════════════════════════════════════════════════════════════════
@@ -124,6 +130,9 @@ class HQMLLApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: _riskEngineService),
         ChangeNotifierProvider.value(value: _kycAmlService),
         ChangeNotifierProvider.value(value: _marketDataIngestionService),
+        // ── v52.0 — Performance Optimizer + Auto-Workflow ────────────────────
+        ChangeNotifierProvider.value(value: _performanceOptimizerService),
+        ChangeNotifierProvider.value(value: _autoWorkflowService),
       ],
       // _AppShell liegt INNERHALB MultiProvider → alle context.watch() sicher
       child: const _AppShell(),
