@@ -51,6 +51,7 @@ import 'kyc_aml_screen.dart';
 import 'market_data_ingestion_screen.dart';
 import 'performance_screen.dart';
 import 'auto_workflow_screen.dart';
+import 'system_health_screen.dart';
 import 'auth_screen.dart';
 import '../services/auth_service.dart';
 import '../services/exchange_service.dart';
@@ -112,6 +113,7 @@ class _MainScaffoldState extends State<MainScaffold>
     _NavItem(icon: Icons.sensors_outlined, activeIcon: Icons.sensors, label: 'MKTDATA'),
     _NavItem(icon: Icons.speed_outlined, activeIcon: Icons.speed, label: 'PERF'),
     _NavItem(icon: Icons.account_tree_outlined, activeIcon: Icons.account_tree, label: 'WORKFLOW'),
+    _NavItem(icon: Icons.monitor_heart_outlined, activeIcon: Icons.monitor_heart, label: 'HEALTH'),
   ];
 
   @override
@@ -179,6 +181,7 @@ class _MainScaffoldState extends State<MainScaffold>
       const MarketDataIngestionScreen(),
       const PerformanceScreen(),
       const AutoWorkflowScreen(),
+      const SystemHealthScreen(),
     ];
 
     return AnnotatedRegion<SystemUiOverlayStyle>(

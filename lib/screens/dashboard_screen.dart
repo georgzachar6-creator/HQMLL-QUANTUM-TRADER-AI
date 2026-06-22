@@ -1,5 +1,5 @@
 // ============================================================
-// DASHBOARD v49 – HQMLL Quantum Trader
+// DASHBOARD v53 – HQMLL Quantum Trader
 // Live Portfolio, P&L, TradingSignalStream, AI Engine, News
 // Realtime StreamBuilder + Error Handling + LiveDataService
 // ============================================================
@@ -18,6 +18,8 @@ import '../widgets/crypto_icon.dart';
 import '../services/trading_signal_service.dart';
 import '../services/live_data_service.dart';
 import '../services/error_handler_service.dart';
+import '../services/performance_optimizer_service.dart';
+import '../services/auto_workflow_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -205,6 +207,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     final tss  = context.watch<TradingSignalService>();
     final lds  = context.watch<LiveDataService>();
     final errs = context.watch<ErrorHandlerService>();
+    final perf = context.watch<PerformanceOptimizerService>();
+    final wf   = context.watch<AutoWorkflowService>();
 
     // Portfolio live berechnen
     _syncPortfolioFromExchange(ex);
@@ -255,6 +259,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             _buildHeader(p, ex, lds),
             // Live-Status Banner (Realtime)
             _buildLiveStatusBanner(p, lds, errs),
+            _buildSystemStatusStrip(p, perf, wf),
             _buildPortfolioCard(p),
             _buildAllocationRow(p),
             _buildSignalStream(p, tss),
@@ -268,6 +273,82 @@ class _DashboardScreenState extends State<DashboardScreen>
         ),
       ),
     );
+  }
+
+  // ── SYSTEM STATUS STRIP (v53) ──────────────────────────────────────────────
+  Widget _buildSystemStatusStrip(
+      dynamic p,
+      PerformanceOptimizerService perf,
+      AutoWorkflowService wf) {
+    final tier      = perf.currentTier;
+    final fps       = perf.currentFps;
+    final saveState = wf.autoSaveState;
+    final tierColor = _tierColorFor(tier);
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: p.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: p.primary.withValues(alpha: 0.15)),
+      ),
+      child: Row(children: [
+        // ── FPS / Performance ──
+        _StatusChip(
+          icon: Icons.speed,
+          label: '${fps.toStringAsFixed(0)} fps',
+          color: tierColor,
+          sublabel: tier.emoji,
+        ),
+        const SizedBox(width: 8),
+        // ── AutoSave ──
+        _StatusChip(
+          icon: saveState.isActive ? Icons.cloud_done_outlined : Icons.cloud_off_outlined,
+          label: saveState.isActive ? 'AUTO-SAVE' : 'OFFLINE',
+          color: saveState.isActive ? const Color(0xFF00FF88) : Colors.grey,
+          sublabel: saveState.isActive ? saveState.statusText : '—',
+        ),
+        const Spacer(),
+        // ── Tasks ──
+        Row(children: [
+          Icon(Icons.task_alt_outlined, size: 11, color: p.textSecondary),
+          const SizedBox(width: 3),
+          Text('${wf.totalRunCount} Tasks',
+              style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
+          const SizedBox(width: 8),
+          // Workflow Status
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: (wf.isRunning ? const Color(0xFF00FF88) : Colors.grey)
+                  .withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(
+                color: (wf.isRunning ? const Color(0xFF00FF88) : Colors.grey)
+                    .withValues(alpha: 0.35),
+              ),
+            ),
+            child: Text(
+              wf.isRunning ? 'ENGINE EIN' : 'ENGINE AUS',
+              style: GoogleFonts.spaceMono(
+                color: wf.isRunning ? const Color(0xFF00FF88) : Colors.grey,
+                fontSize: 8, fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ]),
+      ]),
+    );
+  }
+
+  Color _tierColorFor(PerformanceTier t) {
+    switch (t) {
+      case PerformanceTier.excellent: return const Color(0xFF00FF88);
+      case PerformanceTier.good:      return const Color(0xFF00AAFF);
+      case PerformanceTier.degraded:  return const Color(0xFFFFAA00);
+      case PerformanceTier.critical:  return const Color(0xFFFF3358);
+    }
   }
 
   // ── LIVE STATUS BANNER (Realtime StreamBuilder) ──
@@ -1339,4 +1420,51 @@ class _DashboardPhaseMiniPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _DashboardPhaseMiniPainter old) =>
       old.experiments.length != experiments.length || old.animValue != animValue;
+}
+
+
+// ── Status Chip Widget (für System Status Strip) ──────────────────────────────
+class _StatusChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String sublabel;
+  final Color color;
+
+  const _StatusChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+    this.sublabel = '',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 11, color: color),
+        const SizedBox(width: 4),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label,
+                style: GoogleFonts.spaceMono(
+                  color: color, fontSize: 9, fontWeight: FontWeight.bold,
+                )),
+            if (sublabel.isNotEmpty)
+              Text(sublabel,
+                  style: GoogleFonts.inter(
+                    color: color.withValues(alpha: 0.7), fontSize: 8,
+                  )),
+          ],
+        ),
+      ]),
+    );
+  }
 }
