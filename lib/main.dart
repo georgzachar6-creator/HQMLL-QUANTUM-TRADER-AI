@@ -1,6 +1,6 @@
-/// HQMLL Quantum Trader — main.dart v52.0
-/// Root-Fix: MultiProvider innerhalb HQMLLApp — kein ProviderNotFoundException möglich
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader — main.dart v53.1
+// Root-Fix: MultiProvider innerhalb HQMLLApp — kein ProviderNotFoundException möglich
+// Grigori Saks · 2025
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';

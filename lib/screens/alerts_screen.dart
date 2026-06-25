@@ -140,16 +140,13 @@ class _AlertsScreenState extends State<AlertsScreen>
     _bellAnim.forward(from: 0).then((_) => _bellAnim.reverse());
   }
 
-  @override
-  /// v28.0: Sync prices from ExchangeService and check alert conditions
+  // v28.0: Sync prices from ExchangeService and check alert conditions
   void _syncPricesFromExchange(ExchangeService ex) {
-    bool anyTriggered = false;
     for (final sym in _prices.keys.toList()) {
       final live = ex.getPrice(sym);
       if (live > 0) _prices[sym] = live;
     }
     _syncAlertsAndCheck();
-    if (anyTriggered) _ringBell();
   }
 
   void _syncAlertsAndCheck() {

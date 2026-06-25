@@ -2,7 +2,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../widgets/crypto_icon.dart';
 import '../providers/theme_provider.dart';
 import '../services/exchange_service.dart';
 

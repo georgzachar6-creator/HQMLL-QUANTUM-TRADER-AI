@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../widgets/crypto_icon.dart';
 
 import '../providers/theme_provider.dart';
 import '../providers/live_price_provider.dart';

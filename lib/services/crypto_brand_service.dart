@@ -34,12 +34,12 @@ class BrandToken {
     this.geckoFilename = '',
   });
 
-  /// Prioritized logo URL chain: Logo.dev → CoinGecko → CryptoCompare → null
+  /// Prioritized logo URL chain: Logo.dev → geckoUrl → geckoLargeUrl → CryptoCompare
   String get primaryLogoUrl =>
       logoDevUrl ??
-      geckoLargeUrl ??
+      geckoUrl ??
       cryptoIconUrl ??
-      '';
+      geckoLargeUrl;
 
   String get geckoLargeUrl => geckoFilename.isNotEmpty
       ? 'https://assets.coingecko.com/coins/images/$geckoImageId/large/$geckoFilename'

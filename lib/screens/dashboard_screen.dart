@@ -13,7 +13,6 @@ import '../providers/theme_provider.dart';
 import '../services/exchange_service.dart';
 import '../services/auto_save_service.dart';
 import '../services/time_crystal_service.dart';
-import '../services/persistence_service.dart';
 import '../widgets/crypto_icon.dart';
 import '../services/trading_signal_service.dart';
 import '../services/live_data_service.dart';
@@ -66,15 +65,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     {'sym': 'AVAX', 'name': 'Avalanche', 'price': 36.84, 'change': 3.15, 'color': const Color(0xFFE84142), 'hist': <double>[]},
     {'sym': 'DOT', 'name': 'Polkadot', 'price': 7.24, 'change': 0.74, 'color': const Color(0xFFE6007A), 'hist': <double>[]},
     {'sym': 'LINK', 'name': 'Chainlink', 'price': 14.82, 'change': 2.88, 'color': const Color(0xFF2A5ADA), 'hist': <double>[]},
-  ];
-
-  // AI Signals
-  final List<Map<String, dynamic>> _signals = [
-    {'pair': 'BTC/USDT', 'action': 'KAUFEN', 'conf': 87, 'reason': 'RSI Divergenz + Volume Spike', 'color': const Color(0xFF00FF88), 'tf': '4H'},
-    {'pair': 'ETH/USDT', 'action': 'KAUFEN', 'conf': 79, 'reason': 'Golden Cross 50/200 MA', 'color': const Color(0xFF00FF88), 'tf': '1D'},
-    {'pair': 'SOL/USDT', 'action': 'STARK KAUFEN', 'conf': 93, 'reason': 'Breakout + Whale Akkumulation', 'color': const Color(0xFF00AAFF), 'tf': '1H'},
-    {'pair': 'BNB/USDT', 'action': 'HALTEN', 'conf': 62, 'reason': 'Seitwärtsbewegung erwartet', 'color': const Color(0xFFFFD700), 'tf': '4H'},
-    {'pair': 'ADA/USDT', 'action': 'VERKAUFEN', 'conf': 71, 'reason': 'RSI Überkauft + Resistance', 'color': const Color(0xFFFF3358), 'tf': '1D'},
   ];
 
   // News
@@ -965,7 +955,6 @@ class _DashboardScreenState extends State<DashboardScreen>
         ..._watchlist.asMap().entries.map((entry) {
           final i = entry.key;
           final w = entry.value;
-          final color = w['color'] as Color;
           final price = w['price'] as double;
           final change = w['change'] as double;
           final hist = w['hist'] as List<double>;
@@ -1060,7 +1049,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   // ── QUANTUM RESEARCH PANEL ──
   Widget _buildQuantumResearchPanel(dynamic p, TimeCrystalService tc, AutoSaveService as2) {
     final ins = tc.getTradingInsights();
-    final dtcRate   = (ins['dtcStabilityRate'] as double) * 100;
     final bestAcc   = (ins['bestModelAccuracy'] as double) * 100;
     final isQAdv    = ins['quantumAdvantage'] as bool;
     final regime    = ins['regimeInsight'] as String;

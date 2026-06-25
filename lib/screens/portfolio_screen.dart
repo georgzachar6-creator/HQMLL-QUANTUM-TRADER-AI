@@ -7,8 +7,6 @@ import 'package:fl_chart/fl_chart.dart';
 import '../providers/theme_provider.dart';
 import '../services/exchange_service.dart';
 import '../services/wallet_service.dart';
-import '../services/auto_save_service.dart';
-import '../widgets/coin_logos.dart';
 import 'oracle_screen.dart';
 import '../widgets/crypto_icon.dart';
 

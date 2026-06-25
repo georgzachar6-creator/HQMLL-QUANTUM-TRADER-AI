@@ -194,7 +194,6 @@ class AutoSaveState {
 class AutoWorkflowService extends ChangeNotifier {
 
   static const _kTasksKey = 'qt_workflow_tasks_v52';
-  static const _kFixesKey = 'qt_autofix_records_v52';
 
   // ── State ─────────────────────────────────────────────────────────────────
   final List<WorkflowTask>  _tasks       = [];

@@ -10,7 +10,6 @@ import '../widgets/asset_icon_widget.dart';
 import '../widgets/coin_logos.dart';
 import '../services/exchange_service.dart';
 import '../services/wallet_service.dart';
-import '../services/auto_save_service.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});

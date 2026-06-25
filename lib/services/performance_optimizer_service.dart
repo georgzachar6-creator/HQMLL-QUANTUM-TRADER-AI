@@ -150,7 +150,6 @@ class PerformanceOptimizerService extends ChangeNotifier {
 
   // ── FPS tracking ─────────────────────────────────────────────────────────
   DateTime? _lastFrameTime;
-  int _frameCount = 0;
   double _currentFps = 60.0;
   final List<double> _recentFps = [];
 
@@ -265,7 +264,6 @@ class PerformanceOptimizerService extends ChangeNotifier {
       }
     }
     _lastFrameTime = now;
-    _frameCount++;
   }
 
   // ══════════════════════════════════════════════════════════════════════════

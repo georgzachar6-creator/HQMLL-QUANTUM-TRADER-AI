@@ -16,7 +16,6 @@ import '../services/auto_save_service.dart';
 import '../theme/app_themes.dart';
 import '../widgets/tradingview_widget.dart';
 import '../widgets/crypto_icon.dart';
-import '../widgets/coin_logos.dart';
 import '../widgets/quantum_coin_tile.dart';
 import '../services/websocket_service.dart';
 
