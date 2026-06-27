@@ -96,7 +96,6 @@ class _SocialTradingScreenState extends State<SocialTradingScreen>
     final solPrice = ex.getPrice('SOL');
     if (btcPrice > 0 && _feed.isNotEmpty) {
       // Refresh live price context in signal text (first signal only for performance)
-      final priceStr = '\$${btcPrice.toStringAsFixed(0)}';
       if (_feed[0]['type'] == 'SIGNAL' && !_feed[0]['priceUpdated']) {
         _feed[0]['livePrice'] = btcPrice;
         _feed[0]['ethPrice'] = ethPrice;

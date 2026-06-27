@@ -84,7 +84,7 @@ class _WalletScreenState extends State<WalletScreen>
     final tp = context.watch<ThemeProvider>();
     final p = tp.palette;
     context.watch<ExchangeService>();
-    final ws = context.watch<WalletService>();
+    context.watch<WalletService>(); // keep for reactivity
 
     return Scaffold(
       backgroundColor: p.background,

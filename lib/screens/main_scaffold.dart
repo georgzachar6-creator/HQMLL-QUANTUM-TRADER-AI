@@ -866,6 +866,7 @@ class _LiveTickerBannerState extends State<_LiveTickerBanner>
   final Random _rng = Random();
 
   // v33.0: Fallback-Seed-Preise (werden sofort durch ExchangeService überschrieben)
+  // ignore: unused_field
   static const _fallbackPrices = <String, double>{
     'BTC': 67842.50, 'ETH': 3548.20, 'SOL': 182.40, 'BNB': 598.30,
     'ADA': 0.452, 'AVAX': 36.80, 'MATIC': 0.892, 'DOT': 7.92,

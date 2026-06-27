@@ -25,6 +25,7 @@ class _RebalancerScreenState extends State<RebalancerScreen>
   late Animation<double> _pulse; // ignore: unused_field
 
   // v27.0: Static fallback prices (overridden by ExchangeService in build)
+  // ignore: unused_field
   static const Map<String, double> _fallbackPrices = {
     'BTC': 67842.0, 'ETH': 3548.0, 'SOL': 185.4, 'BNB': 620.0,
     'ADA': 0.485, 'DOT': 7.2, 'AVAX': 38.5, 'LINK': 17.8,

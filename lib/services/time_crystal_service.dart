@@ -320,7 +320,7 @@ class TimeCrystalService extends ChangeNotifier {
   static const _kExperiments  = 'qt_tc_experiments_v44';
   static const _kModelResults = 'qt_tc_model_results_v44';
   static const _kHypotheses   = 'qt_tc_hypotheses_v44';
-  static const _kConfig       = 'qt_tc_config_v44';
+  static const _kConfig       = 'qt_tc_config_v44'; // ignore: unused_field
 
   final _rnd = Random();
 

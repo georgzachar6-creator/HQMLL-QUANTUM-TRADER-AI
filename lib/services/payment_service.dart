@@ -135,7 +135,7 @@ class PaymentRecipient {
 class PaymentService extends ChangeNotifier {
   static const _kPayments    = 'qt_payments_v41';
   static const _kRecipients  = 'qt_recipients_v41';
-  static const _kDraftPayment = 'qt_draft_payment_v41';
+  static const _kDraftPayment = 'qt_draft_payment_v41'; // ignore: unused_field
   static const _kLastFromAcc  = 'qt_last_from_acc_v41';
   static const _kLastCurrency = 'qt_last_currency_v41';
   static const _kLastAmount   = 'qt_last_amount_v41';

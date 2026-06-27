@@ -29,8 +29,8 @@ class _IntelligenceScreenState extends State<IntelligenceScreen>
 
   int _activeTab = 0;
   bool _isEncrypting = false;
-  String _inputText = '';
-  String _keyText = '';
+  String _inputText = ''; // ignore: unused_field
+  String _keyText = ''; // ignore: unused_field
   bool _isDecrypting = false;
   bool _vaultLocked = true;
   String _encryptedOutput = '';

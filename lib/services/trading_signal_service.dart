@@ -174,7 +174,7 @@ class PortfolioMetrics {
 // ══════════════════════════════════════════════════════════════
 class TradingSignalService extends ChangeNotifier {
   static const _kSignals  = 'qt_signals_v47';
-  static const _kMetrics  = 'qt_metrics_v47';
+  static const _kMetrics  = 'qt_metrics_v47'; // ignore: unused_field
 
   final _rnd = Random();
   Timer? _signalTimer;

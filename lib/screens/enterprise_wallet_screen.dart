@@ -151,7 +151,8 @@ class _EnterpriseWalletScreenState extends State<EnterpriseWalletScreen>
   bool _withdrawConfirmStep = false;
   bool _swapProcessing = false;
   bool _fiatProcessing = false;
-  String? _lastTxId;
+  // ignore: unused_field
+  String? _lastTxId; // last transaction ID for display
 
   final _rnd = Random(42);
 

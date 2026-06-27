@@ -98,12 +98,12 @@ class _QuantumResearchScreenState extends State<QuantumResearchScreen>
   int _selectedPortal = 0;
   double _scanProgress = 0.0;
   bool _deepScanActive = false;
-  bool _gravityFieldActive = true;
+  bool _gravityFieldActive = true; // ignore: unused_field
   Timer? _scanTimer;
   Timer? _autoSaveTimer;
   final List<String> _researchLog = [];
   int _quantumScore = 0;
-  bool _logLoaded = false;
+  bool _logLoaded = false; // ignore: unused_field
   final ScrollController _sysLogScrollCtrl = ScrollController();
   String _txFilter = 'ALL';
   String _sysFilter = 'ALL';

@@ -167,7 +167,8 @@ class _OmsRiskScreenState extends State<OmsRiskScreen>
   final _stopPriceCtrl = TextEditingController();
   final _tpPriceCtrl = TextEditingController();
   final _trailingPctCtrl = TextEditingController(text: '1.5');
-  bool _isOco = false;
+  // ignore: unused_field
+  final bool _isOco = false; // reserved for OCO order type
   String _selectedExchange = 'Binance';
 
   late RiskMetrics _riskMetrics;
@@ -177,7 +178,8 @@ class _OmsRiskScreenState extends State<OmsRiskScreen>
 
   // Risk circuit breakers
   bool _dailyLossCircuitBreaker = false;
-  bool _concentrationCircuitBreaker = false;
+  // ignore: unused_field
+  bool _concentrationCircuitBreaker = false; // reserved for risk limiter
   double _maxDailyLoss = -500.0; // USD
   double _maxSinglePosition = 0.02; // 2% of equity
 

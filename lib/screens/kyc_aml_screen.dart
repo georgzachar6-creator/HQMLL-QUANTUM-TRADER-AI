@@ -18,7 +18,7 @@ class KycAmlScreen extends StatefulWidget {
 class _KycAmlScreenState extends State<KycAmlScreen>
     with TickerProviderStateMixin {
   late TabController _tabCtrl;
-  bool _onboarding = false;
+  bool _onboarding = false; // ignore: unused_field
 
   // Onboarding Form
   final _formKey = GlobalKey<FormState>();

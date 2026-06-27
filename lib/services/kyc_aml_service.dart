@@ -342,7 +342,7 @@ class SuspiciousActivityReport {
 class KycAmlService extends ChangeNotifier {
   static const _kKycProfile = 'qt_kyc_profile_v51';
   static const _kAmlTxns    = 'qt_aml_transactions_v51';
-  static const _kSars       = 'qt_sars_v51';
+  static const _kSars       = 'qt_sars_v51'; // ignore: unused_field
 
   KycProfile? _currentProfile;
   AmlRiskRating _userRiskRating = AmlRiskRating.low;

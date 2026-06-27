@@ -58,7 +58,6 @@ class _PortfolioScreenState extends State<PortfolioScreen>
     final ethP = ex.getPrice('ETH'); final ethStr = _fmtChatPrice(ethP > 0 ? ethP : 3548.20);
     final solP = ex.getPrice('SOL'); final solStr = _fmtChatPrice(solP > 0 ? solP : 182.40);
     final btcBuy = _fmtChatPrice((btcP > 0 ? btcP : 67842.0) * 0.943);
-    final ethBuy = _fmtChatPrice((ethP > 0 ? ethP : 3548.20) * 0.945);
     final solBuy = _fmtChatPrice((solP > 0 ? solP : 182.40) * 0.933);
     return {
       'btc': 'BTC-Analyse: Preis $btcStr. RSI: 62.4 — leicht uberkauft. '

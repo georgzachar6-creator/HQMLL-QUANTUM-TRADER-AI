@@ -449,7 +449,6 @@ class _OrderbookScreenState extends State<OrderbookScreen>
     final isUp = _midPrice >= _prevMidPrice;
     final priceColor = isUp ? const Color(0xFF00FF88) : const Color(0xFFFF3358);
     final isChange24Pos = _change24h >= 0;
-    final sym = _selectedPair.split('/').first;
     // Smart price display
     final priceStr = _midPrice >= 1000
         ? '\$${_midPrice.toStringAsFixed(2)}'

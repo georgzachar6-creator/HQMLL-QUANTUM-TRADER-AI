@@ -38,7 +38,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen>
   double _cpuUsage = 34.2;
   double _memUsage = 58.7;
   double _netIn = 124.5;
-  double _netOut = 45.2;
+  double _netOut = 45.2; // ignore: unused_field
   double _diskUsage = 62.4;
   final List<double> _cpuHistory = [];
   final List<double> _netHistory = [];
@@ -65,7 +65,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen>
 
   // CLI Command History
   final List<String> _cmdHistory = [];
-  int _historyIdx = -1;
+  int _historyIdx = -1; // ignore: unused_field
 
   // Available commands
   static const _commands = {

@@ -978,7 +978,6 @@ class _QMLResearchScreenState extends State<QMLResearchScreen>
   Widget _buildMiniTimeSeries(QuantumPalette p, TCExperiment exp, Color lineColor) {
     if (exp.data.isEmpty) return const SizedBox.shrink();
     final data = exp.data;
-    final maxVal = 1.0;
     return SizedBox(
       height: 32,
       child: CustomPaint(

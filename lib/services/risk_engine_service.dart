@@ -252,7 +252,7 @@ class RiskEvent {
 class CircuitBreaker {
   CircuitBreakerState _state = CircuitBreakerState.closed;
   int _failureCount = 0;
-  DateTime? _lastFailureAt;
+  DateTime? _lastFailureAt; // ignore: unused_field
   DateTime? _openedAt;
 
   final int failureThreshold;
@@ -327,7 +327,7 @@ class RiskEngineService extends ChangeNotifier {
   double _maxDrawdownPct     = 0.15; // 15% max drawdown
   double _var95Limit         = 0.03; // 3% 95% VaR limit
   double _concentrationLimit = 0.25; // 25% max in single asset
-  double _maxLeverage        = 2.0;
+  double _maxLeverage        = 2.0; // ignore: unused_field
   bool _autoTradingEnabled   = true;
   bool _killSwitchActive     = false;
 

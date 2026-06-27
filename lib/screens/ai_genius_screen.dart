@@ -264,11 +264,10 @@ class _AIGeniusScreenState extends State<AIGeniusScreen>
     final tp = context.watch<ThemeProvider>();
     final p = tp.palette;
     final accentColor = const Color(0xFF00E5FF);
-    // v38.0: Reactive live price updates + agent count from PersistenceService
+    // v38.0: Reactive live price updates
     final ex = context.watch<ExchangeService>();
-    final ps = context.watch<PersistenceService>();
+    context.watch<PersistenceService>(); // keep for reactivity
     _updateMemoryWithLivePrices(ex);
-    final agentCount = ps.activeAgentCount.clamp(1, _agents.length);
 
     return Scaffold(
       backgroundColor: p.background,

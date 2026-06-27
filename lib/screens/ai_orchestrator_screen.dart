@@ -160,11 +160,11 @@ class _AiOrchestratorScreenState extends State<AiOrchestratorScreen>
   late OrchestratorSession _session;
   final List<StrategyAgent> _agents = [];
   final List<AiSignal> _signals = [];
-  final List<Map<String, dynamic>> _pipeline = []; // execution log
+  final List<Map<String, dynamic>> _pipeline = []; // ignore: unused_field
 
   // Pipeline visualization state
   int _pipelineStep = 0; // 0=Data 1=Strategy 2=Risk 3=Execution
-  bool _pipelineActive = false;
+  bool _pipelineActive = false; // ignore: unused_field
 
   @override
   void initState() {

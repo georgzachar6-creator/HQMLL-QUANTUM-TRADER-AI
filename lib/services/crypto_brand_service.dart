@@ -137,6 +137,7 @@ class CryptoBrandService extends ChangeNotifier {
   CryptoBrandService._();
 
   final Map<String, String> _logoCache = {};       // symbol → logoUrl
+  // ignore: unused_field
   final Map<String, Map<String, dynamic>> _meta = {}; // geckoId → metadata
   final Set<String> _fetching = {};
   bool _initialized = false;
