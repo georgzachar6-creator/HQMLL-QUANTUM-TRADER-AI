@@ -160,8 +160,8 @@ class PortfolioRiskSnapshot {
   final double totalExposure;
   final double netExposure;
   final double grossExposure;
-  final double intraday_var95; // 95% VaR
-  final double intraday_var99; // 99% VaR
+  final double intradayVar95; // 95% VaR
+  final double intradayVar99; // 99% VaR
   final double maxDrawdownPct;
   final double sharpeRatio;
   final double concentrationScore; // 0–1, higher = more concentrated
@@ -173,8 +173,8 @@ class PortfolioRiskSnapshot {
     required this.totalExposure,
     required this.netExposure,
     required this.grossExposure,
-    required this.intraday_var95,
-    required this.intraday_var99,
+    required this.intradayVar95,
+    required this.intradayVar99,
     required this.maxDrawdownPct,
     required this.sharpeRatio,
     required this.concentrationScore,
@@ -183,9 +183,9 @@ class PortfolioRiskSnapshot {
   });
 
   String get riskLevel {
-    if (intraday_var95 < 0.01) return 'NIEDRIG';
-    if (intraday_var95 < 0.03) return 'MITTEL';
-    if (intraday_var95 < 0.07) return 'HOCH';
+    if (intradayVar95 < 0.01) return 'NIEDRIG';
+    if (intradayVar95 < 0.03) return 'MITTEL';
+    if (intradayVar95 < 0.07) return 'HOCH';
     return 'KRITISCH';
   }
 
@@ -692,8 +692,8 @@ class RiskEngineService extends ChangeNotifier {
       totalExposure: totalExposure,
       netExposure: netExposure,
       grossExposure: totalExposure,
-      intraday_var95: var95,
-      intraday_var99: var99,
+      intradayVar95: var95,
+      intradayVar99: var99,
       maxDrawdownPct: currentDrawdownPct,
       sharpeRatio: _dailyPnl / (_currentPortfolioValue * 0.001 + 0.001),
       concentrationScore: hhi,
@@ -707,14 +707,14 @@ class RiskEngineService extends ChangeNotifier {
     if (snapshot == null) return;
 
     // VaR-Check
-    if (snapshot.intraday_var95 > _var95Limit) {
+    if (snapshot.intradayVar95 > _var95Limit) {
       _addRiskEvent(RiskEvent(
         id: 'VAR_${DateTime.now().millisecondsSinceEpoch}',
         type: RiskEventType.postTradeVarExceeded,
         message: 'Portfolio VaR überschreitet Limit: '
-            '${(snapshot.intraday_var95 * 100).toStringAsFixed(2)}%',
+            '${(snapshot.intradayVar95 * 100).toStringAsFixed(2)}%',
         symbol: 'PORTFOLIO',
-        value: snapshot.intraday_var95,
+        value: snapshot.intradayVar95,
         threshold: _var95Limit,
         isActive: true,
         occurredAt: DateTime.now(),

@@ -834,6 +834,7 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
     try {
       final ps2 = context.read<PaymentService>();
       final as2 = context.read<AutoSaveService>();
+      final persistSvc = context.read<PersistenceService>();
       final isCrypto = _cryptoCurrencies.contains(_fromCurrency) || _cryptoCurrencies.contains(_toCurrency);
       await ps2.createPayment(
         type: isCrypto ? PaymentType.cryptoTransfer : PaymentType.internalTransfer,
@@ -851,7 +852,7 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
       // Persist last-used currency/amount for next time
       await ps2.saveTransferDefaults(currency: _fromCurrency, amount: amt);
       // SystemLog
-      context.read<PersistenceService>().addSystemLog(
+      persistSvc.addSystemLog(
         'TX', '$_txType: $amt $_fromCurrency → ${converted.toStringAsFixed(2)} $_toCurrency | Ref: $ref',
         level: SysLogLevel.quantum,
       );

@@ -701,9 +701,7 @@ class _QMLResearchScreenState extends State<QMLResearchScreen>
   }
 
   Widget _buildPipelineHistoryCard(QuantumPalette p, DRPipelineRun run) {
-    final completed = run.completedAt != null
-        ? run.completedAt!.difference(run.startedAt).inSeconds
-        : null;
+    final completed = run.completedAt?.difference(run.startedAt).inSeconds;
     final completedStages = run.stageStatus.values
         .where((s) => s == DRStageStatus.completed).length;
 
@@ -1938,6 +1936,7 @@ class _QMLResearchScreenState extends State<QMLResearchScreen>
 
   void _runSymbolic(TimeCrystalService tc) {
     tc.runSymbolicReasoning().then((eqs) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('${eqs.length} symbolische Gleichungen + 3 Theoreme validiert'),
         backgroundColor: const Color(0xFF9945FF),

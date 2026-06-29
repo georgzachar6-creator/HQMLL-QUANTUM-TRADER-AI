@@ -59,18 +59,18 @@ class _ConnectorScreenState extends State<ConnectorScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final ex = context.read<ExchangeService>();
+      final lp = context.read<LivePriceProvider>();
+      final ps = context.read<PersistenceService>();
       await ex.initialize();
-      if (mounted) {
-        final lp = context.read<LivePriceProvider>();
-        await lp.initialize();
-        // v40.1: SystemLog WS connection event
-        final ps = context.read<PersistenceService>();
-        ps.addSystemLog('WS',
-            'Connector initialisiert — Binance WS: ${ex.wsConnected ? "AKTIV" : "GETRENNT"}',
-            level: ex.wsConnected ? SysLogLevel.success : SysLogLevel.warning);
-        // v40.1: Persist WS config snapshot
-        await ps.saveWsConfig(ps.wsConfig);
-      }
+      if (!mounted) return;
+      await lp.initialize();
+      if (!mounted) return;
+      // v40.1: SystemLog WS connection event
+      ps.addSystemLog('WS',
+          'Connector initialisiert — Binance WS: ${ex.wsConnected ? "AKTIV" : "GETRENNT"}',
+          level: ex.wsConnected ? SysLogLevel.success : SysLogLevel.warning);
+      // v40.1: Persist WS config snapshot
+      await ps.saveWsConfig(ps.wsConfig);
     });
 
     _refreshTimer = Timer.periodic(const Duration(seconds: 2), (_) {

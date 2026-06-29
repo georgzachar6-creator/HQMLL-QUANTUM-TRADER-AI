@@ -96,13 +96,14 @@ class _TR2PreviewScreenState extends State<TR2PreviewScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final ex = context.read<ExchangeService>();
-      await ex.initialize();
       final ps = context.read<PersistenceService>();
+      await ex.initialize();
+      if (!mounted) return;
       if (ps.selfHealEnabled) _startSelfHeal();
       // v40: SystemLog boot event
       ps.addSystemLog('AI', 'TR2 Engine gestartet — Self-Heal: ${ps.selfHealEnabled}',
           level: SysLogLevel.success);
-      if (mounted) setState(() {});
+      setState(() {});
     });
   }
 

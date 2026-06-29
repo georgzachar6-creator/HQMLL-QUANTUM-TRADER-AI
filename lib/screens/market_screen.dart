@@ -57,20 +57,21 @@ class _MarketScreenState extends State<MarketScreen>
 
     // ExchangeService als primäre Preisquelle initialisieren
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
       final ex = context.read<ExchangeService>();
+      final lp = context.read<LivePriceProvider>();
+      final ms = context.read<MarketService>();
       await ex.initialize();
+      if (!mounted) return;
       // LivePriceProvider als Sekundär-Quelle für Market-Metadaten
-      if (mounted) {
-        final lp = context.read<LivePriceProvider>();
-        await lp.initialize();
-        // Sync local watchlist from MarketService
-        final ms = context.read<MarketService>();
-        if (ms.watchlist.isNotEmpty && mounted) {
-          setState(() {
-            _localWatchlist.clear();
-            for (final e in ms.watchlist) { _localWatchlist.add(e.symbol); }
-          });
-        }
+      await lp.initialize();
+      if (!mounted) return;
+      // Sync local watchlist from MarketService
+      if (ms.watchlist.isNotEmpty) {
+        setState(() {
+          _localWatchlist.clear();
+          for (final e in ms.watchlist) { _localWatchlist.add(e.symbol); }
+        });
       }
     });
 

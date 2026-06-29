@@ -804,28 +804,28 @@ class _QuantumMonitorScreenState extends State<QuantumMonitorScreen>
   Widget _buildLiveMarketFeed(dynamic p) {
     // v30.0: Use ExchangeService for live prices
     final ex = context.read<ExchangeService>();
-    String _fmt(String sym, String fallback) {
+    String fmt(String sym, String fallback) {
       final pr = ex.getPrice(sym);
       if (pr <= 0) return fallback;
       return pr >= 1000 ? (pr / 1000).toStringAsFixed(3) + 'K' : pr.toStringAsFixed(pr >= 1 ? 2 : 4);
     }
-    String _chg(String sym, String fallback) {
+    String chg(String sym, String fallback) {
       final tick = ex.getTick(sym);
       if (tick == null) return fallback;
       final c = tick.change24h;
       return '${c >= 0 ? '+' : ''}${c.toStringAsFixed(2)}%';
     }
-    bool _pos(String sym, bool fallback) {
+    bool pos(String sym, bool fallback) {
       final tick = ex.getTick(sym);
       return tick != null ? tick.change24h >= 0 : fallback;
     }
     final assets = [
-      ('BTC/USDT', _fmt('BTC', '67.842'), _chg('BTC', '+2.14%'), _pos('BTC', true)),
-      ('ETH/USDT', _fmt('ETH', '3.548'), _chg('ETH', '+1.87%'), _pos('ETH', true)),
-      ('SOL/USDT', _fmt('SOL', '182.40'), _chg('SOL', '-0.43%'), _pos('SOL', false)),
-      ('BNB/USDT', _fmt('BNB', '598.30'), _chg('BNB', '+0.91%'), _pos('BNB', true)),
+      ('BTC/USDT',   fmt('BTC', '67.842'),  chg('BTC', '+2.14%'), pos('BTC', true)),
+      ('ETH/USDT',   fmt('ETH', '3.548'),   chg('ETH', '+1.87%'), pos('ETH', true)),
+      ('SOL/USDT',   fmt('SOL', '182.40'),  chg('SOL', '-0.43%'), pos('SOL', false)),
+      ('BNB/USDT',   fmt('BNB', '598.30'),  chg('BNB', '+0.91%'), pos('BNB', true)),
       ('QEMMA/USDT', '0.0847', '+12.45%', true), // no exchange data for QEMMA
-      ('ADA/USDT', _fmt('ADA', '0.624'), _chg('ADA', '-1.23%'), _pos('ADA', false)),
+      ('ADA/USDT',   fmt('ADA', '0.624'),   chg('ADA', '-1.23%'), pos('ADA', false)),
     ];
     return Container(
       padding: const EdgeInsets.all(14),

@@ -762,11 +762,12 @@ class _PipelineActionCardState extends State<_PipelineActionCard> {
         GestureDetector(
           onTap: _running ? null : () async {
             if (!mounted) return;
+            final messenger = ScaffoldMessenger.of(context);
             setState(() => _running = true);
             try {
               final result = await widget.onRun();
               if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
+              messenger.showSnackBar(
                 SnackBar(
                   content: Text(
                     result.success
