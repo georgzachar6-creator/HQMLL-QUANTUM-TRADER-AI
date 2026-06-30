@@ -677,8 +677,11 @@ class _HexGridPainter extends CustomPainter {
     for (int i = 0; i < 6; i++) {
       final angle = pi / 180 * (60 * i - 30);
       final p = Offset(center.dx + r * cos(angle), center.dy + r * sin(angle));
-      if (i == 0) path.moveTo(p.dx, p.dy);
-      else path.lineTo(p.dx, p.dy);
+      if (i == 0) {
+        path.moveTo(p.dx, p.dy);
+      } else {
+        path.lineTo(p.dx, p.dy);
+      }
     }
     path.close();
     canvas.drawPath(path, paint);
@@ -705,7 +708,7 @@ class _RotatingRingPainter extends CustomPainter {
     // Dashed arc segments
     const dashCount = 8;
     const dashLength = pi / 12;
-    final gapLength = (2 * pi - dashCount * dashLength) / dashCount;
+    const gapLength = (2 * pi - dashCount * dashLength) / dashCount;
     for (int i = 0; i < dashCount; i++) {
       final startAngle = angle + i * (dashLength + gapLength);
       canvas.drawArc(

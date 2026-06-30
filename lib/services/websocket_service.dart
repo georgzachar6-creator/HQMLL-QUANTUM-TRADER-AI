@@ -410,6 +410,7 @@ class OKXConnector extends ExchangeConnector {
   @override
   void sendPing() => _channel?.sink.add('ping');
 
+  @override
   WebSocketChannel? get _channel => null;
 
   @override
@@ -472,7 +473,7 @@ class WebSocketManager extends ChangeNotifier {
   String _primaryExchange = 'Binance';
   String get primaryExchange => _primaryExchange;
 
-  List<StreamSubscription> _subs = [];
+  final List<StreamSubscription> _subs = [];
   bool _started = false;
 
   static const List<String> defaultSymbols = [
@@ -577,7 +578,9 @@ class WebSocketManager extends ChangeNotifier {
   }
 
   void stop() {
-    for (final sub in _subs) sub.cancel();
+    for (final sub in _subs) {
+      sub.cancel();
+    }
     _subs.clear();
     binance.disconnect();
     coinbase.disconnect();

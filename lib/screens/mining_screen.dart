@@ -29,16 +29,16 @@ class _MiningScreenState extends State<MiningScreen>
   // Mining State
   bool _miningActive = false;
   double _hashrate = 0;
-  double _targetHashrate = 142.6;
-  double _poolHashrate = 4821.3;
+  final double _targetHashrate = 142.6;
+  final double _poolHashrate = 4821.3;
   double _dailyReward = 0.00284;
-  double _totalMined = 1.04872;
-  double _pendingPayout = 0.00284;
+  final double _totalMined = 1.04872;
+  final double _pendingPayout = 0.00284;
   double _efficiency = 94.7;
   double _temperature = 68.4;
-  double _powerDraw = 285.0;
+  final double _powerDraw = 285.0;
   int _shareCount = 1847;
-  int _rejectedShares = 12;
+  final int _rejectedShares = 12;
   double _profitUSD = 193.42;
   double _btcPrice = 67842.0; // seeded from ExchangeService
   bool _btcIsLive = false;
@@ -400,7 +400,7 @@ class _MiningScreenState extends State<MiningScreen>
           Row(children: [
             Text('Pool HR: ${_poolHashrate.toStringAsFixed(1)} PH/s', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
             const Spacer(),
-            Text('Target: ${_targetHashrate} TH/s', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
+            Text('Target: $_targetHashrate TH/s', style: GoogleFonts.spaceMono(color: p.textSecondary, fontSize: 9)),
           ]),
         ],
       ),
@@ -443,7 +443,7 @@ class _MiningScreenState extends State<MiningScreen>
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Icon(Icons.monetization_on_rounded, color: const Color(0xFFFFD700), size: 16),
+          const Icon(Icons.monetization_on_rounded, color: Color(0xFFFFD700), size: 16),
           const SizedBox(width: 8),
           Text('MINING REWARDS', style: GoogleFonts.spaceMono(color: const Color(0xFFFFD700), fontSize: 11, letterSpacing: 1.5)),
         ]),
@@ -549,7 +549,7 @@ class _MiningScreenState extends State<MiningScreen>
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Icon(Icons.check_circle_outline_rounded, color: const Color(0xFF00AAFF), size: 16),
+          const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF00AAFF), size: 16),
           const SizedBox(width: 8),
           Text('SHARES', style: GoogleFonts.spaceMono(color: const Color(0xFF00AAFF), fontSize: 11, letterSpacing: 1.5)),
         ]),
@@ -718,7 +718,9 @@ class _MiningScreenState extends State<MiningScreen>
             onTap: () {
               HapticFeedback.selectionClick();
               setState(() {
-                for (var pl in _pools) pl['selected'] = false;
+                for (var pl in _pools) {
+                  pl['selected'] = false;
+                }
                 _pools[e.key]['selected'] = true;
               });
             },
@@ -851,7 +853,7 @@ class _MiningScreenState extends State<MiningScreen>
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(color: p.surface, borderRadius: BorderRadius.circular(10), border: Border.all(color: p.primary.withValues(alpha: 0.1))),
           child: Row(children: [
-            Icon(Icons.currency_bitcoin_rounded, color: const Color(0xFFFFD700), size: 20),
+            const Icon(Icons.currency_bitcoin_rounded, color: Color(0xFFFFD700), size: 20),
             const SizedBox(width: 8),
             Text('BTC \$${_btcPrice.toStringAsFixed(0)}', style: GoogleFonts.spaceMono(color: const Color(0xFFFFD700), fontSize: 11)),
             const SizedBox(width: 6),

@@ -167,7 +167,7 @@ class _EnterpriseScreenState extends State<EnterpriseScreen>
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              Icon(Icons.star_rounded, color: const Color(0xFFFFD700), size: 22),
+              const Icon(Icons.star_rounded, color: Color(0xFFFFD700), size: 22),
               const SizedBox(width: 8),
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(_licenseType, style: GoogleFonts.spaceMono(color: const Color(0xFFFFD700), fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1)),
@@ -186,7 +186,7 @@ class _EnterpriseScreenState extends State<EnterpriseScreen>
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(color: const Color(0xFF020608), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.2))),
               child: Row(children: [
-                Icon(Icons.vpn_key_rounded, color: const Color(0xFFFFD700), size: 14),
+                const Icon(Icons.vpn_key_rounded, color: Color(0xFFFFD700), size: 14),
                 const SizedBox(width: 8),
                 Expanded(child: Text(_licenseKey, style: GoogleFonts.spaceMono(color: const Color(0xFFFFD700), fontSize: 11, letterSpacing: 0.5))),
                 GestureDetector(
@@ -325,7 +325,7 @@ class _EnterpriseScreenState extends State<EnterpriseScreen>
               border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.25), style: BorderStyle.solid),
             ),
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(Icons.person_add_rounded, color: const Color(0xFFFFD700), size: 18),
+              const Icon(Icons.person_add_rounded, color: Color(0xFFFFD700), size: 18),
               const SizedBox(width: 8),
               Text('MITGLIED EINLADEN', style: GoogleFonts.spaceMono(color: const Color(0xFFFFD700), fontSize: 11, letterSpacing: 1)),
             ]),
@@ -357,7 +357,7 @@ class _EnterpriseScreenState extends State<EnterpriseScreen>
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              Icon(Icons.security_rounded, color: const Color(0xFF00AAFF), size: 16),
+              const Icon(Icons.security_rounded, color: Color(0xFF00AAFF), size: 16),
               const SizedBox(width: 8),
               Text('API KEY VERWALTUNG', style: GoogleFonts.spaceMono(color: const Color(0xFF00AAFF), fontSize: 11, letterSpacing: 1)),
             ]),

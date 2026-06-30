@@ -571,11 +571,17 @@ class _TradingScreenState extends State<TradingScreen>
       bool isPositive, double change24h, ExchangeService ex) {
     // Signal aus echtem Change und Preis ableiten
     final String signal;
-    if (change24h > 3) signal = 'STARK KAUFEN';
-    else if (change24h > 0.5) signal = 'KAUFEN';
-    else if (change24h < -3) signal = 'STARK VERKAUFEN';
-    else if (change24h < -0.5) signal = 'VERKAUFEN';
-    else signal = 'HALTEN';
+    if (change24h > 3) {
+      signal = 'STARK KAUFEN';
+    } else if (change24h > 0.5) {
+      signal = 'KAUFEN';
+    } else if (change24h < -3) {
+      signal = 'STARK VERKAUFEN';
+    } else if (change24h < -0.5) {
+      signal = 'VERKAUFEN';
+    } else {
+      signal = 'HALTEN';
+    }
 
     final signalColor = signal.contains('KAUFEN')
         ? p.positive

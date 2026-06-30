@@ -361,7 +361,7 @@ class LiveTickerWidget extends StatelessWidget {
           return Row(mainAxisSize: MainAxisSize.min, children: [
             Text(
               _formatPrice(data.price),
-              style: priceStyle ?? TextStyle(
+              style: priceStyle ?? const TextStyle(
                 color: Colors.white,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,

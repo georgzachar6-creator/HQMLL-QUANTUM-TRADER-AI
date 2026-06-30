@@ -187,7 +187,7 @@ class _SystemHealthScreenState extends State<SystemHealthScreen>
         icon: Icons.storage_outlined,
         isCore: true,
       ),
-      ServiceHealth(
+      const ServiceHealth(
         name: 'ThemeProvider',
         category: 'Core',
         status: ServiceStatus.healthy,
@@ -196,7 +196,7 @@ class _SystemHealthScreenState extends State<SystemHealthScreen>
         isCore: true,
       ),
       // ── Market Data ──────────────────────────────────────────────────────
-      ServiceHealth(
+      const ServiceHealth(
         name: 'ExchangeService',
         category: 'Market Data',
         status: ServiceStatus.healthy,
@@ -295,49 +295,49 @@ class _SystemHealthScreenState extends State<SystemHealthScreen>
         isCore: true,
       ),
       // ── Additional Services ───────────────────────────────────────────────
-      ServiceHealth(
+      const ServiceHealth(
         name: 'TimeCrystalService',
         category: 'Quantum',
         status: ServiceStatus.healthy,
         detail: 'DTC-Phase aktiv',
         icon: Icons.diamond_outlined,
       ),
-      ServiceHealth(
+      const ServiceHealth(
         name: 'SecureVaultService',
         category: 'Security',
         status: ServiceStatus.healthy,
         detail: 'Vault verschlüsselt',
         icon: Icons.enhanced_encryption,
       ),
-      ServiceHealth(
+      const ServiceHealth(
         name: 'AuthService',
         category: 'Security',
         status: ServiceStatus.healthy,
         detail: 'Eingeloggt',
         icon: Icons.lock_outlined,
       ),
-      ServiceHealth(
+      const ServiceHealth(
         name: 'CoinMarketCapService',
         category: 'Market Data',
         status: ServiceStatus.healthy,
         detail: 'API verfügbar',
         icon: Icons.bar_chart_outlined,
       ),
-      ServiceHealth(
+      const ServiceHealth(
         name: 'PaymentService',
         category: 'Finance',
         status: ServiceStatus.healthy,
         detail: 'Zahlungssystem aktiv',
         icon: Icons.payment_outlined,
       ),
-      ServiceHealth(
+      const ServiceHealth(
         name: 'MarketService',
         category: 'Market Data',
         status: ServiceStatus.healthy,
         detail: 'Marktdaten live',
         icon: Icons.candlestick_chart_outlined,
       ),
-      ServiceHealth(
+      const ServiceHealth(
         name: 'LivePriceProvider',
         category: 'Market Data',
         status: ServiceStatus.healthy,
@@ -351,7 +351,7 @@ class _SystemHealthScreenState extends State<SystemHealthScreen>
         detail: ex.isConnected ? 'WS verbunden' : 'Keine Verbindung',
         icon: Icons.wifi_outlined,
       ),
-      ServiceHealth(
+      const ServiceHealth(
         name: 'CryptoIconService',
         category: 'UI',
         status: ServiceStatus.healthy,
@@ -777,7 +777,7 @@ class _ResourcesTab extends StatelessWidget {
               border: Border.all(color: Colors.orange.withValues(alpha: 0.25)),
             ),
             child: Row(children: [
-              Icon(Icons.slow_motion_video, size: 12, color: Colors.orange),
+              const Icon(Icons.slow_motion_video, size: 12, color: Colors.orange),
               const SizedBox(width: 6),
               Expanded(child: Text(w.widgetName,
                 style: GoogleFonts.spaceMono(color: p.primary, fontSize: 10),

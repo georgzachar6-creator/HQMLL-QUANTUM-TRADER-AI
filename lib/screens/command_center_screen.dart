@@ -39,7 +39,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen>
   double _memUsage = 58.7;
   double _netIn = 124.5;
   double _netOut = 45.2; // ignore: unused_field
-  double _diskUsage = 62.4;
+  final double _diskUsage = 62.4;
   final List<double> _cpuHistory = [];
   final List<double> _netHistory = [];
 
@@ -206,7 +206,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen>
             }
             return '\$${buf.toString()}';
           }
-          _termLines.add(_TermLine(text: '\u{1F4B0} Wallet Balance (Live):', type: 'output'));
+          _termLines.add(const _TermLine(text: '\u{1F4B0} Wallet Balance (Live):', type: 'output'));
           _termLines.add(_TermLine(text: '  BTC: 0.48271 (\u2248 ${fmtVal(bVal)})', type: 'info'));
           _termLines.add(_TermLine(text: '  ETH: 4.8402 (\u2248 ${fmtVal(eVal)})', type: 'info'));
           _termLines.add(_TermLine(text: '  SOL: 142.8 (\u2248 ${fmtVal(sVal)})', type: 'info'));
@@ -573,7 +573,7 @@ class _CommandCenterScreenState extends State<CommandCenterScreen>
                 Row(children: [
                   Text('Calls heute:', style: GoogleFonts.inter(color: p.textSecondary, fontSize: 9)),
                   const SizedBox(width: 6),
-                  Text('${(ep['calls'] as int).toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ',')}', style: GoogleFonts.spaceMono(color: p.primary, fontSize: 9)),
+                  Text((ep['calls'] as int).toString().replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ','), style: GoogleFonts.spaceMono(color: p.primary, fontSize: 9)),
                   const Spacer(),
                   // Latency bar
                   SizedBox(
@@ -675,7 +675,11 @@ class _SparkPainter extends CustomPainter {
     for (int i = 0; i < data.length; i++) {
       final x = (i / (data.length - 1)) * size.width;
       final y = size.height - ((data[i] - minV) / range) * size.height;
-      if (i == 0) path.moveTo(x, y); else path.lineTo(x, y);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
     }
     canvas.drawPath(path, paint);
   }

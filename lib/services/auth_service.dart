@@ -186,7 +186,7 @@ class AuthResult {
   factory AuthResult.fail(String error) =>
       AuthResult(success: false, error: error);
   factory AuthResult.need2FA() =>
-      AuthResult(success: false, requires2FA: true);
+      const AuthResult(success: false, requires2FA: true);
 }
 
 // ══════════════════════════════════════════════════════
@@ -457,7 +457,7 @@ class AuthService extends ChangeNotifier {
   }
 
   String _hashPassword(String pw) {
-    final bytes = utf8.encode(pw + 'qt_salt_2025');
+    final bytes = utf8.encode('${pw}qt_salt_2025');
     return sha256.convert(bytes).toString();
   }
 

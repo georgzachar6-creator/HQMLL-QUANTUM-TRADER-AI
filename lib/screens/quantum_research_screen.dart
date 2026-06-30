@@ -98,7 +98,7 @@ class _QuantumResearchScreenState extends State<QuantumResearchScreen>
   int _selectedPortal = 0;
   double _scanProgress = 0.0;
   bool _deepScanActive = false;
-  bool _gravityFieldActive = true; // ignore: unused_field
+  final bool _gravityFieldActive = true; // ignore: unused_field
   Timer? _scanTimer;
   Timer? _autoSaveTimer;
   final List<String> _researchLog = [];
@@ -855,7 +855,7 @@ class _QuantumResearchScreenState extends State<QuantumResearchScreen>
         child: Row(children: [
           AnimatedBuilder(
             animation: _orbitCtrl,
-            builder: (_, __) => Container(
+            builder: (_, __) => SizedBox(
               width: 56, height: 56,
               child: CustomPaint(
                 painter: _BlackHolePainter(_orbitCtrl.value, _pulseCtrl.value),
@@ -1063,7 +1063,7 @@ class _QuantumResearchScreenState extends State<QuantumResearchScreen>
     final btc = ex.getPrice('BTC');
     final eth = ex.getPrice('ETH');
     final measurements = [
-      ('Schwerkraft-Konstante G', 'BTC/ETH Verhältnis', btc > 0 && eth > 0 ? '${(btc / eth).toStringAsFixed(2)}' : '…', const Color(0xFF00F0FF)),
+      ('Schwerkraft-Konstante G', 'BTC/ETH Verhältnis', btc > 0 && eth > 0 ? (btc / eth).toStringAsFixed(2) : '…', const Color(0xFF00F0FF)),
       ('Lichtgeschwindigk. c', 'Tick-Geschwindigkeit', '${ex.ticks.length} tps', const Color(0xFF00FF88)),
       ('Planck-Konstante h', 'Min. Quantum-Einheit', '0.000001 BTC', const Color(0xFF9945FF)),
       ('Zeit-Dilatation τ', 'Markt-Zeitkrümmung', _portals[_selectedPortal].resonance, const Color(0xFFF7931A)),
@@ -1639,8 +1639,11 @@ class _WaveformPainter extends CustomPainter {
     for (int px = 0; px < w.toInt(); px++) {
       final t = px / w;
       final y = mid - mid * 0.75 * amp * sin(2 * pi * freq * t + phase + time * 2 * pi);
-      if (px == 0) path.moveTo(px.toDouble(), y);
-      else path.lineTo(px.toDouble(), y);
+      if (px == 0) {
+        path.moveTo(px.toDouble(), y);
+      } else {
+        path.lineTo(px.toDouble(), y);
+      }
     }
     canvas.drawPath(path, paint);
 
@@ -1726,7 +1729,7 @@ class _GravityOrbitalPainter extends CustomPainter {
       // Symbol label
       final tp = TextPainter(
         text: TextSpan(text: f.symbol,
-            style: TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold)),
+            style: const TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold)),
         textDirection: TextDirection.ltr,
       )..layout();
       tp.paint(canvas, Offset(bx - tp.width / 2, by - tp.height / 2));
@@ -1779,7 +1782,7 @@ class _TimeGatePainter extends CustomPainter {
     // Rotating energy lines
     for (int i = 0; i < 12; i++) {
       final angle = 2 * pi * i / 12 + time * 2 * pi;
-      final innerR = 18.0;
+      const innerR = 18.0;
       final outerR = 30.0 + stability * 20;
       canvas.drawLine(
         Offset(cx + innerR * cos(angle), cy + innerR * sin(angle)),

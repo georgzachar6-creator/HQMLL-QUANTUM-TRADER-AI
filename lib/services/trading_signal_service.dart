@@ -328,20 +328,32 @@ class TradingSignalService extends ChangeNotifier {
 
     // Action bestimmen
     late SignalAction action;
-    if (bullScore > 0.5)       action = SignalAction.strongBuy;
-    else if (bullScore > 0.15) action = SignalAction.buy;
-    else if (bullScore > -0.15) action = SignalAction.hold;
-    else if (bullScore > -0.5) action = SignalAction.sell;
-    else                       action = SignalAction.strongSell;
+    if (bullScore > 0.5) {
+      action = SignalAction.strongBuy;
+    } else if (bullScore > 0.15) {
+      action = SignalAction.buy;
+    } else if (bullScore > -0.15) {
+      action = SignalAction.hold;
+    } else if (bullScore > -0.5) {
+      action = SignalAction.sell;
+    } else {
+      action = SignalAction.strongSell;
+    }
 
     // Risk Level
     final riskScore = (tcPhase == TCPhase.chaotic ? 0.8 : 0.3) + _rnd.nextDouble() * 0.3;
     late RiskLevel risk;
-    if (riskScore < 0.2)      risk = RiskLevel.veryLow;
-    else if (riskScore < 0.4) risk = RiskLevel.low;
-    else if (riskScore < 0.6) risk = RiskLevel.medium;
-    else if (riskScore < 0.8) risk = RiskLevel.high;
-    else                      risk = RiskLevel.veryHigh;
+    if (riskScore < 0.2) {
+      risk = RiskLevel.veryLow;
+    } else if (riskScore < 0.4) {
+      risk = RiskLevel.low;
+    } else if (riskScore < 0.6) {
+      risk = RiskLevel.medium;
+    } else if (riskScore < 0.8) {
+      risk = RiskLevel.high;
+    } else {
+      risk = RiskLevel.veryHigh;
+    }
 
     // Preisziele
     final gainPct = action.isBullish ? 0.02 + confidence * 0.06 : -(0.02 + confidence * 0.04);
@@ -445,7 +457,7 @@ class TradingSignalService extends ChangeNotifier {
   }
 
   void _updateMetrics() {
-    final base   = 75847.32;
+    const base   = 75847.32;
     final drift  = (_rnd.nextDouble() - 0.48) * 200;
     final total  = base + drift;
     final pnl24h = 1200 + _rnd.nextDouble() * 800 - 200;

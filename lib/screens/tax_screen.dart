@@ -771,8 +771,11 @@ class _TaxScreenState extends State<TaxScreen> with TickerProviderStateMixin {
           color: val == groupVal ? p.primary.withValues(alpha: 0.25) : p.primary.withValues(alpha: 0.06),
         ),
       ),
+      // ignore: deprecated_member_use
       child: RadioListTile<String>(
+        // ignore: deprecated_member_use
         value: val, groupValue: groupVal,
+        // ignore: deprecated_member_use
         onChanged: onChanged,
         title: Text(val, style: GoogleFonts.inter(color: p.textPrimary, fontSize: 12)),
         subtitle: sub.isNotEmpty ? Text(sub, style: GoogleFonts.inter(color: p.textSecondary, fontSize: 10)) : null,

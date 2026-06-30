@@ -27,7 +27,7 @@ class _AccountingScreenState extends State<AccountingScreen>
   int _selectedYear = DateTime.now().year;
   String _filterType = 'ALL';
   // ignore: unused_field
-  String _filterAsset = 'ALL';
+  final String _filterAsset = 'ALL';
   String _searchQuery = '';
   final _searchCtrl = TextEditingController();
 
@@ -688,19 +688,19 @@ class _AccountingScreenState extends State<AccountingScreen>
     final rnd = Random(DateTime.now().day);
 
     final insights = [
-      _AiInsight('Portfolio Diversifikation', 
+      const _AiInsight('Portfolio Diversifikation', 
         'Du handelst hauptsächlich BTC und ETH. Diversifikation auf 5-7 Assets empfohlen.',
         Icons.pie_chart, Colors.blueAccent, 0.72),
-      _AiInsight('Handelsfrequenz optimal',
+      const _AiInsight('Handelsfrequenz optimal',
         'Deine durchschnittliche Haltezeit ist gut für Swing-Trading. Weiter so!',
         Icons.show_chart, Colors.greenAccent, 0.85),
-      _AiInsight('Gebühren-Optimierung',
+      const _AiInsight('Gebühren-Optimierung',
         'Durch Limit-Orders statt Market-Orders kannst du bis zu 40% Gebühren sparen.',
         Icons.savings, Colors.orangeAccent, 0.6),
-      _AiInsight('Risk-Management',
+      const _AiInsight('Risk-Management',
         'Stop-Loss bei 3% und Take-Profit bei 8% sind für dein Portfolio optimal.',
         Icons.security, Colors.purpleAccent, 0.79),
-      _AiInsight('Steuer-Effizienz',
+      const _AiInsight('Steuer-Effizienz',
         'Nutze die €1000 Freigrenze durch gestaffelte Realisierung von Gewinnen.',
         Icons.account_balance, Colors.cyanAccent, 0.91),
       _AiInsight('Auto-Trading Performance',

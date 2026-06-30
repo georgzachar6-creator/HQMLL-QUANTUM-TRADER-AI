@@ -76,7 +76,7 @@ class _KycAmlScreenState extends State<KycAmlScreen>
               onPressed: _startOnboarding,
               backgroundColor: const Color(0xFF00E5FF),
               icon: const Icon(Icons.person_add, color: Colors.black),
-              label: Text('KYC starten',
+              label: const Text('KYC starten',
                   style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
             )
           : null,
@@ -320,7 +320,7 @@ class _TransactionsTab extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.receipt_long, color: Colors.grey, size: 56),
+            const Icon(Icons.receipt_long, color: Colors.grey, size: 56),
             const SizedBox(height: 12),
             const Text('Keine Transaktionen', style: TextStyle(color: Colors.grey)),
             const SizedBox(height: 8),
@@ -406,16 +406,16 @@ class _SarTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final sars = kyc.sars;
     if (sars.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.check_circle_outline, color: Colors.green, size: 64),
-            const SizedBox(height: 12),
-            const Text('Keine verdächtigen Aktivitäten',
+            SizedBox(height: 12),
+            Text('Keine verdächtigen Aktivitäten',
                 style: TextStyle(color: Colors.green, fontSize: 16)),
-            const SizedBox(height: 8),
-            const Text('System ist compliant',
+            SizedBox(height: 8),
+            Text('System ist compliant',
                 style: TextStyle(color: Colors.grey, fontSize: 13)),
           ],
         ),
@@ -448,7 +448,7 @@ class _ComplianceTab extends StatelessWidget {
           title: 'AMLR (Anti-Money Laundering Regulation)',
           icon: Icons.account_balance,
           color: const Color(0xFF00E5FF),
-          items: [
+          items: const [
             'Betragsgrenze: €10.000 Meldepflicht',
             'Travel Rule: €1.000 für Krypto-Transfers',
             'Verdächtige Aktivitäten → SAR innerhalb 24h',
@@ -462,7 +462,7 @@ class _ComplianceTab extends StatelessWidget {
           title: 'MiCA (Markets in Crypto-Assets)',
           icon: Icons.currency_bitcoin,
           color: Colors.orange,
-          items: [
+          items: const [
             'KYC vor Krypto-Transaktionen erforderlich',
             'Custodial Wallet: volle KYC-Pflicht',
             'Stablecoin-Emittenten: Erweiterte Anforderungen',
@@ -476,7 +476,7 @@ class _ComplianceTab extends StatelessWidget {
           title: 'MiFID II (Markets in Financial Instruments)',
           icon: Icons.gavel,
           color: Colors.purple,
-          items: [
+          items: const [
             'Suitability Assessment für Anlagen',
             'Best Execution Nachweispflicht',
             'Transaktionsmeldepflicht Art. 26',
@@ -536,7 +536,7 @@ class _EmptyState extends StatelessWidget {
                 style: TextStyle(color: Colors.white, fontSize: 18,
                     fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Text('Starten Sie die Identitätsprüfung um den vollen\nFunktionsumfang freizuschalten.',
+            const Text('Starten Sie die Identitätsprüfung um den vollen\nFunktionsumfang freizuschalten.',
                 style: TextStyle(color: Colors.grey, fontSize: 13),
                 textAlign: TextAlign.center),
             const SizedBox(height: 24),

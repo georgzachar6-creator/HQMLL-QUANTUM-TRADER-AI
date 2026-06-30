@@ -33,7 +33,7 @@ class _DeployHubScreenState extends State<DeployHubScreen>
   String _deployStatus = '';
   final List<_TxEntry> _liveTx = [];
   int _gasPrice = 24;
-  int _gasLimit = 200000;
+  final int _gasLimit = 200000;
   double _ethPrice = 3548.20;
 
   // Networks
@@ -151,7 +151,7 @@ class _DeployHubScreenState extends State<DeployHubScreen>
         backgroundColor: p.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(children: [
-          Icon(Icons.check_circle_rounded, color: const Color(0xFF00FF88), size: 24),
+          const Icon(Icons.check_circle_rounded, color: Color(0xFF00FF88), size: 24),
           const SizedBox(width: 8),
           Text('Deployment erfolgreich', style: GoogleFonts.spaceMono(color: const Color(0xFF00FF88), fontSize: 13)),
         ]),
@@ -314,7 +314,7 @@ class _DeployHubScreenState extends State<DeployHubScreen>
                     Text(c['desc'] as String, style: GoogleFonts.inter(color: p.textSecondary, fontSize: 8), overflow: TextOverflow.ellipsis),
                   ])),
                   if (c['audited'] == true)
-                    Icon(Icons.verified_rounded, color: const Color(0xFF00FF88), size: 12),
+                    const Icon(Icons.verified_rounded, color: Color(0xFF00FF88), size: 12),
                 ]),
               ),
             );

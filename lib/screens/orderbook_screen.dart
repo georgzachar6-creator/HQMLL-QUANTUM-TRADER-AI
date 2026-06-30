@@ -29,7 +29,7 @@ class _OrderbookScreenState extends State<OrderbookScreen>
 
   String _selectedPair = 'BTC/USDT';
   String _selectedExchange = 'BINANCE';
-  int _orderbookDepth = 15;
+  final int _orderbookDepth = 15;
   int _selectedTab = 0;
   final _tabs = ['ORDERBOOK', 'TRADES', 'TIEFE', 'STATISTIKEN'];
 
@@ -848,11 +848,11 @@ class _OrderbookScreenState extends State<OrderbookScreen>
           flex: 1,
           child: Row(children: [
             Expanded(child: _buildDepthStatCard(p,
-                'BID VOLUMEN', '${_bidVolume.toStringAsFixed(3)}',
+                'BID VOLUMEN', _bidVolume.toStringAsFixed(3),
                 '\$${(_bidVolume * _midPrice / 1000).toStringAsFixed(0)}K', const Color(0xFF00FF88))),
             const SizedBox(width: 8),
             Expanded(child: _buildDepthStatCard(p,
-                'ASK VOLUMEN', '${_askVolume.toStringAsFixed(3)}',
+                'ASK VOLUMEN', _askVolume.toStringAsFixed(3),
                 '\$${(_askVolume * _midPrice / 1000).toStringAsFixed(0)}K', const Color(0xFFFF3358))),
             const SizedBox(width: 8),
             Expanded(child: _buildDepthStatCard(p,
@@ -946,8 +946,8 @@ class _OrderbookScreenState extends State<OrderbookScreen>
         const SizedBox(height: 12),
         _buildStatsCard(p, 'ORDERBOOK STATISTIKEN', [
           _StatRow('Bid-Ask Spread', '\$${_spread.toStringAsFixed(_spread < 1 ? 4 : 2)} (${_spreadPct.toStringAsFixed(3)}%)'),
-          _StatRow('Bid Volumen', '${_bidVolume.toStringAsFixed(4)}'),
-          _StatRow('Ask Volumen', '${_askVolume.toStringAsFixed(4)}'),
+          _StatRow('Bid Volumen', _bidVolume.toStringAsFixed(4)),
+          _StatRow('Ask Volumen', _askVolume.toStringAsFixed(4)),
           _StatRow('Markt Imbalance', '${_imbalance >= 0 ? "+" : ""}${_imbalance.toStringAsFixed(2)}%'),
           _StatRow('Anzahl Bid Level', '${_bids.length}'),
           _StatRow('Anzahl Ask Level', '${_asks.length}'),

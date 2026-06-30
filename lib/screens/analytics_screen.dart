@@ -470,7 +470,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           // Header row
           Row(
             children: [
-              SizedBox(width: cell + 4),
+              const SizedBox(width: cell + 4),
               ..._corrSymbols.map((s) => SizedBox(
                     width: cell,
                     child: Center(
@@ -639,12 +639,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
   Widget _buildRiskGauge(QuantumPalette p) {
     // Risk score 0-100
     const riskScore = 38.0;
-    final riskColor = riskScore < 30
+    const riskColor = riskScore < 30
         ? Colors.greenAccent
         : riskScore < 60
             ? Colors.orangeAccent
             : Colors.redAccent;
-    final riskLabel = riskScore < 30
+    const riskLabel = riskScore < 30
         ? 'NIEDRIG'
         : riskScore < 60
             ? 'MITTEL'
@@ -685,7 +685,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                     backgroundColor:
                         riskColor.withValues(alpha: 0.1),
                     valueColor:
-                        AlwaysStoppedAnimation<Color>(riskColor),
+                        const AlwaysStoppedAnimation<Color>(riskColor),
                     strokeCap: StrokeCap.round,
                   ),
                 ),
@@ -699,7 +699,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                           fontSize: 36,
                           fontWeight: FontWeight.w900),
                     ),
-                    Text(riskLabel,
+                    const Text(riskLabel,
                         style: TextStyle(
                             color: riskColor,
                             fontSize: 12,
@@ -813,8 +813,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                           ],
                         ))
                     .toList(),
-                gridData: FlGridData(show: false),
-                titlesData: FlTitlesData(show: false),
+                gridData: const FlGridData(show: false),
+                titlesData: const FlTitlesData(show: false),
                 borderData: FlBorderData(show: false),
               ),
             ),
@@ -953,13 +953,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Extreme\nAngst',
+                const Text('Extreme\nAngst',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.redAccent, fontSize: 8)),
                 Text('Neutral',
                     style:
                         TextStyle(color: p.textSecondary, fontSize: 8)),
-                Text('Extreme\nGier',
+                const Text('Extreme\nGier',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Colors.greenAccent, fontSize: 8)),
@@ -1104,8 +1104,8 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
           Expanded(
             child: LineChart(
               LineChartData(
-                gridData: FlGridData(show: false),
-                titlesData: FlTitlesData(show: false),
+                gridData: const FlGridData(show: false),
+                titlesData: const FlTitlesData(show: false),
                 borderData: FlBorderData(show: false),
                 minY: 0,
                 maxY: 100,
@@ -1115,7 +1115,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                     isCurved: true,
                     color: Colors.orangeAccent,
                     barWidth: 2,
-                    dotData: FlDotData(show: false),
+                    dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
                       gradient: LinearGradient(

@@ -664,7 +664,7 @@ class MarketDataIngestionService extends ChangeNotifier {
     }
 
     // Preis simulieren: Geometric Brownian Motion
-    final sigma = 0.0004; // 0.04% pro Tick
+    const sigma = 0.0004; // 0.04% pro Tick
     final dW = _rng.nextGaussian();
     final newPrice = current.lastPrice * exp(sigma * dW);
 
@@ -749,8 +749,11 @@ class MarketDataIngestionService extends ChangeNotifier {
     double avgGain = 0, avgLoss = 0;
     for (int i = closes.length - period; i < closes.length; i++) {
       final diff = closes[i] - closes[i - 1];
-      if (diff > 0) avgGain += diff;
-      else avgLoss += diff.abs();
+      if (diff > 0) {
+        avgGain += diff;
+      } else {
+        avgLoss += diff.abs();
+      }
     }
     avgGain /= period;
     avgLoss /= period;
@@ -770,7 +773,9 @@ class MarketDataIngestionService extends ChangeNotifier {
     if (closes.isEmpty) return 0.0;
     final k = 2.0 / (period + 1);
     double ema = closes.first;
-    for (final c in closes.skip(1)) ema = c * k + ema * (1 - k);
+    for (final c in closes.skip(1)) {
+      ema = c * k + ema * (1 - k);
+    }
     return ema;
   }
 

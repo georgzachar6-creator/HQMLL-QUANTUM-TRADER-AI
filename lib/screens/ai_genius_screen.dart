@@ -263,7 +263,7 @@ class _AIGeniusScreenState extends State<AIGeniusScreen>
   Widget build(BuildContext context) {
     final tp = context.watch<ThemeProvider>();
     final p = tp.palette;
-    final accentColor = const Color(0xFF00E5FF);
+    const accentColor = Color(0xFF00E5FF);
     // v38.0: Reactive live price updates
     final ex = context.watch<ExchangeService>();
     context.watch<PersistenceService>(); // keep for reactivity
@@ -863,7 +863,7 @@ class _AIGeniusScreenState extends State<AIGeniusScreen>
             ],
           ),
         );
-      }).toList(),
+      }),
       ],  // close outer list children
     );
   }

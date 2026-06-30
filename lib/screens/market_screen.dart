@@ -390,8 +390,9 @@ class _MarketScreenState extends State<MarketScreen>
           icon: Icon(Icons.sort, color: p.textSecondary, size: 18),
           color: p.surface,
           onSelected: (v) => setState(() {
-            if (_sortBy == v) _sortAsc = !_sortAsc;
-            else { _sortBy = v; _sortAsc = true; }
+            if (_sortBy == v) {
+              _sortAsc = !_sortAsc;
+            } else { _sortBy = v; _sortAsc = true; }
           }),
           itemBuilder: (_) => [
             _sortMenuItem(p, 'rank', 'Rank'),
@@ -570,7 +571,7 @@ class _MarketScreenState extends State<MarketScreen>
         SizedBox(width: 80, child: Text('PRICE', textAlign: TextAlign.right, style: GoogleFonts.orbitron(color: p.textSecondary, fontSize: 9))),
         SizedBox(width: 64, child: Text('24H %', textAlign: TextAlign.right, style: GoogleFonts.orbitron(color: p.textSecondary, fontSize: 9))),
         SizedBox(width: 72, child: Text('CHART', textAlign: TextAlign.center, style: GoogleFonts.orbitron(color: p.textSecondary, fontSize: 9))),
-        SizedBox(width: 24, child: Text('', textAlign: TextAlign.right)),
+        const SizedBox(width: 24, child: Text('', textAlign: TextAlign.right)),
       ]),
     );
   }
@@ -674,8 +675,11 @@ class _MarketScreenState extends State<MarketScreen>
               onTap: () {
                 HapticFeedback.lightImpact();
                 setState(() {
-                  if (isWatched) _localWatchlist.remove(q.symbol);
-                  else _localWatchlist.add(q.symbol);
+                  if (isWatched) {
+                    _localWatchlist.remove(q.symbol);
+                  } else {
+                    _localWatchlist.add(q.symbol);
+                  }
                 });
                 // Persist to MarketService
                 final ms = context.read<MarketService>();

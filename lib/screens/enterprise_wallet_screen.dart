@@ -28,7 +28,7 @@ class _WalletBalance {
   final double amount;
   final String address;
   final String memo;          // for XRP/XLM/TON
-  bool selected;
+  bool selected = false;
 
   _WalletBalance({
     required this.symbol,
@@ -37,7 +37,6 @@ class _WalletBalance {
     required this.amount,
     required this.address,
     this.memo = '',
-    this.selected = false,
   });
 
   double usdValue(double price) => amount * price;
@@ -1137,7 +1136,7 @@ class _EnterpriseWalletScreenState extends State<EnterpriseWalletScreen>
           const SizedBox(height: 16),
 
           // Amount
-          Text('${_fiatDirection == 'OUT' ? 'FIAT AMOUNT TO RECEIVE' : 'FIAT AMOUNT TO SEND'}',
+          Text(_fiatDirection == 'OUT' ? 'FIAT AMOUNT TO RECEIVE' : 'FIAT AMOUNT TO SEND',
             style: TextStyle(color: Colors.grey[600], fontSize: 10, letterSpacing: 1.5)),
           const SizedBox(height: 8),
           _buildTextField(

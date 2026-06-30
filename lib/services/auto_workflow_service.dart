@@ -208,7 +208,7 @@ class AutoWorkflowService extends ChangeNotifier {
   DateTime? _lastSaveAt;
   Duration _autoSaveInterval = const Duration(minutes: 2);
   bool _hasUnsavedChanges = false;
-  List<String> _unsavedSections = [];
+  final List<String> _unsavedSections = [];
 
   // ── Streams ───────────────────────────────────────────────────────────────
   final _logStream    = StreamController<String>.broadcast();

@@ -521,7 +521,7 @@ class _NFTScreenState extends State<NFTScreen>
               )),
               if (c['verified'] as bool) ...[
                 const SizedBox(width: 4),
-                Icon(Icons.verified, color: const Color(0xFF00AAFF), size: 13),
+                const Icon(Icons.verified, color: Color(0xFF00AAFF), size: 13),
               ],
             ]),
             Text('${c['chain']} · ${c['supply']} Items', style: GoogleFonts.inter(
@@ -672,7 +672,7 @@ class _NFTScreenState extends State<NFTScreen>
                 )),
                 if (c['verified'] as bool) ...[
                   const SizedBox(width: 4),
-                  Icon(Icons.verified, color: const Color(0xFF00AAFF), size: 14),
+                  const Icon(Icons.verified, color: Color(0xFF00AAFF), size: 14),
                 ],
               ]),
               Text(c['desc'] as String, style: GoogleFonts.inter(
@@ -691,7 +691,11 @@ class _NFTScreenState extends State<NFTScreen>
               onTap: () {
                 HapticFeedback.lightImpact();
                 setState(() {
-                  if (inWatchlist) _watchlist.remove(c['name']); else _watchlist.add(c['name'] as String);
+                  if (inWatchlist) {
+                    _watchlist.remove(c['name']);
+                  } else {
+                    _watchlist.add(c['name'] as String);
+                  }
                 });
               },
               child: Icon(
@@ -838,8 +842,8 @@ class _NFTScreenState extends State<NFTScreen>
             const SizedBox(height: 12),
             Row(children: [
               _buildPortfolioStat(p, '${_myNfts.length}', 'NFTs'),
-              _buildPortfolioStat(p, '${totalCost.toStringAsFixed(2)}', 'Investiert (ETH)'),
-              _buildPortfolioStat(p, '${totalValue.toStringAsFixed(2)}', 'Aktuell (ETH)'),
+              _buildPortfolioStat(p, totalCost.toStringAsFixed(2), 'Investiert (ETH)'),
+              _buildPortfolioStat(p, totalValue.toStringAsFixed(2), 'Aktuell (ETH)'),
             ]),
           ]),
         ),
@@ -1172,7 +1176,11 @@ class _SparklinePainter extends CustomPainter {
     for (int i = 0; i < data.length; i++) {
       final x = i / (data.length - 1) * size.width;
       final y = size.height - ((data[i] - mn) / range) * size.height;
-      if (i == 0) path.moveTo(x, y); else path.lineTo(x, y);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
     }
     canvas.drawPath(path, paint);
 

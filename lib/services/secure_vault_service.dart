@@ -216,7 +216,7 @@ class SecureVaultService extends ChangeNotifier {
   // ══════════════════════════════════════════════════════════════
 
   String _deriveKeyHash(String password) {
-    final salt = 'HQMLL-QUANTUM-SALT-GRIGORI-SAKS-2025';
+    const salt = 'HQMLL-QUANTUM-SALT-GRIGORI-SAKS-2025';
     final data = utf8.encode('$password:$salt');
     return sha256.convert(sha256.convert(data).bytes).toString();
   }

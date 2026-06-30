@@ -371,7 +371,7 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
                         color: Colors.green.withValues(alpha: 0.7 + _pulseCtrl.value * 0.3),
                       )),
                       const SizedBox(width: 5),
-                      Text('LIVE FX', style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.w700)),
+                      const Text('LIVE FX', style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.w700)),
                     ],
                   ),
                 ),
@@ -499,8 +499,8 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('B: ${rate.bid.toStringAsFixed(4)}', style: TextStyle(color: Colors.greenAccent, fontSize: 9)),
-              Text('A: ${rate.ask.toStringAsFixed(4)}', style: TextStyle(color: Colors.redAccent, fontSize: 9)),
+              Text('B: ${rate.bid.toStringAsFixed(4)}', style: const TextStyle(color: Colors.greenAccent, fontSize: 9)),
+              Text('A: ${rate.ask.toStringAsFixed(4)}', style: const TextStyle(color: Colors.redAccent, fontSize: 9)),
             ],
           ),
         ],
@@ -668,8 +668,11 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
           GestureDetector(
             onTap: () => _showCurrencyPicker(currencies, currency, (c) {
               setState(() {
-                if (editable) _fromCurrency = c;
-                else _toCurrency = c;
+                if (editable) {
+                  _fromCurrency = c;
+                } else {
+                  _toCurrency = c;
+                }
                 _updateConvertedAmount();
               });
             }, p),
@@ -724,7 +727,7 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
             ),
             title: Text(c, style: TextStyle(color: p.textPrimary, fontWeight: FontWeight.w600)),
             subtitle: Text(_currencyName(c), style: TextStyle(color: p.textSecondary, fontSize: 11)),
-            trailing: c == selected ? Icon(Icons.check, color: const Color(0xFF003399)) : null,
+            trailing: c == selected ? const Icon(Icons.check, color: Color(0xFF003399)) : null,
             onTap: () {
               Navigator.pop(context);
               onSelect(c);
@@ -840,7 +843,7 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
         type: isCrypto ? PaymentType.cryptoTransfer : PaymentType.internalTransfer,
         fromAccount: _fromCurrency,
         toAccount: _toCurrency,
-        toName: '${_toCurrency} Konto',
+        toName: '$_toCurrency Konto',
         amount: amt,
         currency: _fromCurrency,
         amountUsd: isCrypto ? (amt * (_cryptoToUsd[_fromCurrency] ?? 1.0)) : amt,
@@ -942,7 +945,7 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
                 Text('${tx.type.toUpperCase()} · ${tx.reference}',
                   style: TextStyle(color: p.textSecondary, fontSize: 10)),
                 if (tx.bankName != null)
-                  Text(tx.bankName!, style: TextStyle(color: const Color(0xFF003399), fontSize: 10)),
+                  Text(tx.bankName!, style: const TextStyle(color: Color(0xFF003399), fontSize: 10)),
               ],
             ),
           ),
@@ -1022,7 +1025,7 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
               ),
               const Spacer(),
               Text('${b.$4} ${b.$5.toStringAsFixed(2)}',
-                style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.w800, fontSize: 13)),
+                style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.w800, fontSize: 13)),
             ],
           ),
           const SizedBox(height: 8),
@@ -1172,8 +1175,8 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
           width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [const Color(0xFF003399), const Color(0xFF0055CC)],
+            gradient: const LinearGradient(
+              colors: [Color(0xFF003399), Color(0xFF0055CC)],
               begin: Alignment.topLeft, end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(16),
@@ -1304,12 +1307,12 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
               const SizedBox(width: 8),
               GestureDetector(
                 onTap: () => _showEditBalanceDialog(acc, p, ps),
-                child: Icon(Icons.edit, color: Colors.white60, size: 16),
+                child: const Icon(Icons.edit, color: Colors.white60, size: 16),
               ),
               const SizedBox(width: 6),
               GestureDetector(
                 onTap: () => ps.removeBankAccount(acc.id),
-                child: Icon(Icons.delete_outline, color: Colors.white38, size: 16),
+                child: const Icon(Icons.delete_outline, color: Colors.white38, size: 16),
               ),
             ]),
             const Spacer(),
@@ -1361,12 +1364,12 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
           _dialogField(ibanCtrl, 'IBAN', 'DE00 0000 0000 0000 0000 00', p),
           _dialogField(bicCtrl, 'BIC', 'z.B. DORTDE33XXX', p),
           _dialogField(balanceCtrl, 'Aktuelles Guthaben (€)', '0.00', p,
-            type: TextInputType.numberWithOptions(decimal: true)),
+            type: const TextInputType.numberWithOptions(decimal: true)),
           _dialogField(cardLastCtrl, 'Letzte 4 Stellen Kartennr.', '0000', p,
             type: TextInputType.number, maxLen: 4),
           _dialogField(cardExpCtrl, 'Gültig bis', 'MM/YY', p),
           DropdownButtonFormField<String>(
-            value: cardType,
+            initialValue: cardType,
             dropdownColor: p.surface,
             style: GoogleFonts.spaceMono(color: p.textPrimary, fontSize: 11),
             decoration: InputDecoration(labelText: 'Kartentyp',

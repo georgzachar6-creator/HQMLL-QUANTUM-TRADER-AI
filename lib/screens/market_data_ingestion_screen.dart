@@ -433,16 +433,16 @@ class _TickStreamTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (ticks.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.bolt, color: Colors.grey, size: 56),
-            const SizedBox(height: 12),
-            const Text('Warte auf Tick-Daten...',
+            SizedBox(height: 12),
+            Text('Warte auf Tick-Daten...',
                 style: TextStyle(color: Colors.grey)),
-            const SizedBox(height: 8),
-            const Text('Starten Sie den Market Data Gateway',
+            SizedBox(height: 8),
+            Text('Starten Sie den Market Data Gateway',
                 style: TextStyle(color: Colors.grey, fontSize: 12)),
           ],
         ),

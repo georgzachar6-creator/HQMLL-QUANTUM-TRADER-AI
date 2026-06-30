@@ -43,8 +43,8 @@ class _SocialTradingScreenState extends State<SocialTradingScreen>
   double _copyAmount = 500.0;
   bool _autoCopy = false;
   double _maxRisk = 2.0;
-  bool _copyingNexus = true; // ignore: unused_field
-  bool _copyingDeepAlpha = true; // ignore: unused_field
+  final bool _copyingNexus = true; // ignore: unused_field
+  final bool _copyingDeepAlpha = true; // ignore: unused_field
 
   // Community feed
   final List<Map<String, dynamic>> _feed = [
@@ -58,8 +58,8 @@ class _SocialTradingScreenState extends State<SocialTradingScreen>
   // My signal stats
   double _myRoi = 142.8;
   int _myFollowers = 284;
-  int _myTrades = 127;
-  double _myWinRate = 73.4;
+  final int _myTrades = 127;
+  final double _myWinRate = 73.4;
 
   @override
   void initState() {
@@ -291,7 +291,7 @@ class _SocialTradingScreenState extends State<SocialTradingScreen>
       ),
       child: Row(
         children: [
-          Icon(Icons.emoji_events, color: Colors.amber, size: 24),
+          const Icon(Icons.emoji_events, color: Colors.amber, size: 24),
           const SizedBox(width: 10),
           Expanded(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

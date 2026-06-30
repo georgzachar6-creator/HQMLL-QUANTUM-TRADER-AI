@@ -411,7 +411,7 @@ class _AiOrchestratorScreenState extends State<AiOrchestratorScreen>
       final isBuy = _rnd.nextBool();
       final conf = 0.55 + _rnd.nextDouble() * 0.35;
       final agent = _agents[_rnd.nextInt(_agents.length)];
-      final riskLevels = RiskLevel.values;
+      const riskLevels = RiskLevel.values;
 
       setState(() {
         _session.totalSignals++;
@@ -959,7 +959,7 @@ class _AiOrchestratorScreenState extends State<AiOrchestratorScreen>
                 Switch(
                   value: agent.enabled,
                   onChanged: (v) => setState(() => agent.enabled = v),
-                  activeColor: const Color(0xFF00C896),
+                  activeThumbColor: const Color(0xFF00C896),
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
               ],
@@ -1258,10 +1258,10 @@ class _AiOrchestratorScreenState extends State<AiOrchestratorScreen>
     final cumPnl = <double>[0];
     for (final d in dailyPnl) { cumPnl.add(cumPnl.last + d); }
 
-    final maxDrawdown = -8.3;
-    final sharpe = 1.84;
-    final sortino = 2.31;
-    final calmar = 1.17;
+    const maxDrawdown = -8.3;
+    const sharpe = 1.84;
+    const sortino = 2.31;
+    const calmar = 1.17;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),

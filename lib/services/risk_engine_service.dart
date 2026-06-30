@@ -323,7 +323,7 @@ class RiskEngineService extends ChangeNotifier {
   // ── Konfiguration ────────────────────────────────────────────────────────
   RiskTier _riskTier = RiskTier.moderate;
   double _maxPositionSizePct = 0.05; // 5% of portfolio per position
-  double _maxDailyLossPct    = 0.02; // 2% daily loss limit
+  final double _maxDailyLossPct    = 0.02; // 2% daily loss limit
   double _maxDrawdownPct     = 0.15; // 15% max drawdown
   double _var95Limit         = 0.03; // 3% 95% VaR limit
   double _concentrationLimit = 0.25; // 25% max in single asset

@@ -945,7 +945,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         Padding(
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
           child: Row(children: [
-            Icon(Icons.star_rounded, color: const Color(0xFFFFD700), size: 16),
+            const Icon(Icons.star_rounded, color: Color(0xFFFFD700), size: 16),
             const SizedBox(width: 8),
             Text('WATCHLIST', style: GoogleFonts.spaceMono(color: const Color(0xFFFFD700), fontSize: 11, letterSpacing: 1.5)),
             const Spacer(),
@@ -1060,8 +1060,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [const Color(0xFF0A0020), const Color(0xFF150030)],
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0A0020), Color(0xFF150030)],
           begin: Alignment.topLeft, end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(14),
@@ -1078,9 +1078,9 @@ class _DashboardScreenState extends State<DashboardScreen>
           child: Row(children: [
             Container(
               width: 28, height: 28,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const RadialGradient(colors: [Color(0xFF9945FF), Color(0xFF14F195)]),
+                gradient: RadialGradient(colors: [Color(0xFF9945FF), Color(0xFF14F195)]),
               ),
               child: const Icon(Icons.science_outlined, color: Colors.white, size: 14),
             ),
@@ -1325,7 +1325,11 @@ class _SparklinePainter extends CustomPainter {
     for (int i = 0; i < data.length; i++) {
       final x = (i / (data.length - 1)) * size.width;
       final y = size.height - ((data[i] - minV) / range) * size.height;
-      if (i == 0) path.moveTo(x, y); else path.lineTo(x, y);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
     }
     canvas.drawPath(path, paint);
   }

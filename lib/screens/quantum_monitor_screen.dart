@@ -807,7 +807,7 @@ class _QuantumMonitorScreenState extends State<QuantumMonitorScreen>
     String fmt(String sym, String fallback) {
       final pr = ex.getPrice(sym);
       if (pr <= 0) return fallback;
-      return pr >= 1000 ? (pr / 1000).toStringAsFixed(3) + 'K' : pr.toStringAsFixed(pr >= 1 ? 2 : 4);
+      return pr >= 1000 ? '${(pr / 1000).toStringAsFixed(3)}K' : pr.toStringAsFixed(pr >= 1 ? 2 : 4);
     }
     String chg(String sym, String fallback) {
       final tick = ex.getTick(sym);

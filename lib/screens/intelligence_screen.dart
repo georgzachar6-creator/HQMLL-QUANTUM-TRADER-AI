@@ -172,7 +172,7 @@ class _IntelligenceScreenState extends State<IntelligenceScreen>
 
   String _generateFakeEncrypted(String input) {
     final rng = Random();
-    final chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
     final sb = StringBuffer();
     sb.write('$_selectedAlgo::\$2y\$12\$');
     for (int i = 0; i < 80 + input.length * 2; i++) {

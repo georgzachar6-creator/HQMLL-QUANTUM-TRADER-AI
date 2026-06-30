@@ -271,8 +271,11 @@ class CoinGeckoService extends ChangeNotifier {
       }
     } catch (e) {
       _error = 'Network unavailable – showing demo data';
-      if (_markets.isEmpty) _loadFallbackMarkets();
-      else _simulateUpdates();
+      if (_markets.isEmpty) {
+        _loadFallbackMarkets();
+      } else {
+        _simulateUpdates();
+      }
     }
 
     _loading = false;

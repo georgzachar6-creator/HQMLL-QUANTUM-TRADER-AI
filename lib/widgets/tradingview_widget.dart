@@ -464,8 +464,11 @@ class _SparklinePainter extends CustomPainter {
     for (int i = 0; i < data.length; i++) {
       final x = i / (data.length - 1) * size.width;
       final y = size.height - (data[i] - min) / range * size.height;
-      if (i == 0) path.moveTo(x, y);
-      else path.lineTo(x, y);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
     }
     canvas.drawPath(path, paint);
 

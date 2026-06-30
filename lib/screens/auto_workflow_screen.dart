@@ -4,7 +4,6 @@
 library;
 
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -38,10 +37,12 @@ class _AutoWorkflowScreenState extends State<AutoWorkflowScreen>
   void _attachStreams() {
     final svc = context.read<AutoWorkflowService>();
     _logSub = svc.logStream.listen((msg) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _liveLogs.insert(0, msg);
         if (_liveLogs.length > 200) _liveLogs.removeLast();
       });
+      }
     });
     _saveSub = svc.saveStream.listen((state) {
       if (mounted) setState(() => _liveAutoSave = state);

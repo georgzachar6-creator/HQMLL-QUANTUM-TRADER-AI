@@ -27,7 +27,7 @@ class _DeFiScreenState extends State<DeFiScreen> with TickerProviderStateMixin {
   // Portfolio DeFi
   double _totalValueLocked = 12847.50;
   double _totalRewards = 284.32;
-  double _avgAPY = 18.42;
+  final double _avgAPY = 18.42;
 
   // Pools
   final List<Map<String, dynamic>> _pools = [
@@ -463,7 +463,7 @@ class _DeFiScreenState extends State<DeFiScreen> with TickerProviderStateMixin {
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              Icon(Icons.emoji_events_rounded, color: const Color(0xFFFFD700), size: 16),
+              const Icon(Icons.emoji_events_rounded, color: Color(0xFFFFD700), size: 16),
               const SizedBox(width: 8),
               Text('BESTE YIELD MÖGLICHKEITEN', style: GoogleFonts.spaceMono(color: const Color(0xFF00FF88), fontSize: 11, letterSpacing: 1)),
             ]),

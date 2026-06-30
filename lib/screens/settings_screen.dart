@@ -252,7 +252,7 @@ class SettingsScreen extends StatelessWidget {
                   ps.addSystemLog('SETTINGS', 'Realtime-Feed gestoppt', level: SysLogLevel.warning);
                 }
               },
-              activeColor: const Color(0xFF14F195),
+              activeThumbColor: const Color(0xFF14F195),
               inactiveThumbColor: const Color(0xFFF7931A),
             ),
           ]),
@@ -759,10 +759,10 @@ class SettingsScreen extends StatelessWidget {
                 as2.saveAll(trigger: 'manual');
                 ps.addSystemLog('AUTOSAVE', 'Manueller Save ausgeloest', level: SysLogLevel.info);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('💾 Alle Daten gespeichert'),
-                    duration: const Duration(seconds: 2),
-                    backgroundColor: const Color(0xFF00AA55),
+                  const SnackBar(
+                    content: Text('💾 Alle Daten gespeichert'),
+                    duration: Duration(seconds: 2),
+                    backgroundColor: Color(0xFF00AA55),
                   ),
                 );
               },
@@ -816,7 +816,7 @@ class SettingsScreen extends StatelessWidget {
                 return GestureDetector(
                   onTap: () {
                     as2.setInterval(sec);
-                    ps.addSystemLog('SETTINGS', 'Save-Intervall geaendert: ${label}', level: SysLogLevel.info);
+                    ps.addSystemLog('SETTINGS', 'Save-Intervall geaendert: $label', level: SysLogLevel.info);
                   },
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),

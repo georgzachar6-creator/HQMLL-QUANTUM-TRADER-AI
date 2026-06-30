@@ -10,7 +10,6 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/exchange_service.dart';
@@ -179,9 +178,9 @@ class _OmsRiskScreenState extends State<OmsRiskScreen>
   // Risk circuit breakers
   bool _dailyLossCircuitBreaker = false;
   // ignore: unused_field
-  bool _concentrationCircuitBreaker = false; // reserved for risk limiter
-  double _maxDailyLoss = -500.0; // USD
-  double _maxSinglePosition = 0.02; // 2% of equity
+  final bool _concentrationCircuitBreaker = false; // reserved for risk limiter
+  final double _maxDailyLoss = -500.0; // USD
+  final double _maxSinglePosition = 0.02; // 2% of equity
 
   @override
   void initState() {
@@ -370,7 +369,7 @@ class _OmsRiskScreenState extends State<OmsRiskScreen>
             border: Border.all(color: const Color(0xFF4A90E2).withValues(alpha: 0.4)),
           ),
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Text('MiFID II', style: TextStyle(color: const Color(0xFF4A90E2), fontSize: 8, fontWeight: FontWeight.bold)),
+            const Text('MiFID II', style: TextStyle(color: Color(0xFF4A90E2), fontSize: 8, fontWeight: FontWeight.bold)),
             Text('COMPLIANT', style: TextStyle(color: Colors.grey[600], fontSize: 6, letterSpacing: 0.5)),
           ]),
         ),
@@ -504,7 +503,7 @@ class _OmsRiskScreenState extends State<OmsRiskScreen>
     final qty = double.tryParse(_qtyCtrl.text) ?? 0.0;
     final limitP = double.tryParse(_limitPriceCtrl.text) ?? effectivePrice;
     final notionalUsd = qty * (limitP > 0 ? limitP : effectivePrice);
-    final portfolioVal = 50000.0;
+    const portfolioVal = 50000.0;
     final positionPercent = portfolioVal > 0 ? (notionalUsd / portfolioVal) * 100 : 0.0;
 
     // Pre-trade risk checks
@@ -594,7 +593,7 @@ class _OmsRiskScreenState extends State<OmsRiskScreen>
           Text('QUANTITY', style: TextStyle(color: Colors.grey[600], fontSize: 9, letterSpacing: 1.5)),
           const SizedBox(height: 6),
           Row(children: [
-            Expanded(child: _buildInputField(_qtyCtrl, 'Amount (${_orderSymbol})', TextInputType.number, () => setState(() {}))),
+            Expanded(child: _buildInputField(_qtyCtrl, 'Amount ($_orderSymbol)', TextInputType.number, () => setState(() {}))),
             const SizedBox(width: 8),
             _buildSizingMethodBtn('FIXED', 'FIXED_USD'),
             const SizedBox(width: 4),
@@ -719,10 +718,10 @@ class _OmsRiskScreenState extends State<OmsRiskScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            const Icon(Icons.verified_user_outlined, size: 14, color: Color(0xFF4A90E2)),
-            const SizedBox(width: 6),
-            Text('PRE-TRADE RISK CHECKS (MiFID II)', style: TextStyle(color: const Color(0xFF4A90E2), fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+          const Row(children: [
+            Icon(Icons.verified_user_outlined, size: 14, color: Color(0xFF4A90E2)),
+            SizedBox(width: 6),
+            Text('PRE-TRADE RISK CHECKS (MiFID II)', style: TextStyle(color: Color(0xFF4A90E2), fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
           ]),
           const SizedBox(height: 10),
           ...checks.map((c) => Padding(
@@ -756,8 +755,8 @@ class _OmsRiskScreenState extends State<OmsRiskScreen>
           padding: const EdgeInsets.all(14),
           margin: const EdgeInsets.only(bottom: 14),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [const Color(0xFF0D1F17), const Color(0xFF0A1520)],
+            gradient: const LinearGradient(
+              colors: [Color(0xFF0D1F17), Color(0xFF0A1520)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),

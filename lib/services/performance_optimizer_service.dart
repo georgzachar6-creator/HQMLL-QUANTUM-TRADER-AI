@@ -273,7 +273,7 @@ class PerformanceOptimizerService extends ChangeNotifier {
     // In web/release we simulate memory stats
     // In debug we can use dart:developer MemoryUsage
     final rng = Random();
-    final baseHeap = 45 * 1024 * 1024; // ~45MB base
+    const baseHeap = 45 * 1024 * 1024; // ~45MB base
     final variation = (rng.nextDouble() * 10 * 1024 * 1024).toInt();
 
     final snap = MemorySnapshot(

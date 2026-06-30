@@ -570,7 +570,7 @@ class _MainScaffoldState extends State<MainScaffold>
             title: Text('2FA Einstellungen', style: GoogleFonts.rajdhani(color: p.textPrimary, fontSize: 14)),
             trailing: Switch(
               value: auth.currentUser?.twoFaEnabled ?? false,
-              activeColor: p.accent,
+              activeThumbColor: p.accent,
               onChanged: (v) async {
                 if (v) { await auth.enable2FA(); }
                 else { await auth.disable2FA(); }

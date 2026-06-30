@@ -50,27 +50,27 @@ class _AlertsScreenState extends State<AlertsScreen>
 
   // Alert history
   final List<_AlertEvent> _history = [
-    _AlertEvent('BTC', 'Preis > \$41.500', '2024-01-15 09:23', true, Colors.green),
-    _AlertEvent('ETH', 'Preis < \$2.600', '2024-01-14 22:41', true, Colors.red),
-    _AlertEvent('SOL', 'Preis > \$180', '2024-01-14 15:17', true, Colors.green),
-    _AlertEvent('BNB', '%Änderung > 5%', '2024-01-13 11:02', true, const Color(0xFFF3BA2F)),
-    _AlertEvent('ADA', 'Preis < \$0.55', '2024-01-12 08:44', false, Colors.red),
-    _AlertEvent('BTC', 'RSI > 70 (Overbought)', '2024-01-11 16:30', true, Colors.orange),
-    _AlertEvent('LINK', 'Preis > \$18', '2024-01-10 13:15', true, Colors.blue),
-    _AlertEvent('DOT', '%Änderung < -8%', '2024-01-09 19:55', true, Colors.red),
+    const _AlertEvent('BTC', 'Preis > \$41.500', '2024-01-15 09:23', true, Colors.green),
+    const _AlertEvent('ETH', 'Preis < \$2.600', '2024-01-14 22:41', true, Colors.red),
+    const _AlertEvent('SOL', 'Preis > \$180', '2024-01-14 15:17', true, Colors.green),
+    const _AlertEvent('BNB', '%Änderung > 5%', '2024-01-13 11:02', true, Color(0xFFF3BA2F)),
+    const _AlertEvent('ADA', 'Preis < \$0.55', '2024-01-12 08:44', false, Colors.red),
+    const _AlertEvent('BTC', 'RSI > 70 (Overbought)', '2024-01-11 16:30', true, Colors.orange),
+    const _AlertEvent('LINK', 'Preis > \$18', '2024-01-10 13:15', true, Colors.blue),
+    const _AlertEvent('DOT', '%Änderung < -8%', '2024-01-09 19:55', true, Colors.red),
   ];
 
   // Stats
   int _totalTriggered = 23;
   int _activeAlerts = 0;
-  double _accuracy = 87.3;
+  final double _accuracy = 87.3;
 
   bool _showCreateForm = false; // ignore: unused_field
   String _newSymbol = 'BTC';
   String _newCondition = 'Preis >';
   String _newValue = '';
   String _newChannel = 'Push';
-  bool _newEnabled = true; // ignore: unused_field
+  final bool _newEnabled = true; // ignore: unused_field
 
   final _conditionOptions = [
     'Preis >',
@@ -180,6 +180,7 @@ class _AlertsScreenState extends State<AlertsScreen>
     _activeAlerts = _alerts.where((a) => a.enabled).length;
   }
 
+  @override
   Widget build(BuildContext context) {
     final p = context.watch<ThemeProvider>();
     final pal = p.palette;
@@ -703,7 +704,7 @@ class _AlertsScreenState extends State<AlertsScreen>
                               fontSize: 11,
                               fontWeight: FontWeight.bold)),
                       Text(
-                          '\$${(_prices[s] ?? 0) > 1000 ? ((_prices[s] ?? 0) / 1000).toStringAsFixed(1) + 'K' : (_prices[s] ?? 0).toStringAsFixed(2)}',
+                          '\$${(_prices[s] ?? 0) > 1000 ? '${((_prices[s] ?? 0) / 1000).toStringAsFixed(1)}K' : (_prices[s] ?? 0).toStringAsFixed(2)}',
                           style: GoogleFonts.spaceMono(
                               color: pal.textSecondary, fontSize: 8)),
                     ],
@@ -1177,10 +1178,10 @@ class _AlertsScreenState extends State<AlertsScreen>
                     width: 32,
                     height: h,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
+                      gradient: const LinearGradient(
                         colors: [
-                          const Color(0xFFFF0080),
-                          const Color(0xFFFF6B35),
+                          Color(0xFFFF0080),
+                          Color(0xFFFF6B35),
                         ],
                         begin: Alignment.bottomCenter,
                         end: Alignment.topCenter,
@@ -1217,10 +1218,10 @@ class _Alert {
   bool enabled;
   final Color color;
   double currentPrice;
-  bool wasTriggered; // v28.0: real trigger state tracking
+  bool wasTriggered = false; // v28.0: real trigger state tracking
 
   _Alert(this.symbol, this.condition, this.targetValue, this.channel,
-      this.enabled, this.color, this.currentPrice, {this.wasTriggered = false});
+      this.enabled, this.color, this.currentPrice);
 }
 
 class _AlertEvent {

@@ -863,8 +863,8 @@ class _TradingBotScreenState extends State<TradingBotScreen> with TickerProvider
           Expanded(
             child: LineChart(
               LineChartData(
-                gridData: FlGridData(show: false),
-                titlesData: FlTitlesData(show: false),
+                gridData: const FlGridData(show: false),
+                titlesData: const FlTitlesData(show: false),
                 borderData: FlBorderData(show: false),
                 lineBarsData: [
                   LineChartBarData(
@@ -872,7 +872,7 @@ class _TradingBotScreenState extends State<TradingBotScreen> with TickerProvider
                     isCurved: true,
                     color: const Color(0xFF00D4FF),
                     barWidth: 2,
-                    dotData: FlDotData(show: false),
+                    dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
                       gradient: LinearGradient(
@@ -886,7 +886,7 @@ class _TradingBotScreenState extends State<TradingBotScreen> with TickerProvider
                     ),
                   ),
                 ],
-                lineTouchData: LineTouchData(enabled: false),
+                lineTouchData: const LineTouchData(enabled: false),
               ),
             ),
           ),

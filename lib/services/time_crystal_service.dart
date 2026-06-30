@@ -326,10 +326,10 @@ class TimeCrystalService extends ChangeNotifier {
 
   // ── State ─────────────────────────────────────────────────
   List<TCExperiment>         _experiments        = [];
-  List<TCModelResult>        _modelResults       = [];
+  final List<TCModelResult>        _modelResults       = [];
   List<String>               _hypotheses         = [];
-  List<TCExperimentSuggestion> _suggestions      = [];
-  List<String>               _log               = [];
+  final List<TCExperimentSuggestion> _suggestions      = [];
+  final List<String>               _log               = [];
   bool                       _isSimulating      = false;
   bool                       _isTraining        = false;
   bool                       _isSymbolicRunning = false;
@@ -341,8 +341,8 @@ class TimeCrystalService extends ChangeNotifier {
 
   // ── Deep Reasoning Pipeline v48 State ─────────────────────
   DRPipelineRun?             _currentPipelineRun;
-  List<DRPipelineRun>        _pipelineHistory    = [];
-  List<DRTradingFeature>     _tradingFeatures    = [];
+  final List<DRPipelineRun>        _pipelineHistory    = [];
+  final List<DRTradingFeature>     _tradingFeatures    = [];
   bool                       _isPipelineRunning  = false;
   DRPipelineStage?           _currentStage;
 
@@ -774,7 +774,7 @@ class TimeCrystalService extends ChangeNotifier {
     _addLog('🔬 Deep Reasoning Pipeline v48 gestartet — Run: $runId');
 
     try {
-      final stages = DRPipelineStage.values;
+      const stages = DRPipelineStage.values;
       for (int si = 0; si < stages.length; si++) {
         final stage = stages[si];
         _currentStage = stage;
@@ -1272,8 +1272,5 @@ class TimeCrystalService extends ChangeNotifier {
     await _saveHypotheses();
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
 }
+

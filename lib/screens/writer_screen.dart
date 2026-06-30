@@ -693,7 +693,7 @@ contract QEMMAToken is ERC20, Ownable {
           before + selected + after +
           txt.substring(sel.end);
     } else {
-      _docCtrl.text = txt + before + 'Text' + after;
+      _docCtrl.text = '$txt${before}Text$after';
     }
     _updateCounts();
   }

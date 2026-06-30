@@ -59,11 +59,11 @@ class _RebalancerScreenState extends State<RebalancerScreen>
 
   // AI Strategy Profiles
   final List<_Strategy> _strategies = [
-    _Strategy('Konservativ', 'Niedrig', 12.4, 0.62, 'BTC/ETH fokussiert, minimales Risiko', Icons.shield_outlined, const Color(0xFF00C896)),
-    _Strategy('Ausgewogen', 'Mittel', 28.7, 1.24, 'Diversifiziert über Top-20 Assets', Icons.balance, const Color(0xFF00D4FF)),
-    _Strategy('Wachstum', 'Hoch', 45.2, 1.87, 'Wachstums-Assets und DeFi-Protokolle', Icons.trending_up, const Color(0xFFFF6B35)),
-    _Strategy('Aggressiv', 'Sehr hoch', 89.3, 2.41, 'Alt-Coins und Micro-Caps', Icons.rocket_launch, const Color(0xFFFF0080)),
-    _Strategy('AI Optimal', 'KI-gesteuert', 34.1, 1.56, 'Quantales AI-Modell Empfehlung', Icons.auto_awesome, const Color(0xFFFFD700)),
+    const _Strategy('Konservativ', 'Niedrig', 12.4, 0.62, 'BTC/ETH fokussiert, minimales Risiko', Icons.shield_outlined, Color(0xFF00C896)),
+    const _Strategy('Ausgewogen', 'Mittel', 28.7, 1.24, 'Diversifiziert über Top-20 Assets', Icons.balance, Color(0xFF00D4FF)),
+    const _Strategy('Wachstum', 'Hoch', 45.2, 1.87, 'Wachstums-Assets und DeFi-Protokolle', Icons.trending_up, Color(0xFFFF6B35)),
+    const _Strategy('Aggressiv', 'Sehr hoch', 89.3, 2.41, 'Alt-Coins und Micro-Caps', Icons.rocket_launch, Color(0xFFFF0080)),
+    const _Strategy('AI Optimal', 'KI-gesteuert', 34.1, 1.56, 'Quantales AI-Modell Empfehlung', Icons.auto_awesome, Color(0xFFFFD700)),
   ];
   int _selectedStrategy = 4;
 
@@ -79,16 +79,16 @@ class _RebalancerScreenState extends State<RebalancerScreen>
 
   // AI Insights
   final List<_Insight> _insights = [
-    _Insight('Übergewicht BTC', 'BTC ist 8.5% übergewichtet gegenüber optimalem Niveau. Reduzierung empfohlen.', 0.85, Icons.warning_amber, Colors.orange, 'HOCH'),
-    _Insight('ETH Momentum stark', 'ETH zeigt Bull-Signal auf allen Timeframes. Erhöhung auf 25% erhöht Sharpe Ratio.', 0.92, Icons.trending_up, const Color(0xFF627EEA), 'SIGNAL'),
-    _Insight('SOL DeFi Wachstum', 'SOL-Ökosystem wächst 340% YoY. Untergewichtet mit Upside-Potenzial.', 0.78, Icons.bolt, const Color(0xFF9945FF), 'CHANCE'),
-    _Insight('Korrelationsrisiko', 'BNB/AVAX zeigen hohe Korrelation (0.87). Diversifikation verbessern.', 0.71, Icons.link, Colors.yellow, 'RISIKO'),
-    _Insight('Sharpe Ratio Optimierung', 'Ziel-Portfolio verbessert Sharpe Ratio von 1.24 → 1.56 (+25.8%).', 0.96, Icons.auto_awesome, const Color(0xFFFFD700), 'AI'),
+    const _Insight('Übergewicht BTC', 'BTC ist 8.5% übergewichtet gegenüber optimalem Niveau. Reduzierung empfohlen.', 0.85, Icons.warning_amber, Colors.orange, 'HOCH'),
+    const _Insight('ETH Momentum stark', 'ETH zeigt Bull-Signal auf allen Timeframes. Erhöhung auf 25% erhöht Sharpe Ratio.', 0.92, Icons.trending_up, Color(0xFF627EEA), 'SIGNAL'),
+    const _Insight('SOL DeFi Wachstum', 'SOL-Ökosystem wächst 340% YoY. Untergewichtet mit Upside-Potenzial.', 0.78, Icons.bolt, Color(0xFF9945FF), 'CHANCE'),
+    const _Insight('Korrelationsrisiko', 'BNB/AVAX zeigen hohe Korrelation (0.87). Diversifikation verbessern.', 0.71, Icons.link, Colors.yellow, 'RISIKO'),
+    const _Insight('Sharpe Ratio Optimierung', 'Ziel-Portfolio verbessert Sharpe Ratio von 1.24 → 1.56 (+25.8%).', 0.96, Icons.auto_awesome, Color(0xFFFFD700), 'AI'),
   ];
 
   double _portfolioValue = 87432.0;
   bool _isAnalyzing = false;
-  bool _showTrades = false; // ignore: unused_field
+  final bool _showTrades = false; // ignore: unused_field
   double _slippage = 0.5;
   double _maxTradePct = 15.0;
 
@@ -257,7 +257,7 @@ class _RebalancerScreenState extends State<RebalancerScreen>
 
   Widget _buildPortfolioSummary(dynamic pal) {
     final currentSharpe = _strategies[_selectedStrategy].sharpe;
-    final targetSharpe = 1.56;
+    const targetSharpe = 1.56;
     final improvement = ((targetSharpe - currentSharpe) / currentSharpe * 100).abs();
 
     return Container(
@@ -935,8 +935,8 @@ class _RebalancerScreenState extends State<RebalancerScreen>
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.auto_awesome,
-                    color: const Color(0xFFFFD700), size: 20),
+                const Icon(Icons.auto_awesome,
+                    color: Color(0xFFFFD700), size: 20),
                 const SizedBox(width: 8),
                 Text('QUANTUM AI CONFIDENCE',
                     style: GoogleFonts.spaceMono(
@@ -1217,7 +1217,7 @@ class _RebalancerScreenState extends State<RebalancerScreen>
         backgroundColor: const Color(0xFFFFD700),
         label: Row(
           children: [
-            SizedBox(
+            const SizedBox(
               width: 16,
               height: 16,
               child: CircularProgressIndicator(

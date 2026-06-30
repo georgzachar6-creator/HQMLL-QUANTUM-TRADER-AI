@@ -4,7 +4,6 @@
 library;
 
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -45,10 +44,12 @@ class _PerformanceScreenState extends State<PerformanceScreen>
       if (mounted) setState(() => _liveMemory = mem);
     });
     _alertSub = svc.alertStream.listen((msg) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _alerts.insert(0, msg);
         if (_alerts.length > 50) _alerts.removeLast();
       });
+      }
     });
   }
 
@@ -929,7 +930,7 @@ class _SlowWidgetTile extends StatelessWidget {
         border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
       ),
       child: Row(children: [
-        Icon(Icons.slow_motion_video, size: 14, color: Colors.orange),
+        const Icon(Icons.slow_motion_video, size: 14, color: Colors.orange),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -1110,7 +1111,7 @@ class _ReportCard extends StatelessWidget {
             ...report.recommendations.take(5).map((r) => Padding(
               padding: const EdgeInsets.only(bottom: 2),
               child: Row(children: [
-                Icon(Icons.arrow_right, size: 14, color: Colors.orange),
+                const Icon(Icons.arrow_right, size: 14, color: Colors.orange),
                 Text(r.name, style: GoogleFonts.inter(
                   color: p.textSecondary, fontSize: 11,
                 )),
@@ -1168,7 +1169,7 @@ class _AlertEntry extends StatelessWidget {
       border: Border.all(color: Colors.orange.withValues(alpha: 0.25)),
     ),
     child: Row(children: [
-      Icon(Icons.warning_amber_rounded, size: 12, color: Colors.orange),
+      const Icon(Icons.warning_amber_rounded, size: 12, color: Colors.orange),
       const SizedBox(width: 6),
       Expanded(child: Text(
         msg,

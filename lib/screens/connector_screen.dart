@@ -813,9 +813,9 @@ class _ConnectorScreenState extends State<ConnectorScreen>
                     GestureDetector(
                       onTap: () {
                         Clipboard.setData(ClipboardData(text: feed['restUrl'] as String));
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                           content: Text('REST URL kopiert'),
-                          duration: const Duration(seconds: 1),
+                          duration: Duration(seconds: 1),
                         ));
                       },
                       child: Icon(Icons.copy, size: 11, color: p.textSecondary),
@@ -836,9 +836,9 @@ class _ConnectorScreenState extends State<ConnectorScreen>
                     GestureDetector(
                       onTap: () {
                         Clipboard.setData(ClipboardData(text: feed['wsUrl'] as String));
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                           content: Text('WS URL kopiert'),
-                          duration: const Duration(seconds: 1),
+                          duration: Duration(seconds: 1),
                         ));
                       },
                       child: Icon(Icons.copy, size: 11, color: p.textSecondary),

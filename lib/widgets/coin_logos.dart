@@ -302,7 +302,7 @@ class _BtcPainter extends CustomPainter {
 
     // Background gradient circle
     final bgPaint = Paint()
-      ..shader = RadialGradient(colors: [CoinColors.btc2, CoinColors.btc])
+      ..shader = const RadialGradient(colors: [CoinColors.btc2, CoinColors.btc])
           .createShader(Rect.fromCircle(center: c, radius: r));
     canvas.drawCircle(c, r, bgPaint);
 
@@ -338,7 +338,7 @@ class _EthPainter extends CustomPainter {
 
     // BG
     final bgPaint = Paint()
-      ..shader = LinearGradient(
+      ..shader = const LinearGradient(
         begin: Alignment.topLeft, end: Alignment.bottomRight,
         colors: [CoinColors.eth2, CoinColors.eth],
       ).createShader(Rect.fromCircle(center: c, radius: r));
@@ -405,7 +405,7 @@ class _SolPainter extends CustomPainter {
 
     // Solana gradient background
     final bgPaint = Paint()
-      ..shader = LinearGradient(
+      ..shader = const LinearGradient(
         begin: Alignment.topRight, end: Alignment.bottomLeft,
         colors: [CoinColors.sol2, CoinColors.sol],
       ).createShader(Rect.fromCircle(center: c, radius: r));
@@ -445,7 +445,7 @@ class _BnbPainter extends CustomPainter {
 
     // Yellow BG
     final bgPaint = Paint()
-      ..shader = RadialGradient(colors: [CoinColors.bnb2, CoinColors.bnb])
+      ..shader = const RadialGradient(colors: [CoinColors.bnb2, CoinColors.bnb])
           .createShader(Rect.fromCircle(center: c, radius: r));
     canvas.drawCircle(c, r, bgPaint);
 
@@ -481,7 +481,7 @@ class _XrpPainter extends CustomPainter {
     final c = Offset(r, r);
 
     final bgPaint = Paint()
-      ..shader = LinearGradient(
+      ..shader = const LinearGradient(
         begin: Alignment.topLeft, end: Alignment.bottomRight,
         colors: [CoinColors.xrp2, CoinColors.xrp],
       ).createShader(Rect.fromCircle(center: c, radius: r));
@@ -519,7 +519,7 @@ class _AdaPainter extends CustomPainter {
     final c = Offset(r, r);
 
     final bgPaint = Paint()
-      ..shader = LinearGradient(
+      ..shader = const LinearGradient(
         begin: Alignment.topCenter, end: Alignment.bottomCenter,
         colors: [CoinColors.ada2, CoinColors.ada],
       ).createShader(Rect.fromCircle(center: c, radius: r));
@@ -565,7 +565,7 @@ class _AvaxPainter extends CustomPainter {
     final c = Offset(r, r);
 
     final bgPaint = Paint()
-      ..shader = RadialGradient(colors: [CoinColors.avax2, CoinColors.avax])
+      ..shader = const RadialGradient(colors: [CoinColors.avax2, CoinColors.avax])
           .createShader(Rect.fromCircle(center: c, radius: r));
     canvas.drawCircle(c, r, bgPaint);
 
@@ -610,7 +610,7 @@ class _MaticPainter extends CustomPainter {
     final c = Offset(r, r);
 
     final bgPaint = Paint()
-      ..shader = LinearGradient(
+      ..shader = const LinearGradient(
         begin: Alignment.topLeft, end: Alignment.bottomRight,
         colors: [CoinColors.matic2, CoinColors.matic],
       ).createShader(Rect.fromCircle(center: c, radius: r));
@@ -627,7 +627,11 @@ class _MaticPainter extends CustomPainter {
       final angle = (i / 6) * 2 * math.pi - math.pi / 6;
       final x = c.dx + scale * math.cos(angle);
       final y = c.dy + scale * math.sin(angle);
-      if (i == 0) hexPath.moveTo(x, y); else hexPath.lineTo(x, y);
+      if (i == 0) {
+        hexPath.moveTo(x, y);
+      } else {
+        hexPath.lineTo(x, y);
+      }
     }
     hexPath.close();
     canvas.drawPath(hexPath, hexPaint);
@@ -663,7 +667,7 @@ class _DotPainter extends CustomPainter {
     final c = Offset(r, r);
 
     final bgPaint = Paint()
-      ..shader = RadialGradient(colors: [CoinColors.dot2, CoinColors.dot])
+      ..shader = const RadialGradient(colors: [CoinColors.dot2, CoinColors.dot])
           .createShader(Rect.fromCircle(center: c, radius: r));
     canvas.drawCircle(c, r, bgPaint);
 
@@ -699,7 +703,7 @@ class _LinkPainter extends CustomPainter {
 
     // Hexagonal background
     final hexPaint = Paint()
-      ..shader = LinearGradient(
+      ..shader = const LinearGradient(
         begin: Alignment.topCenter, end: Alignment.bottomCenter,
         colors: [CoinColors.link2, CoinColors.link],
       ).createShader(Rect.fromCircle(center: c, radius: r));
@@ -709,7 +713,11 @@ class _LinkPainter extends CustomPainter {
       final angle = (i / 6) * 2 * math.pi - math.pi / 6;
       final x = c.dx + r * math.cos(angle);
       final y = c.dy + r * math.sin(angle);
-      if (i == 0) hexPath.moveTo(x, y); else hexPath.lineTo(x, y);
+      if (i == 0) {
+        hexPath.moveTo(x, y);
+      } else {
+        hexPath.lineTo(x, y);
+      }
     }
     hexPath.close();
     canvas.drawPath(hexPath, hexPaint);
@@ -758,7 +766,7 @@ class _UniPainter extends CustomPainter {
     final c = Offset(r, r);
 
     final bgPaint = Paint()
-      ..shader = RadialGradient(colors: [CoinColors.uni2, CoinColors.uni])
+      ..shader = const RadialGradient(colors: [CoinColors.uni2, CoinColors.uni])
           .createShader(Rect.fromCircle(center: c, radius: r));
     canvas.drawCircle(c, r, bgPaint);
 
@@ -809,8 +817,8 @@ class _AtomPainter extends CustomPainter {
 
     // Dark cosmos BG
     final bgPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [const Color(0xFF4A4F6E), CoinColors.atom],
+      ..shader = const RadialGradient(
+        colors: [Color(0xFF4A4F6E), CoinColors.atom],
       ).createShader(Rect.fromCircle(center: c, radius: r));
     canvas.drawCircle(c, r, bgPaint);
 

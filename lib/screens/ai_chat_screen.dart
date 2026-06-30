@@ -1133,7 +1133,7 @@ class _AIChatScreenState extends State<AIChatScreen>
                   ],
                 ),
                 child: _isTyping
-                    ? Center(
+                    ? const Center(
                         child: SizedBox(
                           width: 18,
                           height: 18,

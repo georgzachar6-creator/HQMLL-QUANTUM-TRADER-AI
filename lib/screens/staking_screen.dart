@@ -74,15 +74,15 @@ class _StakingScreenState extends State<StakingScreen>
 
   // ── Vaults ───────────────────────────────────────────────
   final List<_Vault> _vaults = [
-    _Vault(name: 'ETH Auto-Compound', protocol: 'Yearn Finance',
+    const _Vault(name: 'ETH Auto-Compound', protocol: 'Yearn Finance',
         token: 'WETH', apy: 8.4, tvl: 245e6, myDeposit: 3200.0,
-        color: const Color(0xFF006AE3), emoji: '🏦', risk: 'Niedrig'),
-    _Vault(name: 'USDC Yield', protocol: 'Aave V3',
+        color: Color(0xFF006AE3), emoji: '🏦', risk: 'Niedrig'),
+    const _Vault(name: 'USDC Yield', protocol: 'Aave V3',
         token: 'USDC', apy: 5.2, tvl: 820e6, myDeposit: 10000.0,
-        color: const Color(0xFF2EBAC6), emoji: '💰', risk: 'Sehr Niedrig'),
-    _Vault(name: 'BTC Boost Vault', protocol: 'Beefy Finance',
+        color: Color(0xFF2EBAC6), emoji: '💰', risk: 'Sehr Niedrig'),
+    const _Vault(name: 'BTC Boost Vault', protocol: 'Beefy Finance',
         token: 'WBTC', apy: 12.8, tvl: 92e6, myDeposit: 0,
-        color: const Color(0xFFF7931A), emoji: '₿', risk: 'Mittel'),
+        color: Color(0xFFF7931A), emoji: '₿', risk: 'Mittel'),
   ];
 
   // ── Accumulated yield (simulated) ─────────────────────────
@@ -668,7 +668,7 @@ class _StakingScreenState extends State<StakingScreen>
               color: pool.color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Center(child: Text('💧', style: const TextStyle(fontSize: 22))),
+            child: const Center(child: Text('💧', style: TextStyle(fontSize: 22))),
           ),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

@@ -306,9 +306,9 @@ class _QMLResearchScreenState extends State<QMLResearchScreen>
           child: Row(children: [
             Container(
               width: 44, height: 44,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const RadialGradient(colors: [Color(0xFF9945FF), Color(0xFF14F195)]),
+                gradient: RadialGradient(colors: [Color(0xFF9945FF), Color(0xFF14F195)]),
               ),
               child: const Icon(Icons.account_tree_outlined, color: Colors.white, size: 22),
             ),
@@ -664,7 +664,7 @@ class _QMLResearchScreenState extends State<QMLResearchScreen>
               valueColor: AlwaysStoppedAnimation(phaseColor),
               strokeWidth: 4,
             ),
-            Text('${(f.value * 100).toStringAsFixed(0)}',
+            Text((f.value * 100).toStringAsFixed(0),
               style: GoogleFonts.rajdhani(
                 color: phaseColor, fontSize: 10, fontWeight: FontWeight.w800)),
           ]),

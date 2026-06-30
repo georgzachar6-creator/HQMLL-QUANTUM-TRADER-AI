@@ -604,8 +604,11 @@ class ExchangeService extends ChangeNotifier {
 
   void updateAutoConfig(AutoTradeConfig config) {
     _autoConfig = config;
-    if (config.enabled) _startAutoTrading();
-    else _autoTradeTimer?.cancel();
+    if (config.enabled) {
+      _startAutoTrading();
+    } else {
+      _autoTradeTimer?.cancel();
+    }
     notifyListeners();
   }
 
