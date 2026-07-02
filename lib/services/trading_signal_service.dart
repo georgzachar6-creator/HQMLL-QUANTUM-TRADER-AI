@@ -1,7 +1,7 @@
-/// HQMLL Quantum Trader — TradingSignalService v47.0
-/// Verbindet TimeCrystalService + ExchangeService → AI-Trading-Signale
-/// Generiert: BUY/SELL/HOLD Signale mit Konfidenz, Regime-Kontext, Risk-Score
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader — TradingSignalService v47.0
+// Verbindet TimeCrystalService + ExchangeService → AI-Trading-Signale
+// Generiert: BUY/SELL/HOLD Signale mit Konfidenz, Regime-Kontext, Risk-Score
+// Grigori Saks · 2025
 library;
 
 import 'dart:async';

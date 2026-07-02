@@ -1,12 +1,12 @@
-/// HQMLL Quantum Trader — QML Research Screen v48.0
-/// TimeCrystal Deep Reasoning: 6 Tabs
-///   TAB 1 — PIPELINE      : Deep Reasoning Full Pipeline (NEU v48)
-///   TAB 2 — DATA LAB      : Floquet-Experimente + Zeitreihen-Visualisierung
-///   TAB 3 — MODEL TRAINER : QML / Deep Learning Training + Metriken
-///   TAB 4 — SYMBOLIC AI   : Symbolische Regression + Theorembeweise
-///   TAB 5 — EXPERIMENT AI : Adaptive Experiment-Designer (RL-Agent)
-///   TAB 6 — TRADING BRIDGE: TimeCrystal → Market Intelligence
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader — QML Research Screen v48.0
+// TimeCrystal Deep Reasoning: 6 Tabs
+//   TAB 1 — PIPELINE      : Deep Reasoning Full Pipeline (NEU v48)
+//   TAB 2 — DATA LAB      : Floquet-Experimente + Zeitreihen-Visualisierung
+//   TAB 3 — MODEL TRAINER : QML / Deep Learning Training + Metriken
+//   TAB 4 — SYMBOLIC AI   : Symbolische Regression + Theorembeweise
+//   TAB 5 — EXPERIMENT AI : Adaptive Experiment-Designer (RL-Agent)
+//   TAB 6 — TRADING BRIDGE: TimeCrystal → Market Intelligence
+// Grigori Saks · 2025
 library;
 
 import 'dart:async';

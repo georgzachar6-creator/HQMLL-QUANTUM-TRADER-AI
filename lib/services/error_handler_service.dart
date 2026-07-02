@@ -1,7 +1,7 @@
-/// HQMLL Quantum Trader — ErrorHandlerService v49.0
-/// Flutter-Äquivalent zu React Error Boundaries
-/// Zentrales Fehler-Management: Capture, Log, Recover, Notify
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader — ErrorHandlerService v49.0
+// Flutter-Äquivalent zu React Error Boundaries
+// Zentrales Fehler-Management: Capture, Log, Recover, Notify
+// Grigori Saks · 2025
 library;
 
 import 'dart:async';

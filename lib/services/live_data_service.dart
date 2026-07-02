@@ -1,7 +1,7 @@
-/// HQMLL Quantum Trader — LiveDataService v49.0
-/// Zentraler Realtime-Update-Hub (Flutter-Äquivalent zu App.jsx Realtime)
-/// StreamController + Periodic Ticks → alle Screens empfangen Live-Daten
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader — LiveDataService v49.0
+// Zentraler Realtime-Update-Hub (Flutter-Äquivalent zu App.jsx Realtime)
+// StreamController + Periodic Ticks → alle Screens empfangen Live-Daten
+// Grigori Saks · 2025
 library;
 
 import 'dart:async';

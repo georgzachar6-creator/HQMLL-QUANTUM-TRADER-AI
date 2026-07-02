@@ -1,12 +1,12 @@
-/// HQMLL Quantum Trader – TimeCrystal Deep Reasoning Service v48.0
-/// 4 Sub-Services in einem ChangeNotifier:
-///   1. Data Service     — experimentelle + synthetische Zeitkristall-Daten
-///   2. Model Service    — Deep Learning / QML Modell-Training & Inferenz (simuliert)
-///   3. Symbolic Service — Symbolische Regression + Theoremprüfung
-///   4. Experiment Design — Adaptive Experiment-Parameter-Vorschläge (RL-Agenten)
-///
-/// Floquet-Systeme · Many-Body-Lokalisierung · DTC-Order · Phasenübergänge
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader – TimeCrystal Deep Reasoning Service v48.0
+// 4 Sub-Services in einem ChangeNotifier:
+//   1. Data Service     — experimentelle + synthetische Zeitkristall-Daten
+//   2. Model Service    — Deep Learning / QML Modell-Training & Inferenz (simuliert)
+//   3. Symbolic Service — Symbolische Regression + Theoremprüfung
+//   4. Experiment Design — Adaptive Experiment-Parameter-Vorschläge (RL-Agenten)
+//
+// Floquet-Systeme · Many-Body-Lokalisierung · DTC-Order · Phasenübergänge
+// Grigori Saks · 2025
 library;
 
 import 'dart:async';

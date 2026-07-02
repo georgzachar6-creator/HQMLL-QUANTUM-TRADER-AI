@@ -1,7 +1,7 @@
-/// HQMLL Quantum Trader – Quantum Coin Tile Widget System v39.0
-/// Animated Premium Coin Tiles · SVG-like Custom Paint Logos
-/// Unique Branding · Live Price Overlays · Glow Effects
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader – Quantum Coin Tile Widget System v39.0
+// Animated Premium Coin Tiles · SVG-like Custom Paint Logos
+// Unique Branding · Live Price Overlays · Glow Effects
+// Grigori Saks · 2025
 library;
 
 import 'dart:math';

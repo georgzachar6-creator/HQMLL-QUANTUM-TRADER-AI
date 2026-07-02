@@ -1,6 +1,6 @@
-/// HQMLL Quantum Trader AI System v10.0 – Download & Install Screen
-/// APK Download + Android Installation Guide
-/// © 2025 Grigori Saks · HQMLL · All Rights Reserved
+// HQMLL Quantum Trader AI System v10.0 – Download & Install Screen
+// APK Download + Android Installation Guide
+// © 2025 Grigori Saks · HQMLL · All Rights Reserved
 library;
 
 import 'dart:async';

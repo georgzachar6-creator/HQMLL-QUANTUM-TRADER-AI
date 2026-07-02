@@ -1,6 +1,6 @@
-/// HQMLL Quantum Trader — Performance Optimizer Service v52.0
-/// FPS-Tracking · Memory Monitor · Widget-Build-Profiler · Auto-Optimize
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader — Performance Optimizer Service v52.0
+// FPS-Tracking · Memory Monitor · Widget-Build-Profiler · Auto-Optimize
+// Grigori Saks · 2025
 library;
 
 import 'dart:async';

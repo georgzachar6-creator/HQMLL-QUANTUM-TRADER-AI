@@ -1,6 +1,6 @@
-/// HQMLL Quantum Trader — KYC/AML Screen v51.0
-/// AMLR · MiCA · MiFID II konforme KYC/AML Ansicht
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader — KYC/AML Screen v51.0
+// AMLR · MiCA · MiFID II konforme KYC/AML Ansicht
+// Grigori Saks · 2025
 library;
 
 import 'package:flutter/material.dart';

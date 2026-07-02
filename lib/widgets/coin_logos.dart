@@ -1,8 +1,8 @@
-/// HQMLL Quantum Trader — Coin SVG Branding Sheet v41.0
-/// Professional original coin logos via CustomPainter + vector geometry
-/// All 12 major coins: BTC/ETH/SOL/BNB/XRP/ADA/AVAX/MATIC/DOT/LINK/UNI/ATOM
-/// Zero external dependencies — fully offline-capable
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader — Coin SVG Branding Sheet v41.0
+// Professional original coin logos via CustomPainter + vector geometry
+// All 12 major coins: BTC/ETH/SOL/BNB/XRP/ADA/AVAX/MATIC/DOT/LINK/UNI/ATOM
+// Zero external dependencies — fully offline-capable
+// Grigori Saks · 2025
 library;
 
 import 'dart:math' as math;

@@ -1,8 +1,8 @@
-/// HQMLL Quantum Trader — Market Data Ingestion Service v51.0
-/// Basiert auf: Perplexity AI Training Platform Architecture
-/// Multi-Provider WebSocket Gateway: CoinGecko, Kraken, Binance, Alpaca
-/// Normalisierung, Time-Series-Storage, Feature Extraction
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader — Market Data Ingestion Service v51.0
+// Basiert auf: Perplexity AI Training Platform Architecture
+// Multi-Provider WebSocket Gateway: CoinGecko, Kraken, Binance, Alpaca
+// Normalisierung, Time-Series-Storage, Feature Extraction
+// Grigori Saks · 2025
 library;
 
 import 'dart:async';

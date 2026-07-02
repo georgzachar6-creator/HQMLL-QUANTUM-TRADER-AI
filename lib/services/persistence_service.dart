@@ -1,11 +1,11 @@
-/// HQMLL Quantum Trader – Persistence Service v40.0
-/// Auto-Save: Settings, Bank Accounts, Transfer Prefs, Session State
-/// System Log: Resonanz, Frequenz, Funkwellen, Gravity, TX Events
-/// Research Log: QuantumResearchScreen persistent log + score
-/// WS Config: Endpoint-URLs persistent gespeichert
-/// ⚠️  NO REAL FINANCIAL DATA IS HARDCODED — user enters their own data
-/// Data is stored locally on-device via SharedPreferences (encrypted at rest by OS)
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader – Persistence Service v40.0
+// Auto-Save: Settings, Bank Accounts, Transfer Prefs, Session State
+// System Log: Resonanz, Frequenz, Funkwellen, Gravity, TX Events
+// Research Log: QuantumResearchScreen persistent log + score
+// WS Config: Endpoint-URLs persistent gespeichert
+// ⚠️  NO REAL FINANCIAL DATA IS HARDCODED — user enters their own data
+// Data is stored locally on-device via SharedPreferences (encrypted at rest by OS)
+// Grigori Saks · 2025
 library;
 
 import 'dart:convert';

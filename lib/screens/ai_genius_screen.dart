@@ -1,6 +1,6 @@
-/// HQMLL Quantum Trader – AI Genius Meta-Reasoning Engine
-/// TR2 Recursive Thinking · Memory Library · Deep Meta-Loops
-/// © 2025 Grigori Saks · HQMLL · Patent-Pending · CONFIDENTIAL
+// HQMLL Quantum Trader – AI Genius Meta-Reasoning Engine
+// TR2 Recursive Thinking · Memory Library · Deep Meta-Loops
+// © 2025 Grigori Saks · HQMLL · Patent-Pending · CONFIDENTIAL
 library;
 
 import 'dart:async';

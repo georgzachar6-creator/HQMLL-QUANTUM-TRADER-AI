@@ -1,7 +1,7 @@
-/// HQMLL Quantum Trader – Market Service v41.0
-/// Live OHLCV · Orderbook · Market Stats · Watchlist persistent
-/// Auto-Save: watchlist, alerts, settings after every change
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader – Market Service v41.0
+// Live OHLCV · Orderbook · Market Stats · Watchlist persistent
+// Auto-Save: watchlist, alerts, settings after every change
+// Grigori Saks · 2025
 library;
 
 import 'dart:convert';

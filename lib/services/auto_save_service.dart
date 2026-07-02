@@ -1,8 +1,8 @@
-/// HQMLL Quantum Trader – AutoSave Service v41.0
-/// Universal auto-save coordinator for ALL services
-/// Coordinates: PersistenceService · WalletService · PaymentService · MarketService
-/// Periodic save every 30s + immediate save on any critical change
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader – AutoSave Service v41.0
+// Universal auto-save coordinator for ALL services
+// Coordinates: PersistenceService · WalletService · PaymentService · MarketService
+// Periodic save every 30s + immediate save on any critical change
+// Grigori Saks · 2025
 library;
 
 import 'dart:async';

@@ -1,6 +1,6 @@
-/// Asset Icon Widget – Originale Coin/Stock/Commodity Icons
-/// CoinGecko CDN für Crypto, Custom SVG für Stocks/Rohstoffe
-/// Grigori Saks · 2025
+// Asset Icon Widget – Originale Coin/Stock/Commodity Icons
+// CoinGecko CDN für Crypto, Custom SVG für Stocks/Rohstoffe
+// Grigori Saks · 2025
 library;
 
 import 'package:flutter/material.dart';

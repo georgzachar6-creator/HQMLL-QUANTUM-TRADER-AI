@@ -1,6 +1,6 @@
-/// HQMLL Quantum Trader — Performance Optimizer Screen v52.0
-/// FPS-Chart · Memory-Graph · Optimization-Controls · Report-Display
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader — Performance Optimizer Screen v52.0
+// FPS-Chart · Memory-Graph · Optimization-Controls · Report-Display
+// Grigori Saks · 2025
 library;
 
 import 'dart:async';

@@ -1,6 +1,6 @@
-/// HQMLL Quantum Trader — Auto-Workflow Screen v52.0
-/// Task-Liste · Pipeline-Runner · Auto-Fix-Log · Auto-Save-Status
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader — Auto-Workflow Screen v52.0
+// Task-Liste · Pipeline-Runner · Auto-Fix-Log · Auto-Save-Status
+// Grigori Saks · 2025
 library;
 
 import 'dart:async';

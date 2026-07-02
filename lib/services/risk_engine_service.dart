@@ -1,8 +1,8 @@
-/// HQMLL Quantum Trader — Risk Engine Service v51.0
-/// Basiert auf: Perplexity AI Training Platform Architecture
-/// Pre-Trade Checks, Post-Trade Monitoring, Circuit Breaker, VaR
-/// MiFID II Art.17 konforme Risk Controls
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader — Risk Engine Service v51.0
+// Basiert auf: Perplexity AI Training Platform Architecture
+// Pre-Trade Checks, Post-Trade Monitoring, Circuit Breaker, VaR
+// MiFID II Art.17 konforme Risk Controls
+// Grigori Saks · 2025
 library;
 
 import 'dart:math';

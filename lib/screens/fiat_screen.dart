@@ -1,7 +1,7 @@
-/// HQMLL Quantum Trader – Fiat Transaction Screen v42
-/// EUR/USD Live Broker API · Bank Transfer · SEPA · SWIFT
-/// v42: PaymentService integration — alle TX auto-saved persistent
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader – Fiat Transaction Screen v42
+// EUR/USD Live Broker API · Bank Transfer · SEPA · SWIFT
+// v42: PaymentService integration — alle TX auto-saved persistent
+// Grigori Saks · 2025
 library;
 
 import 'dart:async';

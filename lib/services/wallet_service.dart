@@ -1,7 +1,7 @@
-/// HQMLL Quantum Trader – Wallet Service v41.0
-/// Manages crypto wallet balances, addresses, transactions
-/// Auto-Save: every balance/address change persisted immediately
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader – Wallet Service v41.0
+// Manages crypto wallet balances, addresses, transactions
+// Auto-Save: every balance/address change persisted immediately
+// Grigori Saks · 2025
 library;
 
 import 'dart:convert';

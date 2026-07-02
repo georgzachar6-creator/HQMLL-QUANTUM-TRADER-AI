@@ -1,6 +1,6 @@
-/// Quantum Trader – AI Trading Bot Screen v2 (v28.0)
-/// ExchangeService Live Prices · Auto-Trading · Strategies · Backtesting · Performance Analytics
-/// Grigori Saks · 2025
+// Quantum Trader – AI Trading Bot Screen v2 (v28.0)
+// ExchangeService Live Prices · Auto-Trading · Strategies · Backtesting · Performance Analytics
+// Grigori Saks · 2025
 library;
 
 import 'dart:async';

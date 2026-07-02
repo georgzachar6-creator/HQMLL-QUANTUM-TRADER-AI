@@ -1,6 +1,6 @@
-/// HQMLL Quantum Trader — Auto-Workflow Service v52.0
-/// Scheduled Tasks · Pipeline Runner · Auto-Fix Engine · Auto-Save Enhanced
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader — Auto-Workflow Service v52.0
+// Scheduled Tasks · Pipeline Runner · Auto-Fix Engine · Auto-Save Enhanced
+// Grigori Saks · 2025
 library;
 
 import 'dart:async';

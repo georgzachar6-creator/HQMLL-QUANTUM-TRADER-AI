@@ -1,6 +1,6 @@
-/// HQMLL Quantum Trader – Live Market Service
-/// CoinGecko REST API + Binance WebSocket + Alpha Vantage Stocks
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader – Live Market Service
+// CoinGecko REST API + Binance WebSocket + Alpha Vantage Stocks
+// Grigori Saks · 2025
 library;
 
 import 'dart:async';

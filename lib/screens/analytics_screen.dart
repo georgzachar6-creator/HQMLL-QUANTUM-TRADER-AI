@@ -1,6 +1,6 @@
-/// Quantum Trader – Advanced Analytics Screen v2 (v27.0)
-/// ExchangeService Live Prices · Heatmap · Korrelations-Matrix · Risk Metrics · Sentiment
-/// Grigori Saks · 2025
+// Quantum Trader – Advanced Analytics Screen v2 (v27.0)
+// ExchangeService Live Prices · Heatmap · Korrelations-Matrix · Risk Metrics · Sentiment
+// Grigori Saks · 2025
 library;
 
 import 'dart:async';

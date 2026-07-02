@@ -1,6 +1,6 @@
-/// Quantum Trader – AI Accounting Screen v24.0
-/// AI Buchhalter · P&L · Steuern · Vollständige Historie · Logs
-/// Grigori Saks · 2025
+// Quantum Trader – AI Accounting Screen v24.0
+// AI Buchhalter · P&L · Steuern · Vollständige Historie · Logs
+// Grigori Saks · 2025
 library;
 
 import 'dart:math';

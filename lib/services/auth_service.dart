@@ -1,6 +1,6 @@
-/// Quantum Trader – Auth Service v24.0
-/// Login · Register · 2FA TOTP · KYC · Biometric · Session
-/// Grigori Saks · 2025
+// Quantum Trader – Auth Service v24.0
+// Login · Register · 2FA TOTP · KYC · Biometric · Session
+// Grigori Saks · 2025
 library;
 
 import 'dart:async';

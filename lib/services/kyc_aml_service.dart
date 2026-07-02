@@ -1,7 +1,7 @@
-/// HQMLL Quantum Trader — KYC/AML Service v51.0
-/// Basiert auf: Perplexity AI Training Platform Architecture
-/// EU-konform: AMLR, MiCA, MiFID II — Onboarding, Monitoring, Travel Rule
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader — KYC/AML Service v51.0
+// Basiert auf: Perplexity AI Training Platform Architecture
+// EU-konform: AMLR, MiCA, MiFID II — Onboarding, Monitoring, Travel Rule
+// Grigori Saks · 2025
 library;
 
 import 'dart:math';

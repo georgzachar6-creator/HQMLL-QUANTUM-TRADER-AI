@@ -1,6 +1,6 @@
-/// HQMLL Quantum Trader – SecureVault Encryption Service
-/// AES-256-CBC + Quantum-Key-Derivation
-/// © 2025 Grigori Saks · HQMLL · Patent-Pending · CONFIDENTIAL
+// HQMLL Quantum Trader – SecureVault Encryption Service
+// AES-256-CBC + Quantum-Key-Derivation
+// © 2025 Grigori Saks · HQMLL · Patent-Pending · CONFIDENTIAL
 library;
 
 import 'dart:convert';

@@ -1,6 +1,6 @@
-/// HQMLL Quantum Trader — Market Data Ingestion Screen v51.0
-/// Multi-Provider WebSocket Gateway · OHLCV · Feature Extraction
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader — Market Data Ingestion Screen v51.0
+// Multi-Provider WebSocket Gateway · OHLCV · Feature Extraction
+// Grigori Saks · 2025
 library;
 
 import 'dart:async';

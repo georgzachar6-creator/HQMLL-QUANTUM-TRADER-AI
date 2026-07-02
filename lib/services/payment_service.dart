@@ -1,7 +1,7 @@
-/// HQMLL Quantum Trader – Payment Service v41.0
-/// Bank Transfers · SEPA · Crypto Payments · Auto-Save after every change
-/// All transfer data saved immediately — survives app restart
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader – Payment Service v41.0
+// Bank Transfers · SEPA · Crypto Payments · Auto-Save after every change
+// All transfer data saved immediately — survives app restart
+// Grigori Saks · 2025
 library;
 
 import 'dart:convert';

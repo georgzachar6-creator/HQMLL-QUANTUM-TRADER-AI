@@ -1,7 +1,7 @@
-/// Quantum Trader – Exchange Service v24.0
-/// Binance REST + WebSocket · CoinGecko · Kraken · Order Management
-/// Real Swap, Send, Receive, Trade · Live Prices
-/// Grigori Saks · 2025
+// Quantum Trader – Exchange Service v24.0
+// Binance REST + WebSocket · CoinGecko · Kraken · Order Management
+// Real Swap, Send, Receive, Trade · Live Prices
+// Grigori Saks · 2025
 library;
 
 import 'dart:async';

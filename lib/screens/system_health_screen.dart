@@ -1,6 +1,6 @@
-/// HQMLL Quantum Trader — System Health Screen v53.0
-/// Live Service Monitor · Dependency Graph · Error Log · Resource Monitor
-/// Grigori Saks · 2025
+// HQMLL Quantum Trader — System Health Screen v53.0
+// Live Service Monitor · Dependency Graph · Error Log · Resource Monitor
+// Grigori Saks · 2025
 library;
 
 import 'dart:async';
