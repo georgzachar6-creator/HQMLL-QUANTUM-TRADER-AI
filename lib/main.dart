@@ -25,6 +25,11 @@ import 'services/kyc_aml_service.dart';
 import 'services/market_data_ingestion_service.dart';
 import 'services/performance_optimizer_service.dart';
 import 'services/auto_workflow_service.dart';
+import 'services/market_data_hub_service.dart';
+import 'services/broker_api_service.dart';
+import 'services/asset_catalog_service.dart';
+import 'services/auto_trading_service.dart';
+import 'services/websocket_service.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/main_scaffold.dart';
@@ -46,6 +51,10 @@ final _kycAmlService              = KycAmlService();
 final _marketDataIngestionService = MarketDataIngestionService();
 final _performanceOptimizerService = PerformanceOptimizerService();
 final _autoWorkflowService        = AutoWorkflowService();
+final _marketDataHubService       = MarketDataHubService();
+final _brokerApiService           = BrokerApiService();
+final _assetCatalogService        = AssetCatalogService();
+final _autoTradingService         = AutoTradingService();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -83,13 +92,26 @@ void main() async {
   _marketDataIngestionService.start();
   _performanceOptimizerService.startMonitoring();
   _autoWorkflowService.startAutoSave();
+  // v54.0 — Enterprise Services initialisieren
+  await _errorHandler.runSafe(() => _brokerApiService.initialize(),
+      source: 'BrokerApiService');
+  await _errorHandler.runSafe(() => _assetCatalogService.loadCachedLogos(),
+      source: 'AssetCatalogService');
+  _assetCatalogService.startAutoRefresh();
+  // MarketDataHub + WebSocket-Verbindungen starten
+  await _errorHandler.runSafe(
+    () => _marketDataHubService.start(
+        symbols: WebSocketManager.defaultSymbols),
+    source: 'MarketDataHubService',
+  );
 
   // ── Startup-Log ───────────────────────────────────────────────────────────
   _persistenceService.addSystemLog(
     'SYSTEM',
-    'HQMLL Quantum Trader v52.0 gestartet — '
+    'HQMLL Quantum Trader v54.0 gestartet — '
     'AutoSave (${_autoSaveService.intervalLabel}) · '
-    'TradingSignals · TimeCrystal · LiveData · RiskEngine · KYC/AML · MarketData · PerfOpt · AutoWorkflow · ErrorHandler aktiv',  
+    'TradingSignals · TimeCrystal · LiveData · RiskEngine · KYC/AML · MarketData · PerfOpt · AutoWorkflow · '
+    'MarketDataHub (5 Exchanges) · BrokerAPI · AssetCatalog (${_assetCatalogService.catalogSize} Assets) · AutoTrading · ErrorHandler aktiv',  
     level: SysLogLevel.quantum,
   );
 
@@ -133,6 +155,11 @@ class HQMLLApp extends StatelessWidget {
         // ── v52.0 — Performance Optimizer + Auto-Workflow ────────────────────
         ChangeNotifierProvider.value(value: _performanceOptimizerService),
         ChangeNotifierProvider.value(value: _autoWorkflowService),
+        // ── v54.0 — Enterprise Platform Services ───────────────────────────
+        ChangeNotifierProvider.value(value: _marketDataHubService),
+        ChangeNotifierProvider.value(value: _brokerApiService),
+        ChangeNotifierProvider.value(value: _assetCatalogService),
+        ChangeNotifierProvider.value(value: _autoTradingService),
       ],
       // _AppShell liegt INNERHALB MultiProvider → alle context.watch() sicher
       child: const _AppShell(),
