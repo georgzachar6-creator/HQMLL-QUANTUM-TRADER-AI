@@ -1,3 +1,5 @@
+// wallet_screen.dart v55.2 — AssetCatalogService Integration
+// CoinGecko CDN logos · 200+ tokens · Category metadata
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +12,7 @@ import '../widgets/asset_icon_widget.dart';
 import '../widgets/coin_logos.dart';
 import '../services/exchange_service.dart';
 import '../services/wallet_service.dart';
+import '../services/asset_catalog_service.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -340,9 +343,36 @@ class _WalletScreenState extends State<WalletScreen>
     );
   }
 
+  // v55.2: CoinGecko CDN logo with CoinLogo fallback
+  Widget _buildCoinLogo(String logoUrl, String symbol, double size, bool showShadow) {
+    if (logoUrl.isNotEmpty) {
+      return Container(
+        width: size, height: size,
+        decoration: showShadow ? BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [BoxShadow(color: Colors.orange.withValues(alpha: 0.3), blurRadius: 8)],
+        ) : null,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(size / 2),
+          child: Image.network(
+            logoUrl, width: size, height: size, fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => CoinLogo(symbol: symbol, size: size, showShadow: showShadow),
+            loadingBuilder: (_, child, progress) =>
+                progress == null ? child : CoinLogo(symbol: symbol, size: size, showShadow: showShadow),
+          ),
+        ),
+      );
+    }
+    return CoinLogo(symbol: symbol, size: size, showShadow: showShadow);
+  }
+
   Widget _buildAssetCard(dynamic p, _WalletAsset a) {
     final isSelected = _selectedAsset == a.symbol;
     final ex = context.watch<ExchangeService>();
+    final catalog = context.read<AssetCatalogService>();
+    final logoUrl = catalog.getLogoUrl(a.symbol);
+    final catalogAsset = AssetCatalogRegistry.find(a.symbol);
+    final categoryLabel = catalogAsset?.category.name ?? '';
     final rawLive = ex.getPrice(a.symbol);
     final livePrice = rawLive > 0 ? rawLive : a.price;
     final isLive = rawLive > 0 && (ex.getTick(a.symbol)?.isLive ?? false);
@@ -364,8 +394,8 @@ class _WalletScreenState extends State<WalletScreen>
         ),
         child: Row(
           children: [
-            // Token Icon – SVG CoinLogo (v42)
-            CoinLogo(symbol: a.symbol, size: 44, showShadow: isSelected),
+            // v55.2: CoinGecko CDN logo with CoinLogo fallback
+            _buildCoinLogo(logoUrl, a.symbol, 44, isSelected),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -383,6 +413,17 @@ class _WalletScreenState extends State<WalletScreen>
                       ),
                       child: Text(a.network, style: TextStyle(color: p.textSecondary, fontSize: 9)),
                     ),
+                    if (categoryLabel.isNotEmpty) ...[
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: p.primary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(categoryLabel, style: TextStyle(color: p.primary.withValues(alpha: 0.7), fontSize: 8)),
+                      ),
+                    ],
                   ]),
                   Text(a.name, style: TextStyle(color: p.textSecondary, fontSize: 11)),
                 ],
