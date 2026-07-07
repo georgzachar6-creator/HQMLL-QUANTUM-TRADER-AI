@@ -1,4 +1,8 @@
 // ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
+// TR2 Recursive AI Deep-Thinking Engine v55.1
+// Meta-Thinking Loops · Bayesian Memory · Strategy Orchestration
+// AutoTradingService + MarketDataHub Integration
+library;
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -7,12 +11,15 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/exchange_service.dart';
 import '../services/persistence_service.dart';
+import '../services/auto_trading_service.dart';
+import '../services/market_data_hub_service.dart';
 
 // ═══════════════════════════════════════════════════════════════
 //  TR2 RECURSIVE PREVIEW — HQMLL Meta-Reasoning Live Visualizer
-//  Quantum Trader AI System v38.0
-//  v38.0: ExchangeService Live Prices + Autonomous Trading Button
-//         + Self-Healing System + PersistenceService Integration
+//  Quantum Trader AI System v55.1
+//  v55.1: AutoTradingService Leaderboard · MarketDataHub Health
+//         Strategy Orchestration Visualization · Bayesian Scores
+//         Meta-Thinking Loop Memory · TR2 Recursive Deep-Think
 // ═══════════════════════════════════════════════════════════════
 
 class TR2PreviewScreen extends StatefulWidget {
@@ -107,7 +114,7 @@ class _TR2PreviewScreenState extends State<TR2PreviewScreen>
     });
   }
 
-  // v38.0: Self-Healing System
+  // ── v55.1: Self-Healing System ──────────────────────────
   void _startSelfHeal() {
     _healTimer?.cancel();
     setState(() => _selfHealActive = true);
@@ -308,26 +315,69 @@ class _TR2PreviewScreenState extends State<TR2PreviewScreen>
   Widget build(BuildContext context) {
     final ex = context.watch<ExchangeService>();
     final ps = context.watch<PersistenceService>();
+    final hub = context.watch<MarketDataHubService>();
+    final at = context.watch<AutoTradingService>();
     final btcPrice = ex.getPrice('BTC');
     final ethPrice = ex.getPrice('ETH');
     return Scaffold(
       backgroundColor: const Color(0xFF020810),
-      body: Column(
-        children: [
-          _buildHeader(btcPrice, ethPrice),
-          // v38.0: Self-Heal Status Bar
-          if (_selfHealActive) _buildSelfHealBar(),
-          Expanded(
-            child: Row(
-              children: [
-                // Left: Neural Graph
-                Expanded(flex: 5, child: _buildNeuralGraph()),
-                // Right: Metrics + Log
-                Expanded(flex: 4, child: _buildRightPanel()),
-              ],
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildHeader(btcPrice, ethPrice),
+            // v55.1: Hub Health Bar
+            _buildHubHealthBar(hub),
+            if (_selfHealActive) _buildSelfHealBar(),
+            Expanded(
+              child: Row(
+                children: [
+                  // Left: Neural Graph
+                  Expanded(flex: 5, child: _buildNeuralGraph()),
+                  // Right: Metrics + Log + Strategy Leaderboard
+                  Expanded(flex: 4, child: _buildRightPanel(at)),
+                ],
+              ),
             ),
-          ),
-          _buildControlBar(ps),
+            _buildControlBar(ps),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // v55.1: MarketDataHub Health Bar
+  Widget _buildHubHealthBar(MarketDataHubService hub) {
+    final health = hub.health;
+    final exchanges = health.keys.toList();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      color: const Color(0xFF00060F),
+      child: Row(
+        children: [
+          Text('HUB:', style: GoogleFonts.spaceMono(color: const Color(0xFF004488), fontSize: 7, letterSpacing: 1)),
+          const SizedBox(width: 6),
+          ...exchanges.map((name) {
+            final h = health[name]!;
+            final color = h.isHealthy ? const Color(0xFF00FF88) : (h.status.name == 'connecting' ? Colors.orange : Colors.red);
+            return Container(
+              margin: const EdgeInsets.only(right: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(3),
+                color: color.withValues(alpha: 0.1),
+                border: Border.all(color: color.withValues(alpha: 0.4)),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Container(width: 4, height: 4, decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
+                const SizedBox(width: 3),
+                Text(name.substring(0, 3).toUpperCase(),
+                    style: GoogleFonts.spaceMono(color: color, fontSize: 7, fontWeight: FontWeight.w700)),
+              ]),
+            );
+          }),
+          const Spacer(),
+          Text('${hub.health.values.where((h) => h.isHealthy).length}/${hub.health.length} HEALTHY',
+              style: GoogleFonts.spaceMono(color: const Color(0xFF004488), fontSize: 7)),
         ],
       ),
     );
@@ -502,18 +552,124 @@ class _TR2PreviewScreenState extends State<TR2PreviewScreen>
   }
 
   // ── Right Panel ───────────────────────────────────────────
-  Widget _buildRightPanel() {
+  Widget _buildRightPanel(AutoTradingService at) {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(4, 8, 8, 8),
       child: Column(
         children: [
           _buildMetricsCard(),
           const SizedBox(height: 8),
+          _buildStrategyOrchestrator(at),
+          const SizedBox(height: 8),
           _buildPhaseProgress(),
           const SizedBox(height: 8),
           _buildMemorySnapshots(),
           const SizedBox(height: 8),
           _buildThinkLog(),
+        ],
+      ),
+    );
+  }
+
+  // v55.1: Strategy Orchestrator Leaderboard
+  Widget _buildStrategyOrchestrator(AutoTradingService at) {
+    final strategies = at.strategyLeaderboard;
+    final isRunning = at.status == BotStatus.running;
+    final isKill = at.status == BotStatus.killSwitchActive;
+    final statusColor = isRunning ? const Color(0xFF00FF88) : (isKill ? Colors.red : const Color(0xFF3A6080));
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFFFAA00).withValues(alpha: 0.25)),
+        color: const Color(0xFF0A0700),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Container(width: 6, height: 6, decoration: BoxDecoration(shape: BoxShape.circle, color: statusColor)),
+            const SizedBox(width: 6),
+            Text('AI STRATEGIE ORCHESTRATOR', style: GoogleFonts.spaceMono(
+              color: const Color(0xFFFFAA00), fontSize: 8, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+            const Spacer(),
+            Text(at.status.name.toUpperCase(), style: GoogleFonts.spaceMono(color: statusColor, fontSize: 7)),
+          ]),
+          const SizedBox(height: 4),
+          Text(
+            'Trades: ${at.totalTrades} | Pos: ${at.openPositionCount} | PnL: \$${at.totalPnL.toStringAsFixed(0)} | WR: ${at.winRate.toStringAsFixed(0)}%',
+            style: GoogleFonts.spaceMono(color: const Color(0xFF5A8080), fontSize: 7),
+          ),
+          const SizedBox(height: 8),
+          if (strategies.isEmpty)
+            Text('Keine Strategien aktiv', style: GoogleFonts.spaceMono(color: const Color(0xFF3A6080), fontSize: 8))
+          else
+            ...strategies.take(4).map((s) {
+              final score = s.score;
+              final enabled = s.enabled;
+              final scoreColor = score > 1.2 ? const Color(0xFF00FF88) : (score < 0.8 ? Colors.red : const Color(0xFFFFAA00));
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 5),
+                child: Row(children: [
+                  Container(width: 4, height: 4, decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: enabled ? const Color(0xFF00FF88) : const Color(0xFF3A6080),
+                  )),
+                  const SizedBox(width: 5),
+                  Expanded(child: Text(s.name,
+                      style: GoogleFonts.spaceMono(
+                          color: enabled ? const Color(0xFFCCCCCC) : const Color(0xFF4A6080),
+                          fontSize: 7),
+                      overflow: TextOverflow.ellipsis)),
+                  SizedBox(
+                    width: 60,
+                    child: LinearProgressIndicator(
+                      value: (score / 2.0).clamp(0, 1),
+                      backgroundColor: const Color(0xFF0A2A1A),
+                      valueColor: AlwaysStoppedAnimation(scoreColor),
+                      minHeight: 3,
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  Text(score.toStringAsFixed(2),
+                      style: GoogleFonts.spaceMono(color: scoreColor, fontSize: 7, fontWeight: FontWeight.bold)),
+                ]),
+              );
+            }),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  if (isRunning) {
+                    at.activateKillSwitch(reason: 'TR2 Manual Stop');
+                  } else {
+                    at.start();
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    color: isRunning
+                        ? Colors.red.withValues(alpha: 0.15)
+                        : const Color(0xFF00FF88).withValues(alpha: 0.1),
+                    border: Border.all(
+                        color: isRunning
+                            ? Colors.red.withValues(alpha: 0.5)
+                            : const Color(0xFF00FF88).withValues(alpha: 0.4)),
+                  ),
+                  child: Text(
+                    isRunning ? 'KILL SWITCH' : 'START BOTS',
+                    style: GoogleFonts.spaceMono(
+                        color: isRunning ? Colors.red : const Color(0xFF00FF88),
+                        fontSize: 7, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
