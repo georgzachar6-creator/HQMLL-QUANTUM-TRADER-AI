@@ -633,7 +633,7 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
                   ),
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                     Text('PSD2', style: GoogleFonts.spaceMono(color: Colors.green, fontSize: 8, fontWeight: FontWeight.w700, letterSpacing: 1)),
-                    Text('LIVE', style: TextStyle(color: Colors.green, fontSize: 7)),
+                    const Text('LIVE', style: TextStyle(color: Colors.green, fontSize: 7)),
                   ]),
                 ),
               ),
@@ -1062,7 +1062,7 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
             Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
               Text('YOU RECEIVE', style: TextStyle(color: p.textSecondary, fontSize: 9)),
               Text('${q.toAmount.toStringAsFixed(2)} ${q.toFiat}',
-                  style: TextStyle(color: Colors.green, fontSize: 14, fontWeight: FontWeight.w800)),
+                  style: const TextStyle(color: Colors.green, fontSize: 14, fontWeight: FontWeight.w800)),
             ]),
           ],
         ),
@@ -1120,7 +1120,7 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
             Expanded(child: Text(e.$1, style: TextStyle(color: p.textPrimary, fontSize: 12, fontWeight: FontWeight.w700))),
             Text('Fee ${e.$2}', style: TextStyle(color: p.textSecondary, fontSize: 10)),
             const SizedBox(width: 12),
-            Text('Latency ${e.$3}', style: TextStyle(color: Colors.green, fontSize: 10)),
+            Text('Latency ${e.$3}', style: const TextStyle(color: Colors.green, fontSize: 10)),
           ],
         ),
       )).toList(),
@@ -1380,10 +1380,10 @@ class _FiatScreenState extends State<FiatScreen> with TickerProviderStateMixin {
               border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
             ),
             child: Column(children: [
-              Row(children: [
-                const Icon(Icons.shield, color: Colors.blue, size: 16),
-                const SizedBox(width: 6),
-                Text('PSD2 / MiFID II Compliance', style: const TextStyle(color: Colors.blue, fontSize: 11, fontWeight: FontWeight.w800)),
+              const Row(children: [
+                Icon(Icons.shield, color: Colors.blue, size: 16),
+                SizedBox(width: 6),
+                Text('PSD2 / MiFID II Compliance', style: TextStyle(color: Colors.blue, fontSize: 11, fontWeight: FontWeight.w800)),
               ]),
               const SizedBox(height: 8),
               _infoRow('AML-Check', '✅ Bestanden', p),
